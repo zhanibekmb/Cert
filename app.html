@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CERT — App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/cert.css">
+<style>
+  body {
+    background:
+      radial-gradient(ellipse 90% 50% at 50% -5%, rgba(226,59,46,.08), transparent 55%),
+      radial-gradient(ellipse 80% 50% at 50% 105%, rgba(201,162,39,.05), transparent 55%),
+      var(--bg);
+    min-height: 100vh;
+  }
+
+  /* ---------- responsive shell ---------- */
+  .app-root { display: flex; min-height: 100vh; }
+
+  /* desktop sidebar (hidden on mobile) */
+  .app-side { display: none; }
+
+  .app-main { flex: 1; min-width: 0; padding-bottom: 88px; }
+
+  /* mobile top bar */
+  .app-bar {
+    position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; background: rgba(7,6,8,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line);
+  }
+  .app-bar .brand span { font-size: 18px; }
+
+  #view { padding: 22px; max-width: 480px; margin: 0 auto; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  /* on mobile the home grid stacks — space the leaderboard from the card above */
+  .home-grid > div + div { margin-top: 22px; }
+
+  /* типографика приложения: убрали моноширинный из подписей/текста,
+     оставили Tektur для заголовков+цифр и Space Grotesk для всего остального */
+  .app-root .kicker { font-family: var(--font-text); letter-spacing: .14em; }
+  .app-root .mono   { font-family: var(--font-text); letter-spacing: 0; }
+
+  .app-avatar {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--bg-3); border: 2px solid var(--bronze-dim);
+    display: flex; align-items: center; justify-content: center; font-size: 15px; color: var(--ink); cursor: pointer;
+    font-family: var(--font-display); font-weight: 700; flex: none;
+  }
+
+  /* bottom nav (mobile) */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; display: flex;
+    background: rgba(7,6,8,.96); backdrop-filter: blur(12px); border-top: 1px solid var(--line);
+    padding: 8px 0 18px; z-index: 25;
+  }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 6px; background: none; border: none; }
+  .nav-item .ic { font-size: 21px; filter: grayscale(.5) brightness(.8); transition: filter .15s; }
+  .nav-item .lb { font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-faint); font-family: var(--font-mono); }
+  .nav-item.active .ic { filter: none; }
+  .nav-item.active .lb { color: var(--bronze); }
+
+  /* ---------- DESKTOP ---------- */
+  @media (min-width: 900px) {
+    .app-bar { display: none; }
+    .bottom-nav { display: none; }
+    .app-main { padding-bottom: 0; }
+
+    .app-side {
+      display: flex; flex-direction: column; width: 244px; flex: none;
+      position: sticky; top: 0; height: 100vh; padding: 26px 20px;
+      border-right: 1px solid var(--line); background: rgba(7,6,8,.6);
+    }
+    .app-side .brand { margin-bottom: 34px; padding: 0 8px; }
+    .app-side .brand span { font-size: 20px; }
+    .side-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+    .side-link {
+      display: flex; align-items: center; gap: 14px; padding: 12px 14px; cursor: pointer;
+      background: none; border: none; border-left: 2px solid transparent; width: 100%; text-align: left;
+      font-family: var(--font-mono); font-size: 13px; letter-spacing: .06em; color: var(--ink-mute);
+      transition: color .15s, background .15s, border-color .15s;
+    }
+    .side-link .ic { font-size: 19px; filter: grayscale(.4); }
+    .side-link:hover { color: var(--ink); background: rgba(255,255,255,.02); }
+    .side-link.active { color: var(--bronze); border-left-color: var(--bronze); background: rgba(201,162,39,.05); }
+    .side-link.active .ic { filter: none; }
+    .side-foot { display: flex; flex-direction: column; gap: 14px; border-top: 1px solid var(--line); padding-top: 18px; }
+    .side-foot .row { justify-content: space-between; }
+
+    #view { max-width: 860px; padding: 38px 40px 64px; }
+    /* roomier cards / two-up where it helps */
+    .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+    .home-grid > div + div { margin-top: 0; }
+  }
+  @media (min-width: 900px) {
+    /* keep the streak block from getting absurdly tall on wide screens */
+    .streak-num { font-size: 84px; }
+  }
+
+  /* shared component bits used by screens */
+  .streak-block { text-align: center; padding: 28px; border: 1px solid var(--bronze-dim);
+    background: linear-gradient(135deg, #1a1210, #120e0c); position: relative; overflow: hidden; }
+  .streak-num { font-family: var(--font-display); font-weight: 800; font-size: 72px; color: var(--bronze); line-height: 1; text-shadow: 0 0 40px rgba(201,162,39,.35); }
+  .strike-dots { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }
+  .sdot { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--red-dim); display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--red); }
+  .sdot.on { background: var(--red); border-color: var(--red); color: #fff; box-shadow: 0 0 12px rgba(226,59,46,.5); }
+
+  .lb-item { display: flex; align-items: center; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--bg-3); }
+  .lb-rank { font-family: var(--font-display); font-weight: 700; font-size: 15px; width: 22px; text-align: center; color: var(--ink-mute); }
+  .lb-av { width: 34px; height: 34px; border-radius: 50%; background: var(--bg-3); display: flex; align-items: center; justify-content: center; font-size: 16px; flex: none; }
+  .lb-streak { font-family: var(--font-display); font-weight: 700; font-size: 17px; color: var(--bronze); text-align: right; }
+  .lb-streak small { display: block; font-family: var(--font-mono); font-size: 9px; color: var(--ink-faint); font-weight: 400; }
+
+  .verdict-photo { width: 100%; height: 280px; border: 1px solid var(--line); background: var(--bg-1) center/cover no-repeat;
+    display: flex; align-items: center; justify-content: center; font-size: 64px; position: relative; }
+  .verdict-badge { font-family: var(--font-display); font-weight: 800; font-size: 46px; letter-spacing: .04em; text-align: center; }
+
+  .scanner { width: 100%; height: 280px; border: 1px solid var(--line); position: relative; overflow: hidden; background: var(--bg-1); }
+  .scan-line { position: absolute; left: 0; right: 0; height: 2px; background: var(--red); box-shadow: 0 0 12px var(--red); animation: scan 1.4s ease-in-out infinite; }
+  @keyframes scan { 0% { top: 4%; } 50% { top: 94%; } 100% { top: 4%; } }
+
+  .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: var(--bg-3); border: 1px solid var(--line-2);
+    color: var(--ink); padding: 12px 20px; font-family: var(--font-mono); font-size: 13px; z-index: 50; max-width: 420px; text-align: center; }
+  @media (min-width: 900px) { .toast { bottom: 30px; } }
+</style>
+</head>
+<body>
+
+<div class="app-root">
+
+  <!-- desktop sidebar -->
+  <aside class="app-side">
+    <a href="index.html" class="brand"><img src="assets/gladiator-logo.png" alt=""><span>CERT</span></a>
+    <nav class="side-nav" id="side-nav"></nav>
+    <div class="side-foot">
+      <div class="row">
+        <div class="lang-toggle">
+          <button class="lang-btn" data-l="en" onclick="appSetLang('en')">EN</button>
+          <button class="lang-btn" data-l="ru" onclick="appSetLang('ru')">RU</button>
+        </div>
+        <div class="app-avatar" onclick="go('#/profile')">Z</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- main column -->
+  <main class="app-main">
+    <div class="app-bar">
+      <a href="index.html" class="brand"><img src="assets/gladiator-logo.png" alt=""><span>CERT</span></a>
+      <div class="row gap-12">
+        <div class="lang-toggle">
+          <button class="lang-btn" data-l="en" onclick="appSetLang('en')">EN</button>
+          <button class="lang-btn" data-l="ru" onclick="appSetLang('ru')">RU</button>
+        </div>
+        <div class="app-avatar" onclick="go('#/profile')">Z</div>
+      </div>
+    </div>
+
+    <div id="view"></div>
+  </main>
+
+  <!-- mobile bottom nav -->
+  <nav class="bottom-nav" id="bottom-nav"></nav>
+</div>
+
+<script>
+  // Point the AI judge at the local API (real Gemini if GEMINI_API_KEY is set on
+  // the server; the server's lenient mock otherwise). scripts/ai.js falls back to
+  // a built-in mock if the server is unreachable, so the app never blocks.
+  window.CERT_AI_ENDPOINT = (location.protocol.indexOf('http') === 0 && location.hostname)
+    ? (location.protocol + '//' + location.hostname + ':8787/api/judge')
+    : 'http://localhost:8787/api/judge';
+</script>
+<script src="scripts/i18n.js"></script>
+<script src="scripts/store.js"></script>
+<script src="scripts/ai.js"></script>
+<script src="scripts/app.js"></script>
+</body>
+</html>

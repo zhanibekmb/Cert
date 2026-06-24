@@ -1,0 +1,19 @@
+{
+  "name": "cert-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cert backend — API-first core. AI judge, goals, strikes, groups, payments.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node test.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  }
+}

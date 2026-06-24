@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CERT — The Streak You Can't Fake</title>
+<meta name="description" content="One goal. A daily photo. An honest AI judge that can't be fooled. Build a streak you can't fake. Free to start.">
+<meta property="og:title" content="CERT — The Streak You Can't Fake">
+<meta property="og:description" content="One goal. A daily photo. An honest AI judge. Build a streak you can't fake. Free to start.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#070608;}
+  body{overflow-x:hidden;font-family:'JetBrains Mono',monospace;}
+  ::selection{background:#e23b2e;color:#0a0a0b;}
+  @keyframes rise{0%{opacity:0;transform:translateY(34px);}100%{opacity:1;transform:translateY(0);}}
+  @keyframes bob{0%,100%{transform:translateY(0);opacity:.65;}50%{transform:translateY(7px);opacity:1;}}
+  @keyframes flick{0%,100%{opacity:.85;}50%{opacity:1;}}
+  .btn-cta{transition:filter .15s,transform .15s;}
+  .btn-cta:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .field-input:focus{border-color:#e23b2e!important;box-shadow:0 0 0 3px rgba(226,59,46,.15);}
+  .faq-btn:hover{color:#e23b2e!important;}
+  .topnav-link:hover{color:#f4efe8!important;}
+  @media(max-width:560px){.topnav-link[data-k="navPricing"]{display:none;}}
+  .bet-yes:hover{background:#e23b2e!important;color:#120606!important;}
+  .bet-no:hover{border-color:#cbc5bd!important;}
+  .lang-btn{background:none;border:none;padding:5px 9px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#7d7770;cursor:pointer;}
+  .lang-btn.active{background:#e23b2e;color:#120606;}
+  /* scroll reveal */
+  .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  /* how-it-works cards */
+  .step-card{transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;}
+  .step-card:hover{transform:translateY(-8px);border-color:#e23b2e!important;box-shadow:0 18px 44px -18px rgba(226,59,46,.55);}
+  .step-card:hover .step-num{transform:scale(1.12);text-shadow:0 0 24px rgba(226,59,46,.7);}
+  .step-num{display:inline-block;transition:transform .25s ease,text-shadow .25s ease;}
+  /* cta glow pulse */
+  @keyframes glowpulse{0%,100%{box-shadow:0 0 0 0 rgba(226,59,46,0);}50%{box-shadow:0 0 32px 4px rgba(226,59,46,.45);}}
+  .cta-pulse{animation:glowpulse 2.6s ease-in-out infinite;}
+  /* shame red glow breathe */
+  @keyframes breathe{0%,100%{text-shadow:0 3px 0 #000,0 0 28px rgba(226,59,46,.2);}50%{text-shadow:0 3px 0 #000,0 0 54px rgba(226,59,46,.5);}}
+  .breathe{animation:breathe 3.4s ease-in-out infinite;}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1!important;transform:none!important;}.cta-pulse,.breathe{animation:none!important;}}
+</style>
+</head>
+<body>
+
+<!-- arena canvas -->
+<canvas id="arena" style="position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;"></canvas>
+<div style="position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 120% 80% at 50% 42%, transparent 38%, rgba(0,0,0,.6) 100%);"></div>
+
+<!-- top bar -->
+<div style="position:fixed;top:0;left:0;right:0;z-index:6;display:flex;justify-content:space-between;align-items:center;padding:16px 26px;pointer-events:none;">
+  <a href="#top" style="display:flex;align-items:center;gap:11px;text-decoration:none;pointer-events:auto;">
+    <img src="assets/gladiator-logo.png" alt="" style="height:38px;width:38px;image-rendering:pixelated;filter:drop-shadow(0 2px 4px #000);">
+    <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:20px;letter-spacing:.16em;color:#f4efe8;text-shadow:0 2px 6px #000;">CERT</span>
+  </a>
+  <div style="display:flex;align-items:center;gap:14px;pointer-events:auto;">
+    <a href="pricing.html" class="topnav-link" data-k="navPricing" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9a948d;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
+    <a href="app.html" class="topnav-link" data-k="navApp" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e23b2e;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
+    <div style="display:flex;border:1px solid #2a2530;">
+      <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
+      <button id="lang-ru" class="lang-btn" onclick="setLang('ru')">RU</button>
+    </div>
+  </div>
+</div>
+
+<main style="position:relative;z-index:2;">
+
+  <!-- HERO -->
+  <section id="top" style="position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:104px 24px 72px;">
+    <div style="max-width:860px;text-align:center;animation:rise 1s ease-out both;">
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.28em;color:#8a847c;text-transform:uppercase;margin-bottom:30px;">
+        <span data-k="day1"></span>
+        <span data-k="day2"></span>
+        <span data-k="day3" style="color:#c8c2ba;"></span>
+      </div>
+      <h1 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(44px,9vw,108px);line-height:.93;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 44px rgba(0,0,0,.85);"><span data-k="heroBig1"></span><br><span data-k="heroBig2"></span></h1>
+      <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.32em;text-transform:uppercase;color:#e23b2e;" data-k="heroAlt"></div>
+      <p style="margin:28px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="heroSub"></p>
+      <a href="app.html#/auth" class="btn-cta cta-pulse" style="display:inline-block;margin-top:34px;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px 36px;text-decoration:none;" data-k="heroCta"></a>
+    </div>
+    <div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;color:#cfc8bf;text-shadow:0 2px 8px #000;animation:flick 2.4s ease-in-out infinite;" data-k="scrollHint"></div>
+      <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:18px;color:#e23b2e;animation:bob 1.8s ease-in-out infinite;text-shadow:0 2px 8px #000;">▼</div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:108px 24px;background:linear-gradient(180deg,rgba(7,6,8,.55),rgba(7,6,8,.6));">
+    <div style="width:100%;max-width:1120px;">
+      <div class="reveal" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:10px;" data-k="hiwKicker"></div>
+      <div class="reveal" data-delay="60" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#e23b2e;margin-bottom:54px;" data-k="hiwAlt"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:stretch;">
+        <div class="step-card reveal" data-delay="0" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
+          <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">01</div>
+          <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s1t"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#6f6a63;margin:6px 0 16px;" data-k="s1alt"></div>
+          <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s1d"></p>
+        </div>
+        <div class="step-card reveal" data-delay="130" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
+          <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">02</div>
+          <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s2t"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#6f6a63;margin:6px 0 16px;" data-k="s2alt"></div>
+          <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s2d"></p>
+        </div>
+        <div class="step-card reveal" data-delay="260" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #3a1c1a;background:rgba(20,9,8,.6);">
+          <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">03</div>
+          <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s3t"></div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#6f6a63;margin:6px 0 16px;" data-k="s3alt"></div>
+          <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s3d"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section style="padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.58),rgba(7,6,8,.6));border-top:1px solid #1c1822;border-bottom:1px solid #1c1822;">
+    <div style="max-width:920px;margin:0 auto;display:flex;flex-wrap:wrap;gap:32px;justify-content:space-around;text-align:center;">
+      <div class="reveal" data-delay="0" style="flex:1 1 200px;">
+        <div data-count="100" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,6vw,64px);color:#e23b2e;line-height:1;text-shadow:0 3px 0 #000;">0</div>
+        <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9a948d;" data-k="stat1l"></div>
+      </div>
+      <div class="reveal" data-delay="130" style="flex:1 1 200px;">
+        <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,6vw,64px);color:#e23b2e;line-height:1;text-shadow:0 3px 0 #000;">0</div>
+        <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9a948d;" data-k="stat2l"></div>
+      </div>
+      <div class="reveal" data-delay="260" style="flex:1 1 200px;">
+        <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,6vw,64px);color:#e23b2e;line-height:1;text-shadow:0 3px 0 #000;">24/7</div>
+        <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9a948d;" data-k="stat3l"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WALL OF SHAME -->
+  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.6),rgba(20,8,8,.72));">
+    <div style="max-width:760px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
+      <h2 class="breathe" style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(34px,6.4vw,72px);line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 40px rgba(226,59,46,.25);" data-k="shameH"></h2>
+      <div style="margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.32em;text-transform:uppercase;color:#e23b2e;" data-k="shameAlt"></div>
+      <p style="margin:30px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:17px;line-height:1.75;color:#c2bcb4;text-shadow:0 2px 10px #000;"><span data-k="shameBody"></span><span style="color:#e23b2e;" data-k="shameAccent"></span></p>
+    </div>
+  </section>
+
+  <!-- AI JUDGE -->
+  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.66),rgba(7,6,8,.7));">
+    <div style="max-width:760px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
+      <h2 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(32px,6vw,68px);line-height:1.02;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000;"><span data-k="judgeH1"></span><br><span data-k="judgeH2"></span></h2>
+      <div style="margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:#e23b2e;" data-k="judgeAlt"></div>
+      <p style="margin:30px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:17px;line-height:1.75;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="judgeBody"></p>
+    </div>
+  </section>
+
+  <!-- MANIFESTO -->
+  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:80px 24px;background:linear-gradient(180deg,rgba(20,8,8,.42),rgba(7,6,8,.7));">
+    <div style="max-width:880px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
+      <div style="font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.08em;color:#e23b2e;margin-bottom:26px;">✶ ✶ ✶</div>
+      <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(30px,5.4vw,60px);line-height:1.08;letter-spacing:-.01em;color:#f4efe8;text-shadow:0 3px 0 #000;" data-k="manifestoH"></div>
+      <p style="margin:26px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.75;color:#b8b2ab;" data-k="manifestoSub"></p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section style="padding:80px 24px;background:linear-gradient(180deg,rgba(7,6,8,.7),rgba(7,6,8,.74));">
+    <div style="max-width:760px;margin:0 auto;">
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:6px;" data-k="faqKicker"></div>
+      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#e23b2e;margin-bottom:36px;" data-k="faqAlt"></div>
+      <div id="faqList" style="border-top:1px solid #241f29;"></div>
+    </div>
+  </section>
+
+  <!-- CTA / WAITLIST -->
+  <section id="waitlist" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px 80px;background:linear-gradient(180deg,rgba(7,6,8,.72),rgba(5,4,6,.92));">
+    <div style="width:100%;max-width:560px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 36%;">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:14px;" data-k="ctaKicker"></div>
+      <h2 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(34px,6.6vw,72px);line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000;"><span data-k="ctaH1"></span><br><span data-k="ctaH2"></span></h2>
+      <div id="seatsLine" style="margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#e23b2e;"></div>
+      <p style="margin:22px auto 30px;max-width:440px;font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1.7;color:#9a948d;" data-k="ctaSub"></p>
+
+      <div style="border:1px solid #2a2530;background:rgba(10,9,13,.78);padding:26px;text-align:left;">
+
+        <!-- step: email -->
+        <div id="step-email">
+          <form id="form-email">
+            <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7d7770;margin-bottom:10px;" data-k="emailLabel"></label>
+            <input id="in-email" class="field-input" type="email" data-kph="emailPh" style="width:100%;background:#0d0c11;border:1px solid #2a2731;color:#f2ede6;font-family:'JetBrains Mono',monospace;font-size:16px;padding:15px 16px;outline:none;letter-spacing:.02em;">
+            <button type="submit" class="btn-cta" style="margin-top:14px;width:100%;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px;border:none;cursor:pointer;" data-k="btnQueue"></button>
+          </form>
+          <div id="err-email" style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#e23b2e;display:none;"></div>
+        </div>
+
+        <!-- step: challenge -->
+        <div id="step-challenge" style="display:none;">
+          <form id="form-challenge">
+            <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7d7770;margin-bottom:10px;" data-k="challengeLabel"></label>
+            <textarea id="in-challenge" class="field-input" rows="3" data-kph="challengePh" style="width:100%;resize:vertical;background:#0d0c11;border:1px solid #2a2731;color:#f2ede6;font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1.5;padding:14px 16px;outline:none;"></textarea>
+            <button type="submit" class="btn-cta" style="margin-top:14px;width:100%;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px;border:none;cursor:pointer;" data-k="btnNext"></button>
+          </form>
+          <div id="err-challenge" style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#e23b2e;display:none;"></div>
+        </div>
+
+        <!-- step: bet -->
+        <div id="step-bet" style="display:none;">
+          <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7d7770;margin-bottom:14px;" data-k="betLabel"></label>
+          <div style="display:flex;gap:12px;">
+            <button class="bet-yes" onclick="bet('yes')" style="flex:1;background:transparent;color:#f2ede6;font-family:'Tektur',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:15px;padding:15px;border:1px solid #e23b2e;cursor:pointer;" data-k="betYes"></button>
+            <button class="bet-no" onclick="bet('no')" style="flex:1;background:transparent;color:#cbc5bd;font-family:'Tektur',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:15px;padding:15px;border:1px solid #3a3540;cursor:pointer;" data-k="betNo"></button>
+          </div>
+          <button onclick="bet('skip')" style="margin-top:14px;width:100%;background:none;border:none;color:#6f6a63;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;" data-k="skip"></button>
+        </div>
+
+        <!-- step: done -->
+        <div id="step-done" style="display:none;">
+          <div style="text-align:center;padding:6px 0;">
+            <div style="font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.08em;color:#e23b2e;margin-bottom:18px;">✶ ✶ ✶</div>
+            <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:30px;text-transform:uppercase;letter-spacing:.04em;color:#f4efe8;line-height:1.05;" data-k="doneTitle"></div>
+            <div style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#e23b2e;" data-k="doneAlt"></div>
+            <div style="margin:22px auto 0;display:inline-block;border:1px solid #2a2530;padding:12px 22px;font-family:'JetBrains Mono',monospace;font-size:14px;color:#cbc5bd;"><span data-k="queueLabel"></span>&nbsp;&nbsp;<span id="pos" style="color:#f4efe8;font-weight:700;"></span></div>
+            <p style="margin:22px auto 0;max-width:380px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#8a847c;" data-k="doneBody"></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer style="padding:30px 24px 40px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;color:#5a554f;background:#050406;">CERT · THE STREAK YOU CAN'T FAKE · © 2026</footer>
+
+</main>
+
+<script>
+/* =====================================================================
+   WAITLIST INTEGRATION
+   Drop a form endpoint into ENDPOINT (e.g. Formspree: https://formspree.io/f/xxxx).
+   Empty = demo mode: submissions are stored in localStorage('cert_waitlist').
+   ===================================================================== */
+const ENDPOINT = "";
+
+/* ---- content dictionary (ported from Arena.dc.html) ---- */
+const dict = {
+  en: {
+    day1:"Day 1 — anyone can start.", day2:"Day 4 — most quit.", day3:"Day 30 — your streak is real.",
+    heroBig1:"Prove it", heroBig2:"every day", heroAlt:"докажи каждый день",
+    heroSub:"One goal. A daily photo. An honest AI judge that can't be fooled. The streak you build here is one you can't fake. Free to start.",
+    hiwKicker:"How it works", hiwAlt:"three steps",
+    s1t:"Set one goal", s1alt:"одна цель", s1d:"Name what you'll do daily, in your own words. The AI judge reads exactly that.",
+    s2t:"Prove it daily", s2alt:"докажи", s2d:"Snap a photo. The judge decides in seconds: counts or not. No appeals.",
+    s3t:"Build the streak", s3alt:"стрик", s3d:"Every approved day stacks. Miss one and it resets to zero. No faking it.",
+    shameH:"Can't be faked", shameAlt:"стрик, который не подделать", shameBody:"Other apps let you tap a checkbox. Here every single day is verified by an impartial judge. ", shameAccent:"That's what makes your streak mean something.",
+    judgeH1:"The judge is code,", judgeH2:"not you", judgeAlt:"судит код, не ты",
+    judgeBody:"You can't argue with it, bribe it, or talk yourself into a pass. It looks at the photo and your goal, and decides. That's the whole point.",
+    ctaKicker:"Free to start · бесплатно", ctaH1:"Start your", ctaH2:"streak", ctaSub:"Free: one goal, a daily photo, an honest judge. Upgrade later for more goals and streak freezes.",
+    emailLabel:"Get launch updates (optional)", emailPh:"you@email.com", btnQueue:"Notify me →",
+    challengeLabel:"What goal will you start with?", challengePh:"e.g. gym daily / read 20 min a day", btnNext:"Done →",
+    betLabel:"", betYes:"", betNo:"", skip:"",
+    doneTitle:"You're on the list", doneAlt:"you can start right now", queueLabel:"early access", doneBody:"Want to start now? The app is live and free — build day one today.",
+    errEmail:"That email looks off.", errChallenge:"Name your goal — even a rough one.",
+    heroCta:"Start free →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Launch app →",
+    stat1l:"% impartial judge", stat2l:"money on the line", stat3l:"AI judge on duty",
+    manifestoH:"Motivation dies by day three. A verified streak doesn't.", manifestoSub:"Willpower is a terrible referee, so we replaced it with one that can't be fooled. What's left is a streak you actually earned.",
+    faqKicker:"Questions", faqAlt:"before you start",
+    faq:[
+      {q:"Is it really free?", a:"Yes. One goal, a daily photo, and the AI judge are free forever. Pro adds more goals, unlimited checks, and streak freezes."},
+      {q:"How does the AI judge work?", a:"You submit a daily photo. The model checks it against the goal you wrote, in your own words, and returns approved or rejected in seconds. If it gets one wrong, you can appeal once."},
+      {q:"Why can't I just fake my streak?", a:"Because you don't mark your own checkbox — an impartial judge does. A photo has to actually prove the goal. That's what makes the streak worth something."},
+      {q:"What happens if I miss a day?", a:"Your streak resets to zero. There's no money on the line — losing the streak you built is the cost. You can start a new one the same day."},
+      {q:"What kind of goal fits?", a:"Anything with a daily action you can photograph: gym, running, reading, cooking, coding, art. If a photo can prove it, the judge can check it."},
+      {q:"Can I do challenges with friends?", a:"Soon. Cert starts solo so it works for you on day one — friend challenges are the next phase."}
+    ]
+  },
+  ru: {
+    day1:"День 1 — начать может каждый.", day2:"День 4 — большинство бросает.", day3:"День 30 — твой стрик настоящий.",
+    heroBig1:"Докажи", heroBig2:"каждый день", heroAlt:"prove it every day",
+    heroSub:"Одна цель. Фото в день. Честный ИИ-судья, которого не обмануть. Стрик, который ты собираешь здесь, нельзя подделать. Бесплатно для старта.",
+    hiwKicker:"Как это работает", hiwAlt:"три шага",
+    s1t:"Одна цель", s1alt:"set one goal", s1d:"Опиши, что будешь делать каждый день, своими словами. ИИ-судья читает именно это.",
+    s2t:"Докажи фото", s2alt:"prove daily", s2d:"Сфоткай. Судья решает за секунды: засчитано или нет. Без апелляций.",
+    s3t:"Собери стрик", s3alt:"the streak", s3d:"Каждый зачтённый день копится. Пропустил — обнуление. Подделать нельзя.",
+    shameH:"Не подделать", shameAlt:"the streak you can't fake", shameBody:"В других приложениях ты сам ставишь галочку. Здесь каждый день заверяет беспристрастный судья. ", shameAccent:"Поэтому твой стрик чего-то стоит.",
+    judgeH1:"Судит код,", judgeH2:"не ты", judgeAlt:"the judge is code, not you",
+    judgeBody:"С ним не поспоришь, не уговоришь и не обманешь себя. Он смотрит на фото и твою цель — и решает. В этом весь смысл.",
+    ctaKicker:"Бесплатно · free to start", ctaH1:"Начни свой", ctaH2:"стрик", ctaSub:"Бесплатно: одна цель, фото в день, честный судья. Потом — больше целей и заморозки стрика.",
+    emailLabel:"Новости запуска (по желанию)", emailPh:"you@email.com", btnQueue:"Сообщить мне →",
+    challengeLabel:"С какой цели начнёшь?", challengePh:"напр. зал каждый день / читать 20 мин в день", btnNext:"Готово →",
+    betLabel:"", betYes:"", betNo:"", skip:"",
+    doneTitle:"Ты в списке", doneAlt:"можно начать прямо сейчас", queueLabel:"ранний доступ", doneBody:"Хочешь начать сейчас? Приложение уже работает и бесплатно — собери первый день сегодня.",
+    errEmail:"Похоже на неправильную почту.", errChallenge:"Назови цель — пусть даже грубо.",
+    heroCta:"Начать бесплатно →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"Открыть →",
+    stat1l:"% беспристрастный судья", stat2l:"денег на кону", stat3l:"ИИ-судья на посту",
+    manifestoH:"Мотивация умирает на третий день. Заверенный стрик — нет.", manifestoSub:"Сила воли — паршивый судья, поэтому мы заменили её той, что не обмануть. Остаётся стрик, который ты реально заработал.",
+    faqKicker:"Вопросы", faqAlt:"перед стартом",
+    faq:[
+      {q:"Это правда бесплатно?", a:"Да. Одна цель, фото в день и ИИ-судья — бесплатно навсегда. Pro добавляет больше целей, безлимит проверок и заморозки стрика."},
+      {q:"Как работает ИИ-судья?", a:"Каждый день ты присылаешь фото. Модель сверяет его с целью, которую ты описал своими словами, и за секунды возвращает «зачтено» или «отказ». Если ошибётся — можно оспорить один раз."},
+      {q:"Почему нельзя просто подделать стрик?", a:"Потому что галочку ставишь не ты, а беспристрастный судья. Фото должно реально доказывать цель. Именно это делает стрик ценным."},
+      {q:"Что будет, если пропущу день?", a:"Стрик обнуляется. Денег на кону нет — цена в том, что ты теряешь собранный стрик. Новый можно начать в тот же день."},
+      {q:"Какая цель подходит?", a:"Любая с ежедневным действием, которое можно сфотографировать: зал, бег, чтение, готовка, код, рисование. Есть фото-доказательство — судья проверит."},
+      {q:"Можно челленджи с друзьями?", a:"Скоро. Cert стартует соло, чтобы работать для тебя в день один — челленджи с друзьями это следующая фаза."}
+    ]
+  }
+};
+
+/* ---- state ---- */
+const state = { lang:'en', step:'email', bet:null, pos:null, seatsLeft:38, faqOpen:null };
+const C = ()=> dict[state.lang];
+const esc = (s)=> String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+
+function seatsLineText(){
+  // concept shift: no scarcity/seats framing — free to start
+  return '';
+}
+
+function applyLang(){
+  const d = C();
+  document.querySelectorAll('[data-k]').forEach(el=>{ const k=el.getAttribute('data-k'); if(d[k]!=null) el.textContent=d[k]; });
+  document.querySelectorAll('[data-kph]').forEach(el=>{ const k=el.getAttribute('data-kph'); if(d[k]!=null) el.setAttribute('placeholder', d[k]); });
+  document.getElementById('seatsLine').textContent = seatsLineText();
+  document.documentElement.lang = state.lang;
+  document.getElementById('lang-en').classList.toggle('active', state.lang==='en');
+  document.getElementById('lang-ru').classList.toggle('active', state.lang==='ru');
+  renderFAQ();
+}
+
+function setLang(l){ state.lang = l; applyLang(); }
+
+function renderFAQ(){
+  const wrap = document.getElementById('faqList');
+  const list = C().faq || [];
+  wrap.innerHTML = '';
+  list.forEach((it,i)=>{
+    const open = state.faqOpen === i;
+    const item = document.createElement('div');
+    item.style.borderBottom = '1px solid #241f29';
+    item.innerHTML =
+      '<button class="faq-btn" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:18px;text-align:left;background:none;border:none;cursor:pointer;padding:22px 4px;font-family:\'Tektur\',sans-serif;font-weight:700;font-size:18px;letter-spacing:.01em;color:#f4efe8;">'
+      + '<span>'+esc(it.q)+'</span>'
+      + '<span style="flex:none;font-family:\'JetBrains Mono\',monospace;font-size:24px;color:#e23b2e;line-height:1;">'+(open?'–':'+')+'</span>'
+      + '</button>'
+      + (open ? '<p style="margin:0;padding:0 4px 24px;max-width:660px;font-family:\'JetBrains Mono\',monospace;font-size:15px;line-height:1.7;color:#9a948d;">'+esc(it.a)+'</p>' : '');
+    item.querySelector('button').addEventListener('click', ()=>{ state.faqOpen = open ? null : i; renderFAQ(); });
+    wrap.appendChild(item);
+  });
+}
+
+/* ---- waitlist flow ---- */
+function showStep(){
+  ['email','challenge','bet','done'].forEach(st=>{
+    document.getElementById('step-'+st).style.display = (state.step===st) ? 'block' : 'none';
+  });
+  if(state.step==='done'){
+    document.getElementById('pos').textContent = '#' + state.pos;
+    document.getElementById('seatsLine').textContent = seatsLineText();
+  }
+}
+
+function showErr(id, msg){
+  const el = document.getElementById(id);
+  if(msg){ el.textContent = msg; el.style.display = 'block'; }
+  else { el.textContent = ''; el.style.display = 'none'; }
+}
+
+function submitLead(){
+  const payload = {
+    email:     document.getElementById('in-email').value.trim(),
+    challenge: document.getElementById('in-challenge').value.trim(),
+    bet:       state.bet,
+    lang:      state.lang,
+    ts:        new Date().toISOString()
+  };
+  try {
+    if(ENDPOINT){
+      fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(payload) }).catch(()=>{});
+    } else {
+      const all = JSON.parse(localStorage.getItem('cert_waitlist') || '[]');
+      all.push(payload); localStorage.setItem('cert_waitlist', JSON.stringify(all));
+      console.log('[CERT demo] lead stored locally:', payload);
+    }
+  } catch(e){ console.warn('submit failed (showing success anyway):', e); }
+}
+
+function finish(){
+  state.pos = 100 - state.seatsLeft + 1;
+  state.seatsLeft = Math.max(0, state.seatsLeft - 1);
+  state.step = 'done';
+  submitLead();
+  showStep();
+}
+
+function bet(v){ state.bet = v; finish(); }
+
+document.getElementById('form-email').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const val = document.getElementById('in-email').value.trim();
+  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  if(!ok){ showErr('err-email', C().errEmail); return; }
+  showErr('err-email', '');
+  state.step = 'challenge'; showStep();
+  document.getElementById('in-challenge').focus();
+});
+
+document.getElementById('form-challenge').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const val = document.getElementById('in-challenge').value.trim();
+  if(val.length < 3){ showErr('err-challenge', C().errChallenge); return; }
+  showErr('err-challenge', '');
+  // no money-bet step in the new concept — go straight to done
+  finish();
+});
+
+document.getElementById('in-email').addEventListener('input', ()=> showErr('err-email',''));
+document.getElementById('in-challenge').addEventListener('input', ()=> showErr('err-challenge',''));
+
+/* ---- init ---- */
+applyLang();
+showStep();
+
+/* ---- scroll reveal + count-up ---- */
+(function(){
+  const els = document.querySelectorAll('.reveal');
+  const countUp = (el)=>{
+    const target = parseInt(el.getAttribute('data-count'),10);
+    if(isNaN(target)) return;
+    const dur = 1100, t0 = performance.now();
+    const tick = (now)=>{ const p = Math.min(1,(now-t0)/dur); el.textContent = Math.round(target*(0.5-0.5*Math.cos(p*Math.PI))); if(p<1) requestAnimationFrame(tick); };
+    requestAnimationFrame(tick);
+  };
+  const fire = (el)=>{
+    const delay = parseInt(el.getAttribute('data-delay')||'0',10);
+    setTimeout(()=>{ el.classList.add('in'); el.querySelectorAll('[data-count]').forEach(countUp); if(el.hasAttribute('data-count')) countUp(el); }, delay);
+  };
+  if(!('IntersectionObserver' in window)){ els.forEach(fire); return; }
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ fire(en.target); io.unobserve(en.target); } });
+  }, { threshold:0.18 });
+  els.forEach(e=>io.observe(e));
+})();
+
+/* =====================================================================
+   ARENA CANVAS — pixel-art gladiator fight (ported verbatim from Arena.dc.html)
+   ===================================================================== */
+const arenaConfig = { language:'English', showEmperor:true, fightSpeed:1, ambientGlow:1 };
+
+(function startScene(){
+  const cv = document.getElementById('arena'); if(!cv) return;
+  const buf = document.createElement('canvas'); buf.width = 480; buf.height = 270;
+  const g = buf.getContext('2d');
+  const mctx = cv.getContext('2d');
+  const A = '#e23b2e';
+  const FY = 244;
+  const P = { armor:'#7a5e34', armorH:'#a8853f', armorD:'#473418', skin:'#a3795a', skinH:'#c39875', skinD:'#6e4f38', steel:'#9aa1ad', steelH:'#d2d7df', steelD:'#565c67', cloth:'#7e2622', cloth2:'#9a3530', clothD:'#491411', shield:'#6b5536', shieldR:'#a8853f' };
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+
+  const resize = ()=>{ const w = cv.clientWidth || window.innerWidth, h = cv.clientHeight || window.innerHeight; cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); mctx.imageSmoothingEnabled = false; };
+  resize(); window.addEventListener('resize', resize);
+
+  let prog = 0;
+  const onScroll = ()=>{ const max = document.documentElement.scrollHeight - window.innerHeight; prog = max>0 ? Math.min(1, Math.max(0, window.scrollY/max)) : 0; };
+  onScroll(); window.addEventListener('scroll', onScroll, { passive:true });
+
+  const rnd = (n)=> Math.random()*n;
+  const crowdU = [], crowdF = [];
+  for(let i=0;i<180;i++) crowdU.push({ x:rnd(480), y:34+rnd(20), c:Math.random() });
+  for(let i=0;i<140;i++) crowdF.push({ x:rnd(480), y:124+rnd(18), c:Math.random() });
+  const dust = []; for(let i=0;i<28;i++) dust.push({ x:rnd(480), y:rnd(270), s:0.2+rnd(0.6), r:Math.random() });
+  let parts = [];
+
+  const px = (x,y,w,h,c)=>{ g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.max(1,Math.round(w)), Math.max(1,Math.round(h))); };
+
+  const gladA = (cx,t,L)=>{
+    const x = cx + L*7, fy = FY, b = Math.round(Math.sin(t*5));
+    px(x-9,fy,18,2,'rgba(0,0,0,0.5)');
+    px(x-4,fy-10,3,10,P.skinD); px(x+2,fy-10,3,10,P.skin);
+    px(x+2,fy-4,3,4,P.steelD); px(x-4,fy-3,3,3,P.steelD);
+    px(x-5,fy-16+b,11,8,P.cloth);
+    for(let i=0;i<6;i++) px(x-5+i*2,fy-9+b,1,2,P.clothD);
+    px(x-5,fy-16+b,11,1,P.cloth2);
+    px(x-5,fy-26+b,11,11,P.armor); px(x-5,fy-26+b,11,2,P.armorH); px(x-1,fy-24+b,3,7,P.armorD); px(x-6,fy-25+b,3,4,P.armorH);
+    px(x-3,fy-32+b,6,7,P.skin);
+    px(x-4,fy-36+b,10,6,P.steel); px(x-4,fy-36+b,10,1,P.steelH); px(x-4,fy-31+b,10,1,P.steelD); px(x+5,fy-32+b,1,5,P.steel); px(x-2,fy-32+b,4,1,'#070707');
+    px(x-1,fy-39+b,3,4,A);
+    for(let i=0;i<5;i++) px(x-3-i*2,fy-38+b+i,2,3,A);
+    const sx = x+4;
+    px(sx,fy-27+b,5,19,P.shield); px(sx,fy-27+b,5,2,P.shieldR); px(sx,fy-10+b,5,2,P.shieldR); px(sx+1,fy-20+b,3,5,P.armorH);
+    const r = Math.round(6+L*13), ay = fy-24+b-Math.round(L*4);
+    px(x+3,ay,Math.round(4+r*0.35),3,P.skin);
+    px(x+3+Math.round(r*0.35),ay-1,2,5,P.armorD);
+    px(x+6+Math.round(r*0.35),ay,r,2,P.steelH); px(x+6+Math.round(r*0.35),ay+2,r,1,P.steelD);
+    return { x:x+6+Math.round(r*0.35)+r, y:ay+1 };
+  };
+
+  const gladB = (cx,t,L)=>{
+    const x = cx + L*7, fy = FY, b = Math.round(Math.sin(t*5+1));
+    px(x-9,fy,18,2,'rgba(0,0,0,0.5)');
+    px(x-4,fy-10,3,10,P.skin); px(x+2,fy-10,3,10,P.skinD);
+    px(x-4,fy-16+b,9,8,P.clothD); px(x-4,fy-16+b,9,1,P.cloth);
+    px(x-4,fy-25+b,9,10,P.skin); px(x-4,fy-25+b,9,1,P.skinH); px(x-1,fy-23+b,2,7,P.skinD);
+    px(x-6,fy-25+b,3,6,P.armor); px(x-6,fy-25+b,3,1,P.armorH);
+    px(x-3,fy-32+b,6,7,P.skin); px(x-3,fy-32+b,6,2,A); px(x+1,fy-29+b,1,1,'#070707'); px(x-4,fy-30+b,2,4,'#2a1c12');
+    const r = Math.round(8+L*16), ay = fy-27+b-Math.round(L*3);
+    px(x+1,ay+2,Math.round(6+r),2,P.armorD); px(x+1,ay+2,Math.round(6+r),1,P.armorH);
+    const tx = x+1+Math.round(6+r);
+    px(tx,ay-3,2,2,P.steelH); px(tx,ay+1,2,2,P.steelH); px(tx,ay+5,2,2,P.steelH); px(tx-1,ay-1,1,9,P.steel); px(tx+1,ay-3,1,11,P.steelH);
+    px(x,ay+1,3,4,P.skin);
+    px(x+4,fy-17+b,3,3,P.skin);
+    for(let i=0;i<5;i++){ px(x+5+i,fy-14+b+i,1,1,'#7a7560'); px(x+5,fy-14+b+i,1,1,'#7a7560'); }
+    return { x:tx+2, y:ay+2 };
+  };
+
+  const emperor = (down,flash)=>{
+    const ex = 208, ey = 92;
+    if(flash>0){ g.save(); g.globalCompositeOperation='lighter'; const fg=g.createRadialGradient(240,ey+18,2,240,ey+18,40); fg.addColorStop(0,'rgba(226,59,46,'+(0.4*flash)+')'); fg.addColorStop(1,'rgba(226,59,46,0)'); g.fillStyle=fg; g.fillRect(ex-30,ey-20,124,90); g.restore(); }
+    px(ex,ey,64,4,'#2a2230'); px(ex,ey,64,1,'#3a3140');
+    px(ex+2,ey+4,60,30,'#191420');
+    px(ex+4,ey+34,56,8,'#5a1714'); for(let i=0;i<8;i++) px(ex+6+i*7,ey+40,3,4,'#3e0f0d'); px(ex+4,ey+34,56,2,'#7a2420');
+    px(ex+12,ey+10,8,16,'#241c12'); px(ex+13,ey+6,6,6,P.skin);
+    px(ex+44,ey+10,8,16,'#241c12'); px(ex+45,ey+6,6,6,P.skin);
+    px(ex+27,ey+8,10,18,'#6b5a2a'); px(ex+27,ey+8,10,2,'#9a8540'); px(ex+28,ey+3,8,7,P.skin); px(ex+27,ey+2,10,2,'#3a6a30');
+    const hx = ex+38;
+    if(down){ px(hx,ey+16,3,3,P.skin); px(hx+1,ey+19,1,5,A); px(hx,ey+22,2,2,P.skin); }
+    else { px(hx,ey+15,3,3,P.skin); px(hx+1,ey+11,1,4,P.skin); }
+  };
+
+  const brazierGlow = (bx,glow)=>{ g.save(); g.globalCompositeOperation='lighter'; const r=g.createRadialGradient(bx,172,2,bx,172,48); r.addColorStop(0,'rgba(244,150,40,'+(0.24*glow)+')'); r.addColorStop(1,'rgba(244,150,40,0)'); g.fillStyle=r; g.fillRect(bx-52,118,104,108); g.restore(); };
+  const brazier = (bx,t)=>{
+    px(bx-1,180,3,40,'#241c1a'); px(bx-1,180,1,40,'#352a26');
+    px(bx-4,176,9,6,'#2a2128'); px(bx-4,176,9,1,'#3a3140');
+    const f = Math.sin(t*14+bx)*0.5 + Math.sin(t*9+bx*1.3)*0.5;
+    const h = 8 + Math.round(f*3);
+    px(bx-3,176-h,6,h,'#c0531a'); px(bx-2,176-h-2,4,h,'#ef8b23'); px(bx-1,176-h-3,2,h-2,'#f9c45a'); px(bx-1,176-h-1,1,3,'#ffe9b0');
+    if(Math.random()<0.3) px(bx-2+rnd(4),176-h-3-rnd(4),1,1,'#f9c45a');
+  };
+
+  let lastSpark = 0;
+  const start = performance.now();
+  const loop = (now)=>{
+    const sp = (arenaConfig.fightSpeed) || 1;
+    const glow = (typeof arenaConfig.ambientGlow === 'number') ? arenaConfig.ambientGlow : 0.6;
+    const showEmp = !(arenaConfig.showEmperor === false);
+    const t = ((now - start)/1000) * sp;
+    const T = 3.4, tt = (t % T)/T;
+    const lng = (s,e)=>{ if(tt<s||tt>e) return 0; const u=(tt-s)/(e-s); return Math.sin(u*Math.PI); };
+    const aL = lng(0.08,0.30), bL = lng(0.56,0.80);
+    const spark = Math.max(aL,bL);
+    const sparkOn = spark>0.62 ? (spark-0.62)/0.38 : 0;
+    let shx=0, shy=0; if(sparkOn>0){ shx=(Math.random()-0.5)*sparkOn*5; shy=(Math.random()-0.5)*sparkOn*5; }
+
+    g.clearRect(0,0,480,270);
+    const sky = g.createLinearGradient(0,0,0,270); sky.addColorStop(0,'#0c0b14'); sky.addColorStop(0.55,'#0a0910'); sky.addColorStop(1,'#070608'); g.fillStyle = sky; g.fillRect(0,0,480,270);
+
+    px(0,30,480,26,'#0d0b13');
+    crowdU.forEach(d=>{ const fl=0.5+0.5*Math.sin(t*2+d.x); const sk=d.c<0.1; px(d.x,d.y,2,2, sk?'#5a4636':('rgba(42,38,52,'+(0.45+0.3*fl)+')')); });
+    for(let ax=-12; ax<492; ax+=44){
+      px(ax,58,8,82,'#171420'); px(ax,58,2,82,'#221d2c');
+      px(ax+8,72,36,68,'#0a0810');
+      px(ax+8,58,36,14,'#171420'); px(ax+8,58,36,3,'#241f2e');
+    }
+    crowdF.forEach(d=>{ const fl=0.5+0.5*Math.sin(t*1.7+d.x*0.7); const sk=d.c<0.12; px(d.x,d.y,2,2, sk?'#6a5240':('rgba(34,30,42,'+(0.5+0.3*fl)+')')); });
+    px(0,146,480,6,'#1c1826'); px(0,146,480,2,'#2a2433');
+
+    if(showEmp) emperor(sparkOn>0.4, sparkOn);
+
+    const sand = g.createLinearGradient(0,150,0,270); sand.addColorStop(0,'#221c14'); sand.addColorStop(1,'#15100a'); g.fillStyle = sand; g.fillRect(0,150,480,120);
+    for(let i=0;i<96;i++){ const sx=(i*53)%480, sy=153+((i*29)%114); px(sx,sy,1,1, (i%5)?'rgba(60,50,34,0.5)':'rgba(18,14,9,0.6)'); }
+
+    g.save(); g.globalCompositeOperation='lighter'; const cg=g.createRadialGradient(254,212,4,254,212,120); cg.addColorStop(0,'rgba(244,150,40,'+(0.08*glow+0.04)+')'); cg.addColorStop(1,'rgba(244,150,40,0)'); g.fillStyle=cg; g.fillRect(0,150,480,120); g.restore();
+
+    brazierGlow(66,glow); brazierGlow(414,glow);
+
+    gladA(226,t,aL);
+    g.save(); g.translate(2*282,0); g.scale(-1,1); gladB(282,t,bL); g.restore();
+
+    brazier(66,t); brazier(414,t);
+
+    if(sparkOn>0.55 && lastSpark<=0.55){
+      for(let i=0;i<13;i++){ const a=rnd(6.28); parts.push({ x:254, y:222, vx:Math.cos(a)*(0.5+rnd(1.5)), vy:-rnd(1.7), life:1, c: Math.random()<0.5?A:'#f9c45a' }); }
+    }
+    lastSpark = sparkOn;
+
+    if(sparkOn>0){
+      const sxp=254, syp=222;
+      g.save(); g.globalCompositeOperation='lighter';
+      const rg=g.createRadialGradient(sxp,syp,1,sxp,syp,18*sparkOn); rg.addColorStop(0,'rgba(255,232,182,'+(0.9*sparkOn)+')'); rg.addColorStop(0.4,'rgba(244,150,40,'+(0.5*sparkOn)+')'); rg.addColorStop(1,'rgba(244,150,40,0)'); g.fillStyle=rg; g.fillRect(sxp-20,syp-20,40,40); g.restore();
+      g.fillStyle='#ffe9b0'; const n=Math.round(sparkOn*5);
+      for(let i=0;i<n;i++){ const a=rnd(6.28), d=rnd(8*sparkOn); g.fillRect(Math.round(sxp+Math.cos(a)*d),Math.round(syp+Math.sin(a)*d),1,1); }
+    }
+
+    parts = parts.filter(p=>p.life>0);
+    parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.09; p.life-=0.03; g.globalAlpha=Math.max(0,p.life); px(p.x,p.y,1,1,p.c); }); g.globalAlpha=1;
+
+    dust.forEach(d=>{ d.y-=d.s*0.15; d.x+=Math.sin(t+d.r*9)*0.1; if(d.y<118){ d.y=270; d.x=rnd(480); } g.globalAlpha=0.13+d.r*0.1; px(d.x,d.y,1,1,'#caa46a'); }); g.globalAlpha=1;
+
+    const cw=cv.width, ch=cv.height;
+    const S=Math.max(cw/480, ch/270);
+    const dz=1+prog*0.14, sc=S*dz;
+    const fcx=240, fcy=150+prog*60;
+    const dx=cw/2 - fcx*sc + shx*dpr, dy=ch/2 - fcy*sc + shy*dpr;
+    mctx.setTransform(1,0,0,1,0,0); mctx.imageSmoothingEnabled=false;
+    mctx.fillStyle='#070608'; mctx.fillRect(0,0,cw,ch);
+    mctx.drawImage(buf,0,0,480,270,dx,dy,480*sc,270*sc);
+
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

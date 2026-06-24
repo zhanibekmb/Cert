@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# secrets / env  (Gemini API key lives in server/.env — never commit)
+.env
+**/.env
+*.local
+
+# database + uploaded photos
+*.db
+*.db-shm
+*.db-wal
+**/cert.db*
+server/uploads/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.log*

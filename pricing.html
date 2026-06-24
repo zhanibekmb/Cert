@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CERT — Pricing</title>
+<meta name="description" content="Cert pricing: free forever for one goal. Pro unlocks more goals, unlimited photo checks, and streak freezes.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/cert.css">
+<style>
+  body { background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(226,59,46,.10), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 50% 110%, rgba(201,162,39,.06), transparent 60%),
+    var(--bg);
+    min-height: 100vh;
+  }
+  .price-hero { padding: 140px 24px 40px; text-align: center; }
+  .price-hero h1 { font-size: clamp(40px, 8vw, 88px); line-height: .95; margin: 0; }
+  .price-hero p { max-width: 560px; margin: 22px auto 0; font-size: 17px; line-height: 1.7; color: var(--ink-soft); font-family: var(--font-text); }
+  .philosophy { border-left: 2px solid var(--red); padding: 16px 0 16px 22px; max-width: 620px; margin: 0 auto; text-align: left; }
+  .philosophy p { margin: 0; font-size: 16px; line-height: 1.8; color: var(--ink-mute); font-family: var(--font-text); }
+  .philosophy strong { color: var(--ink); }
+  .faq-q { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 18px; text-align: left;
+    background: none; border: none; cursor: pointer; padding: 22px 4px; font-family: var(--font-display);
+    font-weight: 700; font-size: 17px; color: var(--ink); }
+  .faq-q:hover { color: var(--red); }
+  .faq-q .pm { font-family: var(--font-mono); font-size: 24px; color: var(--red); line-height: 1; flex: none; }
+  .faq-a { margin: 0; padding: 0 4px 24px; max-width: 660px; font-size: 16px; line-height: 1.75; color: var(--ink-mute); font-family: var(--font-text); }
+  .faq-item { border-bottom: 1px solid var(--line); }
+  #faqList { border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+
+<!-- top nav -->
+<div class="topbar">
+  <a href="index.html" class="brand">
+    <img src="assets/gladiator-logo.png" alt="">
+    <span>CERT</span>
+  </a>
+  <div class="topbar-links">
+    <a href="index.html" class="navlink" id="nav-home">Home</a>
+    <a href="pricing.html" class="navlink active" id="nav-pricing">Pricing</a>
+    <a href="app.html" class="navlink" id="nav-app">Launch app →</a>
+    <div class="lang-toggle">
+      <button class="lang-btn" data-l="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" data-l="ru" onclick="setLang('ru')">RU</button>
+    </div>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer style="padding:30px 24px 40px;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;color:var(--ink-ghost);background:#050406;">
+  CERT · THE STREAK YOU CAN'T FAKE · © 2026
+</footer>
+
+<script src="scripts/i18n.js"></script>
+<script>
+var billing = 'monthly';
+var faqOpen = null;
+
+function setLang(l) { CertI18n.set(l); render(); }
+
+function render() {
+  var yearly = billing === 'yearly';
+  document.querySelectorAll('.lang-btn').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-l') === CertI18n.lang);
+  });
+  document.getElementById('nav-home').textContent = T('Home', 'Главная');
+  document.getElementById('nav-pricing').textContent = T('Pricing', 'Цены');
+  document.getElementById('nav-app').textContent = T('Launch app →', 'Открыть →');
+
+  var subPrice = yearly ? '$59.99' : '$9.99';
+  var subPer   = yearly ? T('/year', '/год') : T('/month', '/мес');
+  var subNote  = yearly ? T('≈ $5/mo — saves ~50%', '≈ $5/мес — экономия ~50%') : T('Billed monthly. Cancel anytime.', 'Помесячно. Отмена в любой момент.');
+
+  var faq = [
+    { q: T('Is there really a free plan?', 'Есть правда бесплатный план?'),
+      a: T('Yes — free forever. One goal, a daily photo, the AI judge, and your full unfakeable streak. No credit card, no trial clock.', 'Да — бесплатно навсегда. Одна цель, фото в день, ИИ-судья и твой полный неподдельный стрик. Без карты и без таймера триала.') },
+    { q: T('What do I get with Pro?', 'Что даёт Pro?'),
+      a: T('Several goals at once, unlimited daily photo checks, streak freezes, and stats. Friend challenges land in Pro when they ship.', 'Несколько целей сразу, безлимит проверок фото в день, заморозки стрика и статистика. Челленджи с друзьями появятся в Pro, когда выйдут.') },
+    { q: T('Why is the free plan one goal only?', 'Почему на бесплатном только одна цель?'),
+      a: T('One goal is enough to build a real, unfakeable streak — that is the whole product. Pro is for running several at once.', 'Одной цели достаточно, чтобы собрать настоящий неподдельный стрик — это и есть весь продукт. Pro — когда хочешь вести несколько сразу.') },
+    { q: T('Why only 2 photo checks a day on free?', 'Почему на бесплатном 2 проверки в день?'),
+      a: T('Each check runs a real AI vision model, which costs money. Two a day is enough to submit and retry. Pro removes the limit.', 'Каждая проверка запускает настоящую ИИ-vision модель — это стоит денег. Двух в день хватает, чтобы отправить и попробовать снова. Pro снимает лимит.') },
+    { q: T('What is a freeze?', 'Что такое заморозка?'),
+      a: T('A freeze protects one day in advance — travel, a day you might miss — so your streak survives without a photo. A Pro perk.', 'Заморозка защищает один день заранее — поездка, день когда можешь сорваться — стрик выживает без фото. Перк Pro.') },
+    { q: T('What happens if I miss a day?', 'Что будет, если пропущу день?'),
+      a: T('Your streak resets to zero. No charge, no penalty — losing the streak you built is the cost. Start a new one anytime.', 'Стрик обнуляется. Без списаний и штрафов — цена в том, что ты теряешь собранный стрик. Новый можно начать когда угодно.') }
+  ];
+
+  var html = '';
+
+  /* hero */
+  html += '<section class="price-hero">';
+  html += '<div class="kicker" style="margin-bottom:18px;">' + T('Pricing · free to start', 'Цены · бесплатно для старта') + '</div>';
+  html += '<h1 class="display">' + T('Free', 'Бесплатно') + '<br>' + T('to start', 'для старта') + '</h1>';
+  html += '<p>' + T('One goal, a daily photo, and an honest AI judge — free forever. Pro is there when you want more.', 'Одна цель, фото в день и честный ИИ-судья — бесплатно навсегда. Pro — когда захочешь больше.') + '</p>';
+  html += '</section>';
+
+  /* plans */
+  html += '<section class="section" style="padding-top:24px;"><div class="wrap">';
+  html += '<div class="center" style="margin-bottom:28px;">';
+  html += '<div class="bill-toggle">';
+  html += '<button class="bill-opt ' + (!yearly ? 'active' : '') + '" onclick="setBilling(\'monthly\')">' + T('Monthly', 'Месяц') + '</button>';
+  html += '<button class="bill-opt ' + (yearly ? 'active' : '') + '" onclick="setBilling(\'yearly\')">' + T('Yearly', 'Год') + '</button>';
+  html += '</div></div>';
+
+  html += '<div class="price-grid">';
+
+  /* free card */
+  html += '<div class="price-card">';
+  html += '<div class="price-name">' + T('Free', 'Бесплатно') + '</div>';
+  html += '<div class="price-amt">$0 <span class="per">' + T('/forever', '/навсегда') + '</span></div>';
+  html += '<div class="price-note">' + T('No card. No trial clock.', 'Без карты. Без таймера.') + '</div>';
+  html += '<ul class="price-feats">';
+  html += '<li>' + T('1 active goal', '1 активная цель') + '</li>';
+  html += '<li>' + T('AI judge on every photo', 'ИИ-судья на каждом фото') + '</li>';
+  html += '<li>' + T('2 photo checks / day', '2 проверки фото / день') + '</li>';
+  html += '<li>' + T('Full unfakeable streak', 'Полный неподдельный стрик') + '</li>';
+  html += '</ul>';
+  html += '<a href="app.html#/auth" class="btn btn-ghost btn-block">' + T('Start free →', 'Начать бесплатно →') + '</a>';
+  html += '</div>';
+
+  /* pro card */
+  html += '<div class="price-card featured">';
+  html += '<div class="price-badge">' + T('Most popular', 'Популярно') + '</div>';
+  html += '<div class="price-name">' + T('Cert Pro', 'Cert Pro') + '</div>';
+  html += '<div class="price-amt">' + subPrice + ' <span class="per">' + subPer + '</span></div>';
+  html += '<div class="price-note">' + subNote + '</div>';
+  html += '<ul class="price-feats">';
+  html += '<li>' + T('Multiple goals at once', 'Несколько целей сразу') + '</li>';
+  html += '<li>' + T('Unlimited photo checks', 'Безлимит проверок фото') + '</li>';
+  html += '<li>' + T('Streak freezes', 'Заморозки стрика') + '</li>';
+  html += '<li>' + T('Stats & history', 'Статистика и история') + '</li>';
+  html += '<li>' + T('Friends challenges (soon)', 'Челленджи с друзьями (скоро)') + '</li>';
+  html += '</ul>';
+  html += '<a href="app.html#/auth" class="btn btn-red btn-block">' + T('Get Pro →', 'Взять Pro →') + '</a>';
+  html += '</div>';
+
+  /* freezes card */
+  html += '<div class="price-card card-bronze">';
+  html += '<div class="price-name text-bronze">' + T('Freezes', 'Заморозки') + '</div>';
+  html += '<div class="price-note" style="margin-bottom:8px;">' + T('A Pro perk — protect a day in advance.', 'Перк Pro — защити день заранее.') + '</div>';
+  html += '<div style="margin:6px 0 4px;">';
+  html += '<div class="money-row"><div class="money-label">1 ' + T('freeze', 'заморозка') + '</div><div class="money-price">$2</div></div>';
+  html += '<div class="money-row"><div class="money-label">3 ' + T('freezes', 'заморозки') + '<small>' + T('save 17%', 'выгода 17%') + '</small></div><div class="money-price">$5</div></div>';
+  html += '<div class="money-row"><div class="money-label">5 ' + T('freezes', 'заморозок') + '<small>' + T('save 30%', 'выгода 30%') + '</small></div><div class="money-price">$7</div></div>';
+  html += '</div>';
+  html += '<div class="price-note" style="margin-top:auto;">' + T('A freeze keeps your streak alive without a photo. Never expire.', 'Заморозка держит стрик живым без фото. Не сгорают.') + '</div>';
+  html += '</div>';
+
+  html += '</div>'; // price-grid
+  html += '</div></section>';
+
+  /* referral */
+  html += '<section class="section" style="background:var(--surface-2);border-top:1px solid var(--line);border-bottom:1px solid var(--line);"><div class="wrap-narrow center">';
+  html += '<div class="kicker kicker-red" style="margin-bottom:14px;">' + T('Referral', 'Рефералка') + '</div>';
+  html += '<h2 class="display" style="font-size:clamp(28px,5vw,48px);margin:0;">' + T('Bring a friend,', 'Приведи друга,') + '<br>' + T('earn a freeze', 'получи заморозку') + '</h2>';
+  html += '<p class="lede" style="max-width:520px;margin:22px auto 0;font-size:16px;line-height:1.7;color:var(--ink-mute);">' + T('Invite a friend to start their own streak. When they go Pro, a freeze lands in your account. No cash, no payout headaches — just product you can use.', 'Пригласи друга начать свой стрик. Когда он перейдёт на Pro, тебе падает заморозка. Без денег и платёжных сложностей — только польза.') + '</p>';
+  html += '</div></section>';
+
+  /* philosophy */
+  html += '<section class="section"><div class="wrap-narrow">';
+  html += '<div class="philosophy"><p>' + T('This is not a habit tracker. A tracker lets you tick your own box. Cert makes an <strong>impartial judge verify every day</strong> — so the streak you build is one you can\'t fake. That is the whole product, and the free plan gives it to you in full.', 'Это не трекер привычек. В трекере галочку ставишь сам. Cert заставляет <strong>беспристрастного судью заверять каждый день</strong> — и стрик, который ты собираешь, нельзя подделать. В этом весь продукт, и бесплатный план даёт его полностью.') + '</p></div>';
+  html += '</div></section>';
+
+  /* faq */
+  html += '<section class="section" style="padding-top:24px;"><div class="wrap-narrow">';
+  html += '<div class="center kicker" style="margin-bottom:8px;">' + T('Questions', 'Вопросы') + '</div>';
+  html += '<div class="center kicker kicker-red" style="margin-bottom:32px;">' + T('before you start', 'перед стартом') + '</div>';
+  html += '<div id="faqList">';
+  faq.forEach(function (it, i) {
+    var open = faqOpen === i;
+    html += '<div class="faq-item">';
+    html += '<button class="faq-q" onclick="toggleFaq(' + i + ')"><span>' + it.q + '</span><span class="pm">' + (open ? '–' : '+') + '</span></button>';
+    if (open) html += '<p class="faq-a">' + it.a + '</p>';
+    html += '</div>';
+  });
+  html += '</div>';
+  html += '</div></section>';
+
+  /* final cta */
+  html += '<section class="section center" style="padding-top:24px;">';
+  html += '<h2 class="display" style="font-size:clamp(30px,6vw,64px);margin:0 0 26px;">' + T('Ready to start', 'Готов начать') + '<br>' + T('your streak?', 'свой стрик?') + '</h2>';
+  html += '<a href="app.html#/auth" class="btn btn-red btn-lg cta-pulse">' + T('Start free →', 'Начать бесплатно →') + '</a>';
+  html += '</section>';
+
+  document.getElementById('main').innerHTML = html;
+}
+
+function setBilling(b) { billing = b; render(); }
+function toggleFaq(i) { faqOpen = (faqOpen === i ? null : i); render(); }
+
+render();
+</script>
+</body>
+</html>
