@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>CERT — The Streak You Can't Fake</title>
-<meta name="description" content="One goal. A daily photo. An honest AI judge that can't be fooled. Build a streak you can't fake. Free to start.">
+<meta name="description" content="The mobile app for iOS & Android: one goal, a daily photo, an honest AI judge that can't be fooled. Go solo or challenge friends. Build a streak you can't fake. Free to start.">
 <meta property="og:title" content="CERT — The Streak You Can't Fake">
-<meta property="og:description" content="One goal. A daily photo. An honest AI judge. Build a streak you can't fake. Free to start.">
+<meta property="og:description" content="The iOS & Android app: one goal, a daily photo, an honest AI judge. Go solo or challenge friends. Build a streak you can't fake. Free to start.">
 <meta property="og:type" content="website">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,7 +45,20 @@
   /* shame red glow breathe */
   @keyframes breathe{0%,100%{text-shadow:0 3px 0 #000,0 0 28px rgba(226,59,46,.2);}50%{text-shadow:0 3px 0 #000,0 0 54px rgba(226,59,46,.5);}}
   .breathe{animation:breathe 3.4s ease-in-out infinite;}
-  @media (prefers-reduced-motion:reduce){.reveal{opacity:1!important;transform:none!important;}.cta-pulse,.breathe{animation:none!important;}}
+  /* hero two-column + phone mockup */
+  .hero-row{display:flex;align-items:center;justify-content:center;gap:60px;max-width:1120px;width:100%;}
+  .hero-copy{max-width:560px;text-align:left;flex:1 1 440px;}
+  .hero-copy p{margin-left:0!important;}
+  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+  .phone-float{animation:float 5.5s ease-in-out infinite;flex:none;}
+  @media(max-width:880px){
+    .hero-row{flex-direction:column;gap:44px;}
+    .hero-copy{text-align:center;max-width:600px;flex-basis:auto;}
+    .hero-copy p{margin-left:auto!important;margin-right:auto!important;}
+    .hero-copy .day-strip{align-items:center;}
+  }
+  @media(max-width:360px){.phone-float{transform:scale(.92);}}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1!important;transform:none!important;}.cta-pulse,.breathe,.phone-float{animation:none!important;}}
 </style>
 </head>
 <body>
@@ -74,16 +87,76 @@
 
   <!-- HERO -->
   <section id="top" style="position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:104px 24px 72px;">
-    <div style="max-width:860px;text-align:center;animation:rise 1s ease-out both;">
-      <div style="display:flex;flex-direction:column;gap:6px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.28em;color:#8a847c;text-transform:uppercase;margin-bottom:30px;">
-        <span data-k="day1"></span>
-        <span data-k="day2"></span>
-        <span data-k="day3" style="color:#c8c2ba;"></span>
+    <div class="hero-row" style="animation:rise 1s ease-out both;">
+      <div class="hero-copy">
+        <div class="day-strip" style="display:flex;flex-direction:column;gap:6px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.28em;color:#8a847c;text-transform:uppercase;margin-bottom:30px;">
+          <span data-k="day1"></span>
+          <span data-k="day2"></span>
+          <span data-k="day3" style="color:#c8c2ba;"></span>
+        </div>
+        <h1 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,7vw,88px);line-height:.93;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 44px rgba(0,0,0,.85);"><span data-k="heroBig1"></span><br><span data-k="heroBig2"></span></h1>
+        <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.32em;text-transform:uppercase;color:#e23b2e;" data-k="heroAlt"></div>
+        <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:8px;" class="store-badges">
+          <span style="display:inline-flex;align-items:center;gap:7px;border:1px solid #2a2530;background:rgba(12,10,16,.6);padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:#cfc8bf;">▼ iOS · App Store</span>
+          <span style="display:inline-flex;align-items:center;gap:7px;border:1px solid #2a2530;background:rgba(12,10,16,.6);padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:#cfc8bf;">▼ Android · Google Play</span>
+        </div>
+        <p style="margin:24px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="heroSub"></p>
+        <a href="#waitlist" class="btn-cta cta-pulse" style="display:inline-block;margin-top:30px;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px 36px;text-decoration:none;" data-k="heroCta"></a>
       </div>
-      <h1 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(44px,9vw,108px);line-height:.93;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 44px rgba(0,0,0,.85);"><span data-k="heroBig1"></span><br><span data-k="heroBig2"></span></h1>
-      <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.32em;text-transform:uppercase;color:#e23b2e;" data-k="heroAlt"></div>
-      <p style="margin:28px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="heroSub"></p>
-      <a href="#waitlist" class="btn-cta cta-pulse" style="display:inline-block;margin-top:34px;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px 36px;text-decoration:none;" data-k="heroCta"></a>
+
+      <!-- PHONE MOCKUP — mirrors the real app home screen -->
+      <div class="phone-float">
+        <div style="position:relative;width:288px;height:592px;border-radius:44px;background:#0c0a10;padding:11px;box-shadow:0 44px 100px -34px rgba(226,59,46,.42),0 0 0 2px #1a1620,0 0 0 9px #050406,0 0 0 10px #1c1822;">
+          <!-- notch -->
+          <div style="position:absolute;top:13px;left:50%;transform:translateX(-50%);width:118px;height:22px;background:#050406;border-radius:0 0 14px 14px;z-index:4;"></div>
+          <!-- screen -->
+          <div style="position:relative;width:100%;height:100%;border-radius:33px;overflow:hidden;background:#070608;display:flex;flex-direction:column;">
+            <!-- status bar -->
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#cfc8bf;">
+              <span style="font-weight:700;">9:41</span>
+              <span style="letter-spacing:.12em;font-size:10px;">●●● ▰▰▰▰</span>
+            </div>
+            <!-- app header -->
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 18px 14px;border-bottom:1px solid #1c1822;">
+              <img src="assets/gladiator-logo.png" alt="" style="height:24px;width:24px;image-rendering:pixelated;">
+              <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:15px;letter-spacing:.16em;color:#f4efe8;">CERT</span>
+            </div>
+            <!-- body -->
+            <div style="flex:1;padding:15px 15px 0;position:relative;">
+              <!-- streak card -->
+              <div style="border:1px solid #241f29;background:#120f14;border-radius:14px;padding:17px;">
+                <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:62px;line-height:.85;color:#e23b2e;text-shadow:0 2px 0 #000,0 0 30px rgba(226,59,46,.4);">14</div>
+                <div style="margin-top:7px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#6f6a63;">day streak · verified by the judge</div>
+                <div style="margin-top:13px;font-family:'Tektur',sans-serif;font-weight:700;font-size:17px;color:#f4efe8;">Gym — every day</div>
+                <div style="margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#9a948d;">📸 you, mid-workout, in the gym</div>
+                <div style="margin-top:13px;display:inline-flex;align-items:center;gap:8px;border:1px solid #1f3b25;background:rgba(52,199,89,.09);border-radius:8px;padding:7px 11px;">
+                  <span style="font-size:13px;">✅</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#34c759;">APPROVED — today counts</span>
+                </div>
+                <div style="margin-top:13px;background:#e23b2e;border-radius:8px;text-align:center;padding:12px;font-family:'Tektur',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.07em;color:#120606;">📷 SUBMIT TODAY'S PROOF</div>
+              </div>
+              <!-- friends challenge card -->
+              <div style="margin-top:13px;border:1px solid #241f29;background:#120f14;border-radius:14px;padding:14px 15px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#6f6a63;">Challenge · 4 friends</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:#e23b2e;">● LIVE</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 0;">
+                  <span style="color:#f4efe8;">🥇 You</span><span style="color:#c9a227;font-weight:700;">14 🔥</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 0;">
+                  <span style="color:#cbc5bd;">🥈 Alex</span><span style="color:#9a948d;">12 🔥</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 0;">
+                  <span style="color:#cbc5bd;">🥉 Sam</span><span style="color:#9a948d;">9 🔥</span>
+                </div>
+              </div>
+              <!-- bottom fade -->
+              <div style="position:absolute;left:0;right:0;bottom:0;height:54px;background:linear-gradient(180deg,rgba(7,6,8,0),#070608);pointer-events:none;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
     <div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;">
       <div style="font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;color:#cfc8bf;text-shadow:0 2px 8px #000;animation:flick 2.4s ease-in-out infinite;" data-k="scrollHint"></div>
@@ -247,19 +320,19 @@ const dict = {
   en: {
     day1:"Day 1 — anyone can start.", day2:"Day 4 — most quit.", day3:"Day 30 — your streak is real.",
     heroBig1:"Prove it", heroBig2:"every day", heroAlt:"докажи каждый день",
-    heroSub:"One goal. A daily photo. An honest AI judge that can't be fooled. The streak you build here is one you can't fake. Free to start.",
+    heroSub:"The app for one goal, a daily photo, and an honest AI judge that can't be fooled. Go solo or run challenges with friends — the streak you build is one you can't fake. iOS & Android. Free to start.",
     hiwKicker:"How it works", hiwAlt:"three steps",
     s1t:"Set one goal", s1alt:"одна цель", s1d:"Name what you'll do daily, in your own words. The AI judge reads exactly that.",
-    s2t:"Prove it daily", s2alt:"докажи", s2d:"Snap a photo. The judge decides in seconds: counts or not. No appeals.",
-    s3t:"Build the streak", s3alt:"стрик", s3d:"Every approved day stacks. Miss one and it resets to zero. No faking it.",
+    s2t:"Prove it daily", s2alt:"докажи", s2d:"Snap a photo in the app. The judge decides in seconds: counts or not. No appeals.",
+    s3t:"Build the streak", s3alt:"стрик", s3d:"Every approved day stacks. Go solo or challenge friends — miss one and it resets to zero. No faking it.",
     shameH:"Can't be faked", shameAlt:"стрик, который не подделать", shameBody:"Other apps let you tap a checkbox. Here every single day is verified by an impartial judge. ", shameAccent:"That's what makes your streak mean something.",
     judgeH1:"The judge is code,", judgeH2:"not you", judgeAlt:"судит код, не ты",
     judgeBody:"You can't argue with it, bribe it, or talk yourself into a pass. It looks at the photo and your goal, and decides. That's the whole point.",
-    ctaKicker:"Waitlist · 7 days of Pro free", ctaH1:"Start your", ctaH2:"streak", ctaSub:"Leave your email — we'll reserve 7 days of Cert Pro free for launch. The free plan is live right now.",
-    emailLabel:"Your email — reserve 7 days of Pro free", emailPh:"you@email.com", btnQueue:"Reserve 7 days free →",
+    ctaKicker:"Waitlist · iOS & Android · 7 days of Pro free", ctaH1:"Get the", ctaH2:"app", ctaSub:"Leave your email — we'll send you the iOS & Android app at launch and reserve 7 days of Cert Pro free.",
+    emailLabel:"Your email — get the app + 7 days of Pro free", emailPh:"you@email.com", btnQueue:"Reserve 7 days free →",
     challengeLabel:"What goal will you start with?", challengePh:"e.g. gym daily / read 20 min a day", btnNext:"Done →",
     betLabel:"", betYes:"", betNo:"", skip:"",
-    doneTitle:"You're in", doneAlt:"7 days of Pro reserved", queueLabel:"early access", doneBody:"We've reserved 7 days of Cert Pro free for your email at launch. The free plan is live now — start day one today.",
+    doneTitle:"You're in", doneAlt:"7 days of Pro reserved", queueLabel:"early access", doneBody:"We'll send you the iOS & Android app the moment it's live, with 7 days of Cert Pro free reserved for your email. Go solo or bring friends.",
     errEmail:"That email looks off.", errChallenge:"Name your goal — even a rough one.",
     heroCta:"Join the waitlist →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Waitlist",
     stat1l:"% impartial judge", stat2l:"money on the line", stat3l:"AI judge on duty",
@@ -271,25 +344,26 @@ const dict = {
       {q:"Why can't I just fake my streak?", a:"Because you don't mark your own checkbox — an impartial judge does. A photo has to actually prove the goal. That's what makes the streak worth something."},
       {q:"What happens if I miss a day?", a:"Your streak resets to zero. There's no money on the line — losing the streak you built is the cost. You can start a new one the same day."},
       {q:"What kind of goal fits?", a:"Anything with a daily action you can photograph: gym, running, reading, cooking, coding, art. If a photo can prove it, the judge can check it."},
-      {q:"Can I do challenges with friends?", a:"Soon. Cert starts solo so it works for you on day one — friend challenges are the next phase."}
+      {q:"Can I do challenges with friends?", a:"Yes. Start solo or invite friends into a shared challenge — everyone's daily photo goes through the same impartial judge, so no one can fake their way through."},
+      {q:"Is there an app to download?", a:"Yes — Cert is a mobile app for iOS and Android. Join the waitlist and we'll send you the download link the moment it launches."}
     ]
   },
   ru: {
     day1:"День 1 — начать может каждый.", day2:"День 4 — большинство бросает.", day3:"День 30 — твой стрик настоящий.",
     heroBig1:"Докажи", heroBig2:"каждый день", heroAlt:"prove it every day",
-    heroSub:"Одна цель. Фото в день. Честный ИИ-судья, которого не обмануть. Стрик, который ты собираешь здесь, нельзя подделать. Бесплатно для старта.",
+    heroSub:"Приложение для одной цели, фото в день и честного ИИ-судьи, которого не обмануть. Соло или челленджи с друзьями — стрик, который ты собираешь, нельзя подделать. iOS и Android. Бесплатно для старта.",
     hiwKicker:"Как это работает", hiwAlt:"три шага",
     s1t:"Одна цель", s1alt:"set one goal", s1d:"Опиши, что будешь делать каждый день, своими словами. ИИ-судья читает именно это.",
-    s2t:"Докажи фото", s2alt:"prove daily", s2d:"Сфоткай. Судья решает за секунды: засчитано или нет. Без апелляций.",
-    s3t:"Собери стрик", s3alt:"the streak", s3d:"Каждый зачтённый день копится. Пропустил — обнуление. Подделать нельзя.",
+    s2t:"Докажи фото", s2alt:"prove daily", s2d:"Сфоткай в приложении. Судья решает за секунды: засчитано или нет. Без апелляций.",
+    s3t:"Собери стрик", s3alt:"the streak", s3d:"Каждый зачтённый день копится. Соло или челлендж с друзьями — пропустил день, и обнуление. Подделать нельзя.",
     shameH:"Не подделать", shameAlt:"the streak you can't fake", shameBody:"В других приложениях ты сам ставишь галочку. Здесь каждый день заверяет беспристрастный судья. ", shameAccent:"Поэтому твой стрик чего-то стоит.",
     judgeH1:"Судит код,", judgeH2:"не ты", judgeAlt:"the judge is code, not you",
     judgeBody:"С ним не поспоришь, не уговоришь и не обманешь себя. Он смотрит на фото и твою цель — и решает. В этом весь смысл.",
-    ctaKicker:"Вайтлист · 7 дней Pro бесплатно", ctaH1:"Начни свой", ctaH2:"стрик", ctaSub:"Оставь почту — забронируем 7 дней Cert Pro бесплатно к запуску. Бесплатный план уже работает.",
-    emailLabel:"Твоя почта — бронь 7 дней Pro бесплатно", emailPh:"you@email.com", btnQueue:"Забронировать 7 дней →",
+    ctaKicker:"Вайтлист · iOS и Android · 7 дней Pro бесплатно", ctaH1:"Забери", ctaH2:"приложение", ctaSub:"Оставь почту — пришлём приложение для iOS и Android к запуску и забронируем 7 дней Cert Pro бесплатно.",
+    emailLabel:"Твоя почта — приложение + 7 дней Pro бесплатно", emailPh:"you@email.com", btnQueue:"Забронировать 7 дней →",
     challengeLabel:"С какой цели начнёшь?", challengePh:"напр. зал каждый день / читать 20 мин в день", btnNext:"Готово →",
     betLabel:"", betYes:"", betNo:"", skip:"",
-    doneTitle:"Ты в деле", doneAlt:"7 дней Pro забронированы", queueLabel:"ранний доступ", doneBody:"Мы забронировали 7 дней Cert Pro бесплатно для твоей почты к запуску. Бесплатный план уже работает — собери первый день сегодня.",
+    doneTitle:"Ты в деле", doneAlt:"7 дней Pro забронированы", queueLabel:"ранний доступ", doneBody:"Пришлём приложение для iOS и Android, как только оно выйдет, и забронируем 7 дней Cert Pro бесплатно для твоей почты. Соло или с друзьями.",
     errEmail:"Похоже на неправильную почту.", errChallenge:"Назови цель — пусть даже грубо.",
     heroCta:"В список ожидания →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"В бету",
     stat1l:"% беспристрастный судья", stat2l:"денег на кону", stat3l:"ИИ-судья на посту",
@@ -301,7 +375,8 @@ const dict = {
       {q:"Почему нельзя просто подделать стрик?", a:"Потому что галочку ставишь не ты, а беспристрастный судья. Фото должно реально доказывать цель. Именно это делает стрик ценным."},
       {q:"Что будет, если пропущу день?", a:"Стрик обнуляется. Денег на кону нет — цена в том, что ты теряешь собранный стрик. Новый можно начать в тот же день."},
       {q:"Какая цель подходит?", a:"Любая с ежедневным действием, которое можно сфотографировать: зал, бег, чтение, готовка, код, рисование. Есть фото-доказательство — судья проверит."},
-      {q:"Можно челленджи с друзьями?", a:"Скоро. Cert стартует соло, чтобы работать для тебя в день один — челленджи с друзьями это следующая фаза."}
+      {q:"Можно челленджи с друзьями?", a:"Да. Стартуй соло или зови друзей в общий челлендж — фото каждого проходит через одного беспристрастного судью, так что схитрить не выйдет."},
+      {q:"Есть приложение для скачивания?", a:"Да — Cert это мобильное приложение для iOS и Android. Оставь почту в вайтлисте, и мы пришлём ссылку на загрузку сразу после запуска."}
     ]
   }
 };

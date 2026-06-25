@@ -28,3 +28,4 @@ supabase/.temp/
 Thumbs.db
 *.log
 npm-debug.log*
+.gstack/
