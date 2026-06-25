@@ -58,6 +58,7 @@
 </footer>
 
 <script src="scripts/i18n.js"></script>
+<script src="scripts/geo-price.js"></script>
 <script>
 var billing = 'monthly';
 var faqOpen = null;
@@ -73,9 +74,11 @@ function render() {
   document.getElementById('nav-pricing').textContent = T('Pricing', 'Цены');
   document.getElementById('nav-app').textContent = T('Waitlist', 'В бету');
 
-  var subPrice = yearly ? '$59.99' : '$9.99';
+  var subPrice = yearly ? CertPrice.yearly() : CertPrice.monthly();
   var subPer   = yearly ? T('/year', '/год') : T('/month', '/мес');
-  var subNote  = yearly ? T('≈ $5/mo — saves ~50%', '≈ $5/мес — экономия ~50%') : T('Billed monthly. Cancel anytime.', 'Помесячно. Отмена в любой момент.');
+  var subNote  = yearly
+    ? T('≈ ' + CertPrice.yearlyPerMo() + '/mo — saves ~50%', '≈ ' + CertPrice.yearlyPerMo() + '/мес — экономия ~50%')
+    : T('Billed monthly. Cancel anytime.', 'Помесячно. Отмена в любой момент.');
 
   var faq = [
     { q: T('Is there really a free plan?', 'Есть правда бесплатный план?'),
@@ -131,6 +134,7 @@ function render() {
   html += '<div class="price-name">' + T('Cert Pro', 'Cert Pro') + '</div>';
   html += '<div class="price-amt">' + subPrice + ' <span class="per">' + subPer + '</span></div>';
   html += '<div class="price-note">' + subNote + '</div>';
+  html += '<div style="margin:10px 0 2px;padding:8px 12px;border:1px solid var(--red);border-radius:8px;font-family:var(--font-mono);font-size:12px;letter-spacing:.04em;color:var(--red);text-align:center;">🎁 ' + T('7 days free for waitlist', '7 дней бесплатно для вайтлиста') + '</div>';
   html += '<ul class="price-feats">';
   html += '<li>' + T('Multiple goals at once', 'Несколько целей сразу') + '</li>';
   html += '<li>' + T('Unlimited photo checks', 'Безлимит проверок фото') + '</li>';
@@ -146,9 +150,9 @@ function render() {
   html += '<div class="price-name text-bronze">' + T('Freezes', 'Заморозки') + '</div>';
   html += '<div class="price-note" style="margin-bottom:8px;">' + T('A Pro perk — protect a day in advance.', 'Перк Pro — защити день заранее.') + '</div>';
   html += '<div style="margin:6px 0 4px;">';
-  html += '<div class="money-row"><div class="money-label">1 ' + T('freeze', 'заморозка') + '</div><div class="money-price">$2</div></div>';
-  html += '<div class="money-row"><div class="money-label">3 ' + T('freezes', 'заморозки') + '<small>' + T('save 17%', 'выгода 17%') + '</small></div><div class="money-price">$5</div></div>';
-  html += '<div class="money-row"><div class="money-label">5 ' + T('freezes', 'заморозок') + '<small>' + T('save 30%', 'выгода 30%') + '</small></div><div class="money-price">$7</div></div>';
+  html += '<div class="money-row"><div class="money-label">1 ' + T('freeze', 'заморозка') + '</div><div class="money-price">' + CertPrice.freeze('1') + '</div></div>';
+  html += '<div class="money-row"><div class="money-label">3 ' + T('freezes', 'заморозки') + '<small>' + T('save 17%', 'выгода 17%') + '</small></div><div class="money-price">' + CertPrice.freeze('3') + '</div></div>';
+  html += '<div class="money-row"><div class="money-label">5 ' + T('freezes', 'заморозок') + '<small>' + T('save 30%', 'выгода 30%') + '</small></div><div class="money-price">' + CertPrice.freeze('5') + '</div></div>';
   html += '</div>';
   html += '<div class="price-note" style="margin-top:auto;">' + T('A freeze keeps your streak alive without a photo. Never expire.', 'Заморозка держит стрик живым без фото. Не сгорают.') + '</div>';
   html += '</div>';
@@ -196,6 +200,7 @@ function setBilling(b) { billing = b; render(); }
 function toggleFaq(i) { faqOpen = (faqOpen === i ? null : i); render(); }
 
 render();
+CertPrice.load(render); // re-render with local currency once geo resolves
 </script>
 </body>
 </html>

@@ -232,13 +232,15 @@
 
 </main>
 
+<script src="scripts/geo-price.js"></script>
 <script>
 /* =====================================================================
-   WAITLIST INTEGRATION
-   Drop a form endpoint into ENDPOINT (e.g. Formspree: https://formspree.io/f/xxxx).
-   Empty = demo mode: submissions are stored in localStorage('cert_waitlist').
+   WAITLIST INTEGRATION — stores the email in Supabase (table: waitlist) and
+   reserves 7 days of Pro at launch. Anon key is public by design; the table
+   is insert-only for anon (emails can't be read back).
    ===================================================================== */
-const ENDPOINT = "";
+const SUPA_URL = "https://hiydsiiuzpneykbjddsr.supabase.co";
+const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpeWRzaWl1enBuZXlrYmpkZHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTcwOTUsImV4cCI6MjA5Nzg3MzA5NX0.x1-PnDgiyn8wohw4nymhiSuBUe1v2byFQhoUC0fmFiE";
 
 /* ---- content dictionary (ported from Arena.dc.html) ---- */
 const dict = {
@@ -253,11 +255,11 @@ const dict = {
     shameH:"Can't be faked", shameAlt:"стрик, который не подделать", shameBody:"Other apps let you tap a checkbox. Here every single day is verified by an impartial judge. ", shameAccent:"That's what makes your streak mean something.",
     judgeH1:"The judge is code,", judgeH2:"not you", judgeAlt:"судит код, не ты",
     judgeBody:"You can't argue with it, bribe it, or talk yourself into a pass. It looks at the photo and your goal, and decides. That's the whole point.",
-    ctaKicker:"Free to start · бесплатно", ctaH1:"Start your", ctaH2:"streak", ctaSub:"Free: one goal, a daily photo, an honest judge. Upgrade later for more goals and streak freezes.",
-    emailLabel:"Get launch updates (optional)", emailPh:"you@email.com", btnQueue:"Notify me →",
+    ctaKicker:"Waitlist · 7 days of Pro free", ctaH1:"Start your", ctaH2:"streak", ctaSub:"Leave your email — we'll reserve 7 days of Cert Pro free for launch. The free plan is live right now.",
+    emailLabel:"Your email — reserve 7 days of Pro free", emailPh:"you@email.com", btnQueue:"Reserve 7 days free →",
     challengeLabel:"What goal will you start with?", challengePh:"e.g. gym daily / read 20 min a day", btnNext:"Done →",
     betLabel:"", betYes:"", betNo:"", skip:"",
-    doneTitle:"You're on the list", doneAlt:"you can start right now", queueLabel:"early access", doneBody:"Want to start now? The app is live and free — build day one today.",
+    doneTitle:"You're in", doneAlt:"7 days of Pro reserved", queueLabel:"early access", doneBody:"We've reserved 7 days of Cert Pro free for your email at launch. The free plan is live now — start day one today.",
     errEmail:"That email looks off.", errChallenge:"Name your goal — even a rough one.",
     heroCta:"Join the waitlist →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Waitlist",
     stat1l:"% impartial judge", stat2l:"money on the line", stat3l:"AI judge on duty",
@@ -283,11 +285,11 @@ const dict = {
     shameH:"Не подделать", shameAlt:"the streak you can't fake", shameBody:"В других приложениях ты сам ставишь галочку. Здесь каждый день заверяет беспристрастный судья. ", shameAccent:"Поэтому твой стрик чего-то стоит.",
     judgeH1:"Судит код,", judgeH2:"не ты", judgeAlt:"the judge is code, not you",
     judgeBody:"С ним не поспоришь, не уговоришь и не обманешь себя. Он смотрит на фото и твою цель — и решает. В этом весь смысл.",
-    ctaKicker:"Бесплатно · free to start", ctaH1:"Начни свой", ctaH2:"стрик", ctaSub:"Бесплатно: одна цель, фото в день, честный судья. Потом — больше целей и заморозки стрика.",
-    emailLabel:"Новости запуска (по желанию)", emailPh:"you@email.com", btnQueue:"Сообщить мне →",
+    ctaKicker:"Вайтлист · 7 дней Pro бесплатно", ctaH1:"Начни свой", ctaH2:"стрик", ctaSub:"Оставь почту — забронируем 7 дней Cert Pro бесплатно к запуску. Бесплатный план уже работает.",
+    emailLabel:"Твоя почта — бронь 7 дней Pro бесплатно", emailPh:"you@email.com", btnQueue:"Забронировать 7 дней →",
     challengeLabel:"С какой цели начнёшь?", challengePh:"напр. зал каждый день / читать 20 мин в день", btnNext:"Готово →",
     betLabel:"", betYes:"", betNo:"", skip:"",
-    doneTitle:"Ты в списке", doneAlt:"можно начать прямо сейчас", queueLabel:"ранний доступ", doneBody:"Хочешь начать сейчас? Приложение уже работает и бесплатно — собери первый день сегодня.",
+    doneTitle:"Ты в деле", doneAlt:"7 дней Pro забронированы", queueLabel:"ранний доступ", doneBody:"Мы забронировали 7 дней Cert Pro бесплатно для твоей почты к запуску. Бесплатный план уже работает — собери первый день сегодня.",
     errEmail:"Похоже на неправильную почту.", errChallenge:"Назови цель — пусть даже грубо.",
     heroCta:"В список ожидания →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"В бету",
     stat1l:"% беспристрастный судья", stat2l:"денег на кону", stat3l:"ИИ-судья на посту",
@@ -366,19 +368,20 @@ function showErr(id, msg){
 function submitLead(){
   const payload = {
     email:     document.getElementById('in-email').value.trim(),
-    challenge: document.getElementById('in-challenge').value.trim(),
-    bet:       state.bet,
+    challenge: document.getElementById('in-challenge').value.trim() || null,
     lang:      state.lang,
-    ts:        new Date().toISOString()
+    country:   (window.CertPrice && CertPrice.country) || null,
+    currency:  (window.CertPrice && CertPrice.code) || null
   };
   try {
-    if(ENDPOINT){
-      fetch(ENDPOINT, { method:'POST', headers:{'Content-Type':'application/json','Accept':'application/json'}, body:JSON.stringify(payload) }).catch(()=>{});
-    } else {
-      const all = JSON.parse(localStorage.getItem('cert_waitlist') || '[]');
-      all.push(payload); localStorage.setItem('cert_waitlist', JSON.stringify(all));
-      console.log('[CERT demo] lead stored locally:', payload);
-    }
+    fetch(SUPA_URL + '/rest/v1/waitlist', {
+      method:'POST',
+      headers:{ 'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
+      body: JSON.stringify(payload)
+    }).catch(()=>{});
+    // local fallback copy (e.g. duplicate email or offline) — never blocks success
+    const all = JSON.parse(localStorage.getItem('cert_waitlist') || '[]');
+    all.push(payload); localStorage.setItem('cert_waitlist', JSON.stringify(all));
   } catch(e){ console.warn('submit failed (showing success anyway):', e); }
 }
 
@@ -417,6 +420,7 @@ document.getElementById('in-challenge').addEventListener('input', ()=> showErr('
 /* ---- init ---- */
 applyLang();
 showStep();
+if (window.CertPrice) CertPrice.load(); // populate country/currency for the lead
 
 /* ---- scroll reveal + count-up ---- */
 (function(){
