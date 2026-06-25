@@ -43,7 +43,7 @@
   <div class="topbar-links">
     <a href="index.html" class="navlink" id="nav-home">Home</a>
     <a href="pricing.html" class="navlink active" id="nav-pricing">Pricing</a>
-    <a href="app.html" class="navlink" id="nav-app">Launch app →</a>
+    <a href="index.html#waitlist" class="navlink" id="nav-app">Waitlist</a>
     <div class="lang-toggle">
       <button class="lang-btn" data-l="en" onclick="setLang('en')">EN</button>
       <button class="lang-btn" data-l="ru" onclick="setLang('ru')">RU</button>
@@ -71,7 +71,7 @@ function render() {
   });
   document.getElementById('nav-home').textContent = T('Home', 'Главная');
   document.getElementById('nav-pricing').textContent = T('Pricing', 'Цены');
-  document.getElementById('nav-app').textContent = T('Launch app →', 'Открыть →');
+  document.getElementById('nav-app').textContent = T('Waitlist', 'В бету');
 
   var subPrice = yearly ? '$59.99' : '$9.99';
   var subPer   = yearly ? T('/year', '/год') : T('/month', '/мес');
@@ -122,7 +122,7 @@ function render() {
   html += '<li>' + T('2 photo checks / day', '2 проверки фото / день') + '</li>';
   html += '<li>' + T('Full unfakeable streak', 'Полный неподдельный стрик') + '</li>';
   html += '</ul>';
-  html += '<a href="app.html#/auth" class="btn btn-ghost btn-block">' + T('Start free →', 'Начать бесплатно →') + '</a>';
+  html += '<a href="index.html#waitlist" class="btn btn-ghost btn-block">' + T('Start free →', 'Начать бесплатно →') + '</a>';
   html += '</div>';
 
   /* pro card */
@@ -138,7 +138,7 @@ function render() {
   html += '<li>' + T('Stats & history', 'Статистика и история') + '</li>';
   html += '<li>' + T('Friends challenges (soon)', 'Челленджи с друзьями (скоро)') + '</li>';
   html += '</ul>';
-  html += '<a href="app.html#/auth" class="btn btn-red btn-block">' + T('Get Pro →', 'Взять Pro →') + '</a>';
+  html += '<a href="index.html#waitlist" class="btn btn-red btn-block">' + T('Get Pro →', 'Взять Pro →') + '</a>';
   html += '</div>';
 
   /* freezes card */
@@ -186,7 +186,7 @@ function render() {
   /* final cta */
   html += '<section class="section center" style="padding-top:24px;">';
   html += '<h2 class="display" style="font-size:clamp(30px,6vw,64px);margin:0 0 26px;">' + T('Ready to start', 'Готов начать') + '<br>' + T('your streak?', 'свой стрик?') + '</h2>';
-  html += '<a href="app.html#/auth" class="btn btn-red btn-lg cta-pulse">' + T('Start free →', 'Начать бесплатно →') + '</a>';
+  html += '<a href="index.html#waitlist" class="btn btn-red btn-lg cta-pulse">' + T('Start free →', 'Начать бесплатно →') + '</a>';
   html += '</section>';
 
   document.getElementById('main').innerHTML = html;

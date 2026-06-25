@@ -136,6 +136,41 @@ app.post('/api/auth/login', (req, res) => {
   res.json({ token, user: pubUser(u) });
 });
 
+/* Sign in with Google: the client sends a Google ID token (credential).
+   We verify it with Google's tokeninfo (zero deps), check it was issued for
+   OUR client id, then find-or-create the user and issue our own session token. */
+app.post('/api/auth/google', async (req, res) => {
+  const { credential, timezone } = req.body || {};
+  if (!credential) return res.status(400).json({ error: 'no_credential' });
+  if (!process.env.GOOGLE_CLIENT_ID) return res.status(500).json({ error: 'google_not_configured' });
+
+  let claims;
+  try {
+    const r = await fetch('https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential));
+    if (!r.ok) throw new Error('tokeninfo ' + r.status);
+    claims = await r.json();
+  } catch (e) {
+    return res.status(401).json({ error: 'verify_failed', message: e.message });
+  }
+
+  // security checks: audience must be our app, issuer must be Google, email verified, not expired
+  if (claims.aud !== process.env.GOOGLE_CLIENT_ID) return res.status(401).json({ error: 'bad_audience' });
+  if (claims.iss !== 'accounts.google.com' && claims.iss !== 'https://accounts.google.com') return res.status(401).json({ error: 'bad_issuer' });
+  if (String(claims.email_verified) !== 'true') return res.status(401).json({ error: 'email_unverified' });
+  if (claims.exp && (Date.now() / 1000) > Number(claims.exp)) return res.status(401).json({ error: 'token_expired' });
+  const email = String(claims.email || '').toLowerCase();
+  if (!email) return res.status(401).json({ error: 'no_email' });
+
+  let u = Q.userByEmail.get(email);
+  if (!u) {
+    const id = uuid();
+    Q.insertUser.run(id, email, claims.name || email.split('@')[0], null, timezone || 'UTC', 'en', 0, null, 0, genRef(), null, now());
+    u = Q.userById.get(id);
+  }
+  const token = issueToken(u.id);
+  res.json({ token, user: pubUser(u) });
+});
+
 app.post('/api/auth/logout', requireAuth, (req, res) => { revokeToken(req.token); res.json({ ok: true }); });
 
 app.get('/api/me', requireAuth, (req, res) => {
@@ -271,6 +306,12 @@ app.get('/api/referral', requireAuth, (req, res) => {
   const u = Q.userById.get(req.user.id);
   res.json({ code: u.referral_code, link: `cert.app/r/${u.referral_code}` });
 });
+
+/* ---------- static frontend (single-service deploy) ----------
+   Serve the web app from the repo root so ONE deploy serves API + UI.
+   Block /server so backend source and .env are never exposed; dotfiles ignored. */
+app.use('/server', (req, res) => res.status(404).end());
+app.use(express.static(path.join(__dirname, '..'), { dotfiles: 'ignore', extensions: ['html'] }));
 
 /* ---------- boot ---------- */
 const server = app.listen(PORT, () => {

@@ -114,6 +114,9 @@
         '<h1 class="display" style="font-size:40px;margin:0;line-height:1;">' + T('Start your', 'Начни свой') + '<br>' + T('streak', 'стрик') + '</h1>' +
         '<p class="lede" style="color:var(--ink-mute);font-size:15px;margin-top:16px;">' + T('One goal. A daily photo. An honest AI judge. Free to start.', 'Одна цель. Фото в день. Честный ИИ-судья. Бесплатно для старта.') + '</p>' +
       '</div>' +
+      '<div id="gsi-btn" style="display:flex;justify-content:center;margin-bottom:6px;min-height:40px;"></div>' +
+      '<div id="gsi-note" class="center kicker" style="font-size:10px;color:var(--ink-faint);margin-bottom:14px;"></div>' +
+      '<div class="center kicker" style="margin:2px 0 14px;color:var(--ink-faint);">' + T('or', 'или') + '</div>' +
       '<div class="card">' +
         '<label class="field-label">' + T('Your name', 'Имя') + '</label>' +
         '<input id="au-name" class="field-input" placeholder="' + T('Zhanibek', 'Жанибек') + '">' +
@@ -124,7 +127,29 @@
         '<div class="center mono" style="font-size:11px;color:var(--ink-faint);margin-top:14px;">' + T('Demo — no password, stored locally on this device.', 'Демо — без пароля, хранится локально.') + '</div>' +
       '</div>' +
       '</div>';
+    mountGoogleButton();
   }
+
+  /* ---- Google Sign-In (GIS) ---- */
+  function mountGoogleButton() {
+    var el = document.getElementById('gsi-btn');
+    var note = document.getElementById('gsi-note');
+    if (!el) return;
+    if (!window.GOOGLE_CLIENT_ID) { if (note) note.textContent = T('(Google sign-in not configured yet)', '(вход через Google ещё не настроен)'); return; }
+    if (!(window.google && google.accounts && google.accounts.id)) { setTimeout(mountGoogleButton, 600); return; } // GIS still loading
+    try {
+      google.accounts.id.initialize({ client_id: window.GOOGLE_CLIENT_ID, callback: window.onGoogleCredential });
+      google.accounts.id.renderButton(el, { theme: 'filled_black', size: 'large', text: 'continue_with', shape: 'pill', width: 300 });
+    } catch (e) { if (note) note.textContent = ''; }
+  }
+  window.onGoogleCredential = function (resp) {
+    if (!resp || !resp.credential) return;
+    toast(T('Signing in…', 'Входим…'));
+    S.loginWithGoogle(resp.credential)
+      .then(function () { syncChrome(); go(S.get().goals.length ? '#/home' : '#/onboarding'); })
+      .catch(function (e) { console.warn('[google] sign-in failed', e); toast(T('Google sign-in failed — check setup', 'Не удалось войти через Google — проверь настройку')); });
+  };
+
   window.auSubmit = function () {
     var name = document.getElementById('au-name').value.trim();
     var email = document.getElementById('au-email').value.trim();

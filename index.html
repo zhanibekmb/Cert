@@ -62,7 +62,7 @@
   </a>
   <div style="display:flex;align-items:center;gap:14px;pointer-events:auto;">
     <a href="pricing.html" class="topnav-link" data-k="navPricing" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9a948d;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
-    <a href="app.html" class="topnav-link" data-k="navApp" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e23b2e;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
+    <a href="#waitlist" class="topnav-link" data-k="navApp" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e23b2e;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
     <div style="display:flex;border:1px solid #2a2530;">
       <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
       <button id="lang-ru" class="lang-btn" onclick="setLang('ru')">RU</button>
@@ -83,7 +83,7 @@
       <h1 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(44px,9vw,108px);line-height:.93;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 44px rgba(0,0,0,.85);"><span data-k="heroBig1"></span><br><span data-k="heroBig2"></span></h1>
       <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.32em;text-transform:uppercase;color:#e23b2e;" data-k="heroAlt"></div>
       <p style="margin:28px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="heroSub"></p>
-      <a href="app.html#/auth" class="btn-cta cta-pulse" style="display:inline-block;margin-top:34px;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px 36px;text-decoration:none;" data-k="heroCta"></a>
+      <a href="#waitlist" class="btn-cta cta-pulse" style="display:inline-block;margin-top:34px;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px 36px;text-decoration:none;" data-k="heroCta"></a>
     </div>
     <div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;">
       <div style="font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;color:#cfc8bf;text-shadow:0 2px 8px #000;animation:flick 2.4s ease-in-out infinite;" data-k="scrollHint"></div>
@@ -259,7 +259,7 @@ const dict = {
     betLabel:"", betYes:"", betNo:"", skip:"",
     doneTitle:"You're on the list", doneAlt:"you can start right now", queueLabel:"early access", doneBody:"Want to start now? The app is live and free — build day one today.",
     errEmail:"That email looks off.", errChallenge:"Name your goal — even a rough one.",
-    heroCta:"Start free →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Launch app →",
+    heroCta:"Join the waitlist →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Waitlist",
     stat1l:"% impartial judge", stat2l:"money on the line", stat3l:"AI judge on duty",
     manifestoH:"Motivation dies by day three. A verified streak doesn't.", manifestoSub:"Willpower is a terrible referee, so we replaced it with one that can't be fooled. What's left is a streak you actually earned.",
     faqKicker:"Questions", faqAlt:"before you start",
@@ -289,7 +289,7 @@ const dict = {
     betLabel:"", betYes:"", betNo:"", skip:"",
     doneTitle:"Ты в списке", doneAlt:"можно начать прямо сейчас", queueLabel:"ранний доступ", doneBody:"Хочешь начать сейчас? Приложение уже работает и бесплатно — собери первый день сегодня.",
     errEmail:"Похоже на неправильную почту.", errChallenge:"Назови цель — пусть даже грубо.",
-    heroCta:"Начать бесплатно →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"Открыть →",
+    heroCta:"В список ожидания →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"В бету",
     stat1l:"% беспристрастный судья", stat2l:"денег на кону", stat3l:"ИИ-судья на посту",
     manifestoH:"Мотивация умирает на третий день. Заверенный стрик — нет.", manifestoSub:"Сила воли — паршивый судья, поэтому мы заменили её той, что не обмануть. Остаётся стрик, который ты реально заработал.",
     faqKicker:"Вопросы", faqAlt:"перед стартом",

@@ -1,0 +1,14 @@
+# Supabase project config. `project_id` is set when you run `supabase link`.
+project_id = "cert"
+
+[functions.judge]
+verify_jwt = true
+
+[functions.proof-spec]
+verify_jwt = true
+
+[functions.appeal]
+verify_jwt = true
+
+[functions.challenge]
+verify_jwt = true

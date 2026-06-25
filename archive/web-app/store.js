@@ -97,6 +97,35 @@
       save(state);
       return state.user;
     },
+    /* Sign in with Google: verify the Google ID token on the backend, then set
+       the local user from the verified profile (goals stay local for now). */
+    loginWithGoogle: function (credential) {
+      var base = (typeof window !== 'undefined' && window.CERT_API) || '';
+      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+      return fetch(base + '/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: credential, timezone: tz })
+      })
+        .then(function (r) { if (!r.ok) throw new Error('google auth ' + r.status); return r.json(); })
+        .then(function (d) {
+          if (!d || !d.user) throw new Error('bad google response');
+          state.user = {
+            email: d.user.email,
+            name: d.user.name || (d.user.email || '').split('@')[0],
+            timezone: d.user.timezone || tz,
+            plan: (d.user.subscribed && d.user.plan) ? d.user.plan : 'free',
+            freezes: d.user.freezes || 0,
+            referralCode: d.user.referralCode || ('cert-' + Math.random().toString(36).slice(2, 8)),
+            createdAt: d.user.createdAt || new Date().toISOString(),
+            token: d.token || null,
+            google: true
+          };
+          save(state);
+          return state.user;
+        });
+    },
+
     logout: function () {
       state = blank();
       localStorage.removeItem(KEY);

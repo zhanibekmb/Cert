@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Cert",
+    "slug": "cert",
+    "scheme": "cert",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#070608",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.cert.mobile"
+    },
+    "android": {
+      "package": "app.cert.mobile"
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Cert needs the camera to take your daily proof photo."
+        }
+      ],
+      "expo-asset",
+      "expo-web-browser",
+      "expo-notifications",
+      "@react-native-community/datetimepicker"
+    ]
+  }
+}

@@ -164,13 +164,21 @@
 </div>
 
 <script>
-  // Point the AI judge at the local API (real Gemini if GEMINI_API_KEY is set on
-  // the server; the server's lenient mock otherwise). scripts/ai.js falls back to
-  // a built-in mock if the server is unreachable, so the app never blocks.
-  window.CERT_AI_ENDPOINT = (location.protocol.indexOf('http') === 0 && location.hostname)
-    ? (location.protocol + '//' + location.hostname + ':8787/api/judge')
-    : 'http://localhost:8787/api/judge';
+  /* ===== CONFIG ===== */
+  // After deploying the backend (Railway/Render/etc.), put its URL here.
+  // Leave "" for local dev or single-service hosting.
+  window.CERT_API_BASE = "";              // e.g. "https://cert-api.up.railway.app"
+  // Google OAuth Web client ID (Google Cloud Console → Credentials). Public value.
+  window.GOOGLE_CLIENT_ID = "";           // e.g. "1234-abc.apps.googleusercontent.com"
+
+  (function () {
+    var base = window.CERT_API_BASE ||
+      (location.protocol.indexOf('http') === 0 ? location.origin : 'http://localhost:8787');
+    window.CERT_API = base;
+    window.CERT_AI_ENDPOINT = base + '/api/judge';
+  })();
 </script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <script src="scripts/i18n.js"></script>
 <script src="scripts/store.js"></script>
 <script src="scripts/ai.js"></script>
