@@ -87,6 +87,28 @@ function buildJudgePrompt(goalText: string, proofSpec?: string, dailyReq?: strin
   lines.push('Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, in the user goal\'s language>", "confidence": <0..1>}.');
   return lines.join("\n");
 }
+function buildTimelapsePrompt(goalText: string, proofSpec?: string): string {
+  return [
+    "You are a FRIENDLY, GENEROUS AI judge for a habit app called Cert. You are shown SEVERAL FRAMES captured a few seconds apart as a TIMELAPSE of the user's session. Judge whether they show the user genuinely DOING the goal over time. Default to APPROVE — when in doubt, approve.",
+    `User goal: "${goalText}"`,
+    proofSpec ? `Loose hint of what doing it looks like (not a strict checklist): "${proofSpec}"` : "",
+    "APPROVE if the frames plausibly show the activity happening across time: progress, movement, change, or sustained presence at the activity. The user shoots solo with no special equipment or ideal location — never require any of those. Be forgiving about angle, lighting, framing, distance and quality.",
+    "ONLY reject if it is OBVIOUS the timelapse is faked or invalid: every frame is identical/static (a propped single photo, not a real session), a completely unrelated activity, blank/black frames, a screen recording, a stock/internet clip, or clearly staged. A messy but genuine real attempt MUST be approved.",
+    'Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, in the user goal\'s language>", "confidence": <0..1>}.',
+  ].filter(Boolean).join("\n");
+}
+async function judgeTimelapse(opts: { frames: string[]; goalText: string; proofSpec?: string }) {
+  const parts: any[] = [{ text: `Judge this timelapse of ${opts.frames.length} frames (in order). Reply with ONLY the JSON object.` }];
+  for (const f of opts.frames) { const img = parseImage(f); parts.push({ inline_data: { mime_type: img.mimeType, data: img.data } }); }
+  const data = await geminiCall({
+    system_instruction: { parts: [{ text: buildTimelapsePrompt(opts.goalText, opts.proofSpec) }] },
+    contents: [{ role: "user", parts }],
+    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
+  });
+  const p = parseJsonLoose(extractText(data));
+  if (!p) throw new Error("no parseable verdict");
+  return { approved: !!p.approved, reason: String(p.reason || (p.approved ? "Session confirmed." : "Not proven.")).slice(0, 200), confidence: typeof p.confidence === "number" ? p.confidence : (p.approved ? 0.8 : 0.3) };
+}
 async function judgePhoto(opts: { photo: string; goalText: string; proofSpec?: string; dailyReq?: string }) {
   const img = parseImage(opts.photo);
   const data = await geminiCall({
@@ -130,7 +152,11 @@ Deno.serve(async (req) => {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "bad_body" }, 400); }
-  const { goalId, photo, forceReject, peek } = body || {};
+  const { goalId, photo, frames, geo, forceReject, peek } = body || {};
+  const isTimelapse = Array.isArray(frames) && frames.length > 0;
+  const geoLat = geo && typeof geo.lat === "number" ? geo.lat : null;
+  const geoLng = geo && typeof geo.lng === "number" ? geo.lng : null;
+  const geoPlace = geo && geo.place ? String(geo.place).slice(0, 120) : null;
   if (!goalId) return json({ error: "missing_goal" }, 400);
 
   const authHeader = req.headers.get("Authorization") || "";
@@ -189,7 +215,7 @@ Deno.serve(async (req) => {
   }
 
   if (goal.status !== "active") return json({ error: "goal_not_active" }, 409);
-  if (!photo) return json({ error: "missing_photo" }, 400);
+  if (!photo && !isTimelapse) return json({ error: "missing_photo" }, 400);
   if (!scheduledToday) return json({ error: "not_scheduled_today" }, 409);
   if (done) return json({ error: "already_done_today" }, 409);
   if (weekDoneBefore) return json({ error: "week_done", quota }, 409);
@@ -199,21 +225,30 @@ Deno.serve(async (req) => {
   let verdict;
   if (forceReject) {
     verdict = { approved: false, reason: "Demo: forced reject.", confidence: 0.3 };
+  } else if (isTimelapse) {
+    try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: goal.proof_spec_en }); }
+    catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   } else {
     try { verdict = await judgePhoto({ photo, goalText: goal.text, proofSpec: goal.proof_spec_en, dailyReq: daily.en }); }
     catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   }
 
+  // Store the proof. For a timelapse we keep every frame under one folder and
+  // point photo_path at the first frame (the cover); a single photo is just one.
   let photoPath: string | null = null;
   try {
-    const m = /^data:([^;]+);base64,(.*)$/s.exec(String(photo));
-    if (m) {
+    const imgs: string[] = isTimelapse ? frames : (photo ? [photo] : []);
+    const folder = crypto.randomUUID();
+    for (let i = 0; i < imgs.length; i++) {
+      const m = /^data:([^;]+);base64,(.*)$/s.exec(String(imgs[i]));
+      if (!m) continue;
       const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
       const ext = (m[1].split("/")[1] || "jpg").replace("jpeg", "jpg");
-      photoPath = `${user.id}/${goalId}/${crypto.randomUUID()}.${ext}`;
-      await svc.storage.from("proofs").upload(photoPath, bytes, { contentType: m[1], upsert: false });
+      const path = `${user.id}/${goalId}/${folder}/${i}.${ext}`;
+      await svc.storage.from("proofs").upload(path, bytes, { contentType: m[1], upsert: false });
+      if (i === 0) photoPath = path;
     }
-  } catch (_) { photoPath = null; }
+  } catch (_) { /* keep whatever uploaded */ }
 
   const streakBefore = goal.streak || 0;
   let newStreak = streakBefore, newBest = goal.best_streak || 0, newStatus = goal.status, completedAt: string | null = null;
@@ -239,6 +274,7 @@ Deno.serve(async (req) => {
   const { data: sub } = await svc.from("submissions").insert({
     goal_id: goalId, user_id: user.id, day, status: verdict.approved ? "approved" : "rejected",
     reason: verdict.reason, confidence: verdict.confidence, photo_path: photoPath, streak_before: streakBefore,
+    lat: geoLat, lng: geoLng, place: geoPlace,
   }).select("id").single();
   await svc.from("goals").update({ streak: newStreak, best_streak: newBest, status: newStatus, completed_at: completedAt }).eq("id", goalId);
   if (newStatus === "completed") await svc.from("certs").insert({ user_id: user.id, goal_id: goalId, title: goal.text, days: newBest });

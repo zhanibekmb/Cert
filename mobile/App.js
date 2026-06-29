@@ -9,13 +9,15 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
   StyleSheet, Alert, RefreshControl, StatusBar, Image, Switch, Share, Modal, Platform,
-  Animated, PanResponder, Dimensions, Easing,
+  Animated, PanResponder, Dimensions, Easing, KeyboardAvoidingView,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
+import { CameraView, useCameraPermissions } from "expo-camera";
+import * as Location from "expo-location";
 import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import * as Sharing from "expo-sharing";
@@ -63,6 +65,24 @@ async function saveMyName(name) {
   } catch (_) { /* ignore */ }
 }
 
+/* Best-effort device location for geo-verified proofs. Returns {lat,lng,place}
+   or null — never blocks the proof (denied permission / timeout just skips geo). */
+async function getGeo() {
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") return null;
+    const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    let place = null;
+    try {
+      const g = await Location.reverseGeocodeAsync({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+      const a = g && g[0];
+      if (a) place = [a.name, a.city || a.subregion, a.country].filter(Boolean).slice(0, 2).join(", ");
+    } catch (_) { /* reverse-geocode optional */ }
+    return { lat: pos.coords.latitude, lng: pos.coords.longitude, place };
+  } catch (_) { return null; }
+}
+async function getGeoTimed() { return Promise.race([getGeo(), new Promise((r) => setTimeout(() => r(null), 6000))]); }
+
 /* Split a Date into a "YYYY-MM-DD" date and an "HH:MM" time (local). */
 function isoDateParts(d) {
   const pad = (n) => String(n).padStart(2, "0");
@@ -73,10 +93,14 @@ function isoDateParts(d) {
 export default function App() {
   const [session, setSession] = useState(null);
   const [booting, setBooting] = useState(true);
+  const [recovery, setRecovery] = useState(false); // came in via a password-reset link → set a new password
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setBooting(false); });
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      if (event === "PASSWORD_RECOVERY") setRecovery(true);
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -92,8 +116,11 @@ export default function App() {
         const code = parsed?.queryParams?.code;
         if (code && !isJoin) {
           const { error } = await supabase.auth.exchangeCodeForSession(String(code));
-          if (error) console.warn("Cert auth deep-link exchange failed:", error.message);
-          // onAuthStateChange flips to Main on success
+          if (error) { console.warn("Cert auth deep-link exchange failed:", error.message); return; }
+          // a reset link we initiated → prompt for a new password (set by forgotPassword)
+          const pending = await AsyncStorage.getItem("cert_recovery");
+          if (pending) { await AsyncStorage.removeItem("cert_recovery"); setRecovery(true); }
+          // otherwise onAuthStateChange flips to Main on success
         }
       } catch (_) { /* ignore malformed urls */ }
     };
@@ -107,6 +134,7 @@ export default function App() {
       <SafeAreaView style={s.safe} edges={["top"]}>
         <StatusBar barStyle="light-content" />
         {booting ? <Center><ActivityIndicator color={C.bronze} /></Center>
+          : (session && recovery) ? <SetNewPassword onDone={() => setRecovery(false)} />
           : session ? <Main session={session} /> : <Auth />}
       </SafeAreaView>
     </SafeAreaProvider>
@@ -200,6 +228,7 @@ function Auth() {
       setBusy(true); setInfo(null);
       const { error } = await supabase.auth.resetPasswordForEmail(mail, { redirectTo: Linking.createURL("/") });
       if (error) throw error;
+      await AsyncStorage.setItem("cert_recovery", "1"); // so the reset link prompts for a new password
       setInfo("Password reset link sent. Open it from your email on this phone.");
     } catch (e) {
       Alert.alert("Cert", e.message || "Could not send the reset email.");
@@ -210,7 +239,8 @@ function Auth() {
 
   const isSignup = mode === "signup";
   return (
-    <ScrollView contentContainerStyle={s.authWrap} keyboardShouldPersistTaps="handled">
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+    <ScrollView contentContainerStyle={s.authWrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive">
       <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
       <Text style={s.kickerRed}>[ the streak you can't fake ]</Text>
       <Text style={s.h1}>{isSignup ? "Create your\naccount" : "Welcome\nback"}</Text>
@@ -246,11 +276,46 @@ function Auth() {
         </Text>
       </TouchableOpacity>
 
-      {/* Demo: enter without logging in (anonymous session) */}
-      <TouchableOpacity style={s.skipBtn} onPress={enterDemo} disabled={busy}>
-        <Text style={s.skipText}>{busy ? "…" : "Enter demo (no login) →"}</Text>
-      </TouchableOpacity>
+      {/* Demo entry — dev builds only, never ships to users */}
+      {__DEV__ ? (
+        <TouchableOpacity style={s.skipBtn} onPress={enterDemo} disabled={busy}>
+          <Text style={s.skipText}>{busy ? "…" : "Enter demo (no login) →"}</Text>
+        </TouchableOpacity>
+      ) : null}
     </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+/* ---------- SET NEW PASSWORD (after a reset link) ---------- */
+function SetNewPassword({ onDone }) {
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function save() {
+    if (password.length < 6) return Alert.alert("Cert", "Password must be at least 6 characters.");
+    try {
+      setBusy(true);
+      const { error } = await supabase.auth.updateUser({ password });
+      if (error) throw error;
+      Alert.alert("Cert", "Password updated.", [{ text: "OK", onPress: onDone }]);
+    } catch (e) { Alert.alert("Cert", e.message || "Could not update password."); }
+    finally { setBusy(false); }
+  }
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView contentContainerStyle={s.authWrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+        <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
+        <Text style={s.h1}>Set a new{"\n"}password</Text>
+        <Text style={s.lede}>Choose a new password for your account.</Text>
+        <View style={s.card}>
+          <Text style={s.label}>New password</Text>
+          <TextInput style={s.input} placeholder="••••••••" placeholderTextColor={C.faint}
+            secureTextEntry autoCapitalize="none" autoCorrect={false} value={password} onChangeText={setPassword} />
+          <Btn label={busy ? "…" : "Save password →"} onPress={save} disabled={busy} />
+        </View>
+        <TouchableOpacity onPress={onDone}><Text style={s.switchAuth}>Skip for now</Text></TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -266,6 +331,7 @@ function Main({ session }) {
   const [activeBadge, setActiveBadge] = useState(null);
   const [activePlacement, setActivePlacement] = useState(null);
   const [activeChallenge, setActiveChallenge] = useState(null);
+  const [activeReelGoal, setActiveReelGoal] = useState(null); // goal whose timelapse reel is open
   const [submitReturn, setSubmitReturn] = useState(null); // overlay to return to after Submit
   const [joinCode, setJoinCode] = useState(""); // prefilled from an invite link
   const [refreshing, setRefreshing] = useState(false);
@@ -290,7 +356,7 @@ function Main({ session }) {
     const [gRes, cRes, sRes] = await Promise.all([
       supabase.from("goals").select("*").order("created_at", { ascending: true }),
       supabase.from("certs").select("*").order("issued_at", { ascending: false }),
-      supabase.from("submissions").select("day,status").order("day", { ascending: true }),
+      supabase.from("submissions").select("goal_id,day,status").order("day", { ascending: true }),
     ]);
     if (gRes.error) Alert.alert("Cert", gRes.error.message);
     setGoals(gRes.data || []);
@@ -311,6 +377,7 @@ function Main({ session }) {
 
   const openCert = (c) => { setActiveCert(c); setScreen("cert"); };
   const openBadge = (b) => { setActiveBadge(b); setScreen("badge"); };
+  const openReel = (g) => { setActiveReelGoal(g); setScreen("reel"); };
 
   // ----- overlay screens (full screen, own back + swipe-from-left to go back) -----
   if (screen === "new") { const back = () => setScreen(null); return <SwipeBack onBack={back}><NewGoal session={session} onDone={async () => { await load(); setScreen(null); }} onBack={back} /></SwipeBack>; }
@@ -323,6 +390,7 @@ function Main({ session }) {
   if (screen === "settings") { const back = () => setScreen(null); return <SwipeBack onBack={back}><SettingsScreen session={session} onBack={back} /></SwipeBack>; }
   if (screen === "cert" && activeCert) { const back = () => setScreen(null); return <SwipeBack onBack={back}><ShareScreen kind="cert" days={activeCert.days} title={activeCert.title} subtitle={activeCert.issued_at ? "Earned " + new Date(activeCert.issued_at).toLocaleDateString() : null} onBack={back} /></SwipeBack>; }
   if (screen === "badge" && activeBadge) { const back = () => setScreen(null); return <SwipeBack onBack={back}><ShareScreen kind="milestone" days={activeBadge.days} title={activeBadge.title} onBack={back} /></SwipeBack>; }
+  if (screen === "reel" && activeReelGoal) { const back = () => setScreen(null); return <SwipeBack onBack={back}><Reel goal={activeReelGoal} onBack={back} /></SwipeBack>; }
 
   // ----- tab shell (horizontal swipe switches tabs) -----
   const TAB_ORDER = ["home", "challenges", "stats", "profile"];
@@ -338,8 +406,8 @@ function Main({ session }) {
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ flex: 1 }} {...tabSwipe.panHandlers}>
         {tab === "home" && (
-          <HomeTab goals={goals} certs={certs} refreshing={refreshing} onRefresh={onRefresh}
-            onNew={() => setScreen("new")} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} />
+          <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
+            onNew={() => setScreen("new")} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} />
         )}
         {tab === "challenges" && (
           <ChallengesScreen onOpen={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }}
@@ -376,8 +444,13 @@ function TabBar({ tab, setTab }) {
   );
 }
 
-function HomeTab({ goals, certs, refreshing, onRefresh, onNew, onSubmit, onOpenCert }) {
+function HomeTab({ goals, certs, subs, refreshing, onRefresh, onNew, onSubmit, onOpenCert, onReel }) {
+  const [showDone, setShowDone] = useState(false);
   const myGoals = (goals || []).filter((g) => !g.challenge_id); // challenge goals live under Versus
+  const activeGoals = myGoals.filter((g) => g.status !== "completed");
+  const doneGoals = myGoals.filter((g) => g.status === "completed");
+  const subsByGoal = {};
+  for (const x of subs || []) { (subsByGoal[x.goal_id] = subsByGoal[x.goal_id] || []).push(x); }
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
@@ -414,11 +487,25 @@ function HomeTab({ goals, certs, refreshing, onRefresh, onNew, onSubmit, onOpenC
         </View>
       ) : (
         <>
-          {myGoals.map((g) => (
-            <GoalCard key={g.id} goal={g} onSubmit={() => onSubmit(g)}
+          {activeGoals.map((g) => (
+            <GoalCard key={g.id} goal={g} subs={subsByGoal[g.id] || []} onSubmit={() => onSubmit(g)} onReel={() => onReel(g)}
               onOpenCert={() => { const c = certs.find((x) => x.goal_id === g.id); if (c) onOpenCert(c); }} />
           ))}
           <BtnGhost label="+ Add a goal" onPress={onNew} />
+          {doneGoals.length > 0 ? (
+            <>
+              <TouchableOpacity onPress={() => setShowDone((v) => !v)} activeOpacity={0.7}
+                style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 22, paddingVertical: 6 }}>
+                <Ionicons name="checkmark-done-outline" size={16} color={C.mute} />
+                <Text style={[s.kicker, { flex: 1 }]}>Completed · {doneGoals.length}</Text>
+                <Ionicons name={showDone ? "chevron-up" : "chevron-down"} size={18} color={C.mute} />
+              </TouchableOpacity>
+              {showDone ? doneGoals.map((g) => (
+                <GoalCard key={g.id} goal={g} subs={subsByGoal[g.id] || []} onSubmit={() => onSubmit(g)} onReel={() => onReel(g)}
+                  onOpenCert={() => { const c = certs.find((x) => x.goal_id === g.id); if (c) onOpenCert(c); }} />
+              )) : null}
+            </>
+          ) : null}
         </>
       )}
     </ScrollView>
@@ -561,9 +648,11 @@ function goalCadence(goal) {
   const dur = goal.format === "daily" && goal.duration_days ? ` · ${goal.duration_days}d goal` : "";
   return goal.daily_deadline ? `${freq}${dur} · by ${goal.daily_deadline}` : `${freq}${dur}`;
 }
-function GoalCard({ goal, onSubmit, onOpenCert }) {
+function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel }) {
   const completed = goal.status === "completed";
   const isWeekly = goal.type === "recurring" && (goal.format === "3x" || goal.format === "5x" || goal.format === "custom");
+  const isRecurring = goal.type === "recurring";
+  const verifiedCount = (subs || []).filter((x) => x.status === "approved" || x.status === "frozen").length;
   return (
     <View style={s.card}>
       <Text style={s.streakNum}>{goal.streak}</Text>
@@ -571,10 +660,110 @@ function GoalCard({ goal, onSubmit, onOpenCert }) {
       <Text style={s.goalText}>{goal.text}</Text>
       <Text style={[s.spec, { color: C.mute }]}>{goalCadence(goal)}</Text>
       {goal.proof_spec_en ? <Text style={s.spec}>📸 {goal.proof_spec_en}</Text> : null}
+      {isRecurring ? <StreakCalendar subs={subs} /> : null}
+      {isRecurring && !completed ? <MilestoneBar streak={goal.streak || 0} /> : null}
       {completed
         ? <TouchableOpacity onPress={onOpenCert}><Text style={[s.kicker, { color: C.bronze, marginTop: 12 }]}>🏆 Completed — view & share Cert ›</Text></TouchableOpacity>
         : <Btn label="📷 Submit today's proof" onPress={onSubmit} />}
+      {verifiedCount >= 2 ? <BtnGhost label={`🎬 Progress reel · ${verifiedCount} days`} onPress={onReel} /> : null}
     </View>
+  );
+}
+
+/* Last 5 weeks of verified days as a grid (recent streak at a glance). */
+function StreakCalendar({ subs }) {
+  const done = new Set((subs || []).filter((x) => x.status === "approved" || x.status === "frozen").map((x) => x.day));
+  const today = new Date();
+  const cells = [];
+  for (let i = 34; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); cells.push({ key: isoDateParts(d).date, on: done.has(isoDateParts(d).date), isToday: i === 0 }); }
+  return (
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, width: 7 * 18, marginTop: 14 }}>
+      {cells.map((c) => (
+        <View key={c.key} style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: c.on ? C.green : "#1c1822", borderWidth: c.isToday ? 1.5 : 0, borderColor: C.bronze }} />
+      ))}
+    </View>
+  );
+}
+
+/* Progress bar to the next milestone badge (7 / 30 / 100 verified days). */
+function MilestoneBar({ streak }) {
+  const next = MILESTONES.find((m) => m > streak);
+  if (!next) return <Text style={[s.note, { marginTop: 12 }]}>🏆 Legend — past {MILESTONES[MILESTONES.length - 1]} days</Text>;
+  const left = next - streak;
+  const pct = Math.max(0.02, Math.min(1, streak / next));
+  return (
+    <View style={{ marginTop: 14 }}>
+      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
+        <Text style={s.note}>{left} day{left === 1 ? "" : "s"} to your {next}-day badge</Text>
+        <Text style={s.note}>{streak}/{next}</Text>
+      </View>
+      <View style={{ height: 6, borderRadius: 3, backgroundColor: "#1c1822", overflow: "hidden" }}>
+        <View style={{ height: 6, width: (pct * 100) + "%", backgroundColor: C.bronze }} />
+      </View>
+    </View>
+  );
+}
+
+/* ---------- TIMELAPSE REEL (flip-through of a goal's verified proofs) ---------- */
+function Reel({ goal, onBack }) {
+  const [photos, setPhotos] = useState(null); // null=loading · []=none · [{day,url}]
+  const [idx, setIdx] = useState(0);
+  const [playing, setPlaying] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.from("submissions").select("day,photo_path,status")
+        .eq("goal_id", goal.id).in("status", ["approved", "frozen"]).order("day", { ascending: true });
+      const rows = (data || []).filter((r) => r.photo_path);
+      const out = [];
+      for (const r of rows) {
+        const { data: signed } = await supabase.storage.from("proofs").createSignedUrl(r.photo_path, 3600);
+        if (signed?.signedUrl) out.push({ day: r.day, url: signed.signedUrl });
+      }
+      if (alive) { setPhotos(out); setIdx(0); }
+    })();
+    return () => { alive = false; };
+  }, [goal.id]);
+  useEffect(() => {
+    if (!playing || !photos || photos.length < 2) return;
+    const t = setInterval(() => setIdx((i) => (i + 1) % photos.length), 650);
+    return () => clearInterval(t);
+  }, [playing, photos]);
+  async function share() {
+    try { await Share.share({ message: `My Cert timelapse — "${goal.text}": ${(photos || []).length} days, each one verified by AI. The streak you can't fake.` }); } catch (_) { /* */ }
+  }
+  if (photos === null) return <Center><ActivityIndicator color={C.bronze} /></Center>;
+  const cur = photos[idx];
+  return (
+    <ScrollView contentContainerStyle={s.wrap}>
+      <BackBar onBack={onBack} />
+      <Text style={s.h2}>Progress reel</Text>
+      <Text style={s.lede} numberOfLines={2}>{goal.text}</Text>
+      {photos.length === 0 ? (
+        <View style={[s.card, { alignItems: "center", marginTop: 16 }]}>
+          <Text style={s.h2}>No reel yet</Text>
+          <Text style={[s.lede, { textAlign: "center" }]}>Verify a few days with photos and your timelapse builds itself.</Text>
+        </View>
+      ) : (
+        <>
+          <TouchableOpacity activeOpacity={0.95} onPress={() => setPlaying((p) => !p)}>
+            <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} resizeMode="cover" />
+          </TouchableOpacity>
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: "#1c1822", overflow: "hidden", marginTop: 12 }}>
+            <View style={{ height: 4, width: ((idx + 1) / photos.length * 100) + "%", backgroundColor: C.red }} />
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
+            <Text style={s.note}>Day {idx + 1} / {photos.length}</Text>
+            <Text style={s.note}>{cur.day}</Text>
+          </View>
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
+            <View style={{ flex: 1 }}><BtnGhost label={playing ? "⏸ Pause" : "▶ Play"} onPress={() => setPlaying((p) => !p)} /></View>
+            <View style={{ flex: 1 }}><Btn label="Share" onPress={share} /></View>
+          </View>
+          <Text style={[s.note, { textAlign: "center", marginTop: 14 }]}>Save as a video file — coming with the app build.</Text>
+        </>
+      )}
+    </ScrollView>
   );
 }
 
@@ -588,6 +777,7 @@ function NewGoal({ session, onDone, onBack }) {
   const [duration, setDuration] = useState(null);   // null=ongoing, or 7/30/100 (daily only)
   const [deadline, setDeadline] = useState(null);  // "HH:MM" or null
   const [oneTimeDeadline, setOneTimeDeadline] = useState(null); // Date|null, for one_time goals
+  const [proofType, setProofType] = useState("photo"); // 'photo' | 'timelapse'
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
 
@@ -615,6 +805,7 @@ function NewGoal({ session, onDone, onBack }) {
         duration_days: recurring && format === "daily" ? duration : null,
         deadline: ot ? ot.date : null,            // one_time: deadline date
         daily_deadline: recurring ? deadline : (ot ? ot.time : null), // recurring: time-of-day · one_time: deadline time
+        proof_type: proofType,                    // 'photo' | 'timelapse'
         proof_spec_en: spec.en,
         proof_spec_ru: spec.ru,
       });
@@ -626,13 +817,20 @@ function NewGoal({ session, onDone, onBack }) {
   }
 
   return (
-    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <BackBar onBack={onBack} />
       <Text style={s.h2}>What will you prove?</Text>
       <Text style={s.lede}>Write it in your own words. The AI judge reads exactly this.</Text>
       <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done"
         placeholder="e.g. Wake up and send a photo, or gym 45 min" placeholderTextColor={C.faint}
         value={text} onChangeText={(t) => setText(t.replace(/\n/g, " "))} />
+
+      <Text style={[s.label, { marginTop: 14 }]}>How do you prove it?</Text>
+      <View style={s.rowGap}>
+        <Pill label="📷 Quick photo" active={proofType === "photo"} onPress={() => setProofType("photo")} />
+        <Pill label="🎥 Timelapse" active={proofType === "timelapse"} onPress={() => setProofType("timelapse")} />
+      </View>
+      <Text style={s.note}>{proofType === "timelapse" ? "Record your session — the app captures frames over time and the AI judges the whole thing. Much harder to fake." : "Snap one photo. Fast, good for things a single shot can prove."}</Text>
 
       <Text style={[s.label, { marginTop: 14 }]}>Type</Text>
       <View style={s.rowGap}>
@@ -693,8 +891,96 @@ function NewGoal({ session, onDone, onBack }) {
   );
 }
 
+/* ---------- TIMELAPSE CAPTURE (snaps frames over the session for the AI) ---------- */
+const TL_INTERVAL_MS = 3500;  // a frame every ~3.5s
+const TL_MAX_FRAMES = 12;     // hard cap — recording auto-stops here (bounds AI cost + payload)
+const TL_MIN_FRAMES = 3;      // enough to show it is a real session
+function TimelapseCapture({ onCancel, onDone }) {
+  const [perm, requestPerm] = useCameraPermissions();
+  const camRef = useRef(null);
+  const [recording, setRecording] = useState(false);
+  const [frames, setFrames] = useState([]);
+  const timer = useRef(null);
+  const countRef = useRef(0);
+  const stopRef = useRef(() => {});
+
+  useEffect(() => { if (perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [perm]);
+  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
+
+  async function snap() {
+    try {
+      const p = await camRef.current?.takePictureAsync({ base64: true, quality: 0.3, skipProcessing: true, imageType: "jpg" });
+      if (p?.base64) setFrames((f) => (f.length >= TL_MAX_FRAMES ? f : [...f, `data:image/jpeg;base64,${p.base64}`]));
+    } catch (_) { /* skip a dropped frame */ }
+  }
+  function stop() {
+    if (timer.current) { clearInterval(timer.current); timer.current = null; }
+    setRecording(false);
+  }
+  stopRef.current = stop;
+  function start() {
+    setFrames([]); countRef.current = 0; setRecording(true);
+    const tick = async () => {
+      if (countRef.current >= TL_MAX_FRAMES) { stopRef.current(); return; }
+      countRef.current += 1;
+      await snap();
+    };
+    tick();
+    timer.current = setInterval(tick, TL_INTERVAL_MS);
+  }
+
+  if (!perm) return <Center><ActivityIndicator color={C.bronze} /></Center>;
+  if (!perm.granted) {
+    return (
+      <View style={[s.wrap, { flex: 1, justifyContent: "center" }]}>
+        <Text style={s.h2}>Camera needed</Text>
+        <Text style={s.lede}>Cert needs the camera to record your timelapse proof.</Text>
+        <Btn label="Grant camera access" onPress={requestPerm} />
+        <BtnGhost label="Back" onPress={onCancel} />
+      </View>
+    );
+  }
+  return (
+    <View style={{ flex: 1, backgroundColor: "#000" }}>
+      <CameraView ref={camRef} style={{ flex: 1 }} facing="back" />
+      {/* overlay */}
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 18, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>✕</Text>
+        </TouchableOpacity>
+        {recording ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(0,0,0,.5)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
+            <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.red }} />
+            <Text style={{ color: "#fff", fontFamily: "System", fontSize: 13, fontWeight: "700" }}>REC · {frames.length}/{TL_MAX_FRAMES}</Text>
+          </View>
+        ) : <Text style={{ color: "#fff", fontSize: 12 }}>{frames.length > 0 ? `${frames.length} frames` : ""}</Text>}
+      </View>
+      <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 38, backgroundColor: "rgba(0,0,0,.45)" }}>
+        {!recording && frames.length === 0 ? (
+          <>
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>Prop your phone or hold it steady. Tap record while you do the activity — a frame every few seconds, up to {TL_MAX_FRAMES} (then it stops automatically).</Text>
+            <Btn label="● Start recording" onPress={start} />
+          </>
+        ) : recording ? (
+          <Btn label={`■ Stop (${frames.length} frame${frames.length === 1 ? "" : "s"})`} onPress={stop} />
+        ) : (
+          <>
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{frames.length} frames captured.{frames.length < TL_MIN_FRAMES ? ` Record at least ${TL_MIN_FRAMES}.` : ""}</Text>
+            {frames.length >= TL_MIN_FRAMES
+              ? <Btn label="Send to the judge →" onPress={() => onDone(frames)} />
+              : <Btn label="● Record again" onPress={start} />}
+            <BtnGhost label="Retake" onPress={start} />
+          </>
+        )}
+      </View>
+    </View>
+  );
+}
+
 /* ---------- SUBMIT (camera -> judge) ---------- */
 function Submit({ goal, onDone, onBack, onViewBadge }) {
+  const isTimelapse = goal.proof_type === "timelapse";
+  const [capturing, setCapturing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState("idle"); // idle | judging
   const [todaysCheck, setTodaysCheck] = useState(null); // server is source of truth
@@ -743,10 +1029,20 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     const a = res.assets[0];
     const mime = a.mimeType || "image/jpeg";
     const photo = `data:${mime};base64,${a.base64}`;
+    await runJudge({ photo });
+  }
 
+  function onTimelapseFrames(frames) {
+    setCapturing(false);
+    if (frames && frames.length) runJudge({ frames });
+  }
+
+  async function runJudge(payload) {
     setBusy(true); setStage("judging"); setReject(null);
     try {
-      const { data, error } = await supabase.functions.invoke("judge", { body: { goalId: goal.id, photo } });
+      const geo = await getGeoTimed();
+      const geoPlace = geo && geo.place ? geo.place : null;
+      const { data, error } = await supabase.functions.invoke("judge", { body: { goalId: goal.id, geo, ...payload } });
       if (error) throw error;
       if (data?.busy) { Alert.alert("Cert", "The judge is busy — try again in a moment."); return; }
       if (data?.error) {
@@ -774,7 +1070,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
             ]
           );
         } else {
-          Alert.alert("✅ APPROVED", (v.reason || "") + (data.completed ? "\n\n🏆 Goal complete — Cert earned!" : ""), [{ text: "OK", onPress: onDone }]);
+          Alert.alert("✅ APPROVED", (v.reason || "") + (geoPlace ? "\n📍 " + geoPlace : "") + (data.completed ? "\n\n🏆 Goal complete — Cert earned!" : ""), [{ text: "OK", onPress: onDone }]);
         }
       } else {
         // Let them retry while attempts remain; the appeal flow opens only once
@@ -807,23 +1103,32 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     } finally { setAppealBusy(false); }
   }
 
+  if (capturing) return <TimelapseCapture onCancel={() => setCapturing(false)} onDone={onTimelapseFrames} />;
+
   return (
     <ScrollView contentContainerStyle={s.wrap}>
       <BackBar onBack={onBack} />
       <Text style={s.h2}>Submit proof</Text>
       <View style={s.card}>
-        <Text style={[s.kicker, { color: C.bronze }]}>📸 Send a photo like this</Text>
+        <Text style={[s.kicker, { color: C.bronze }]}>{isTimelapse ? "🎥 Record a timelapse of this" : "📸 Send a photo like this"}</Text>
         <Text style={s.goalText}>{goal.proof_spec_en || goal.text}</Text>
       </View>
-      <View style={[s.card, { borderColor: C.red }]}>
-        <Text style={[s.kicker, { color: C.red }]}>🔒 Today's anti-cheat check</Text>
-        {checkState === "ok"
-          ? <Text style={s.goalText}>{todaysCheck}</Text>
-          : checkState === "loading"
-            ? <ActivityIndicator color={C.red} style={{ marginTop: 8, alignSelf: "flex-start" }} />
-            : <TouchableOpacity onPress={loadCheck}><Text style={[s.goalText, { color: C.red }]}>Couldn't load — tap to retry</Text></TouchableOpacity>}
-        <Text style={s.note}>Changes every day so an old photo can't be reused. Include it in the same shot.</Text>
-      </View>
+      {isTimelapse ? (
+        <View style={[s.card, { borderColor: C.red }]}>
+          <Text style={[s.kicker, { color: C.red }]}>🔒 Why a timelapse</Text>
+          <Text style={s.note}>The app captures frames over your session, so the AI sees the activity actually happen. A single propped photo won't pass.</Text>
+        </View>
+      ) : (
+        <View style={[s.card, { borderColor: C.red }]}>
+          <Text style={[s.kicker, { color: C.red }]}>🔒 Today's anti-cheat check</Text>
+          {checkState === "ok"
+            ? <Text style={s.goalText}>{todaysCheck}</Text>
+            : checkState === "loading"
+              ? <ActivityIndicator color={C.red} style={{ marginTop: 8, alignSelf: "flex-start" }} />
+              : <TouchableOpacity onPress={loadCheck}><Text style={[s.goalText, { color: C.red }]}>Couldn't load — tap to retry</Text></TouchableOpacity>}
+          <Text style={s.note}>Changes every day so an old photo can't be reused. Include it in the same shot.</Text>
+        </View>
+      )}
       {deadline ? (
         <View style={[s.card, { borderColor: late ? C.red : C.green, paddingVertical: 12 }]}>
           <Text style={[s.kicker, { color: late ? C.red : C.green }]}>⏰ {late ? `Past today's deadline (${deadline})` : `Submit before ${deadline} today`}</Text>
@@ -833,7 +1138,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       {stage === "judging" ? (
         <View style={{ alignItems: "center", marginTop: 24 }}>
           <ActivityIndicator color={C.red} />
-          <Text style={[s.note, { marginTop: 10 }]}>The judge is analyzing your photo…</Text>
+          <Text style={[s.note, { marginTop: 10 }]}>{isTimelapse ? "The judge is analyzing your timelapse…" : "The judge is analyzing your photo…"}</Text>
         </View>
       ) : reject && reject.attemptsLeft === 0 ? (
         // Attempts used up today — now the appeal is the way out.
@@ -876,8 +1181,14 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
                 : null}
             </View>
           ) : null}
-          <Btn label={reject ? "📷 Retake photo" : "📷 Take a photo"} onPress={() => takeAndJudge(false)} disabled={busy || checkState !== "ok"} />
-          <BtnGhost label="📁 Choose from gallery" onPress={() => takeAndJudge(true)} disabled={busy || checkState !== "ok"} />
+          {isTimelapse ? (
+            <Btn label={reject ? "🎥 Record again" : "🎥 Record timelapse"} onPress={() => setCapturing(true)} disabled={busy || checkState !== "ok"} />
+          ) : (
+            <>
+              <Btn label={reject ? "📷 Retake photo" : "📷 Take a photo"} onPress={() => takeAndJudge(false)} disabled={busy || checkState !== "ok"} />
+              <BtnGhost label="📁 Choose from gallery" onPress={() => takeAndJudge(true)} disabled={busy || checkState !== "ok"} />
+            </>
+          )}
         </>
       )}
     </ScrollView>
@@ -1235,7 +1546,7 @@ function CreateChallenge({ onCreated, onBack }) {
     finally { setBusy(false); }
   }
   return (
-    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <BackBar onBack={onBack} />
       <Text style={s.h2}>Create a challenge</Text>
       {hasProfileName
@@ -1311,7 +1622,7 @@ function JoinChallenge({ onJoined, onBack, initialCode }) {
     finally { setBusy(false); }
   }
   return (
-    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <BackBar onBack={onBack} />
       <Text style={s.h2}>Join a challenge</Text>
       <Text style={s.label}>Challenge code</Text>
