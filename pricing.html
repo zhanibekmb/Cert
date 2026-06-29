@@ -202,5 +202,11 @@ function toggleFaq(i) { faqOpen = (faqOpen === i ? null : i); render(); }
 render();
 CertPrice.load(render); // re-render with local currency once geo resolves
 </script>
+
+<!-- Vercel Web Analytics -->
+<script>
+  window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+</script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
