@@ -1,6 +1,6 @@
 // =====================================================================
 // CERT — mobile app (Expo / React Native). Talks to Supabase:
-//   - auth (email one-time code; Google comes later)
+//   - auth: email + password (sign up / sign in) or Google OAuth (PKCE)
 //   - goals + streak in Postgres (RLS-scoped)
 //   - photo proof -> "judge" Edge Function (Gemini) -> verdict
 // Single-file app for v1; we'll split into screens as it grows.
@@ -9,8 +9,9 @@ import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
   StyleSheet, Alert, RefreshControl, StatusBar, Image, Switch, Share, Modal, Platform,
-  Animated, PanResponder, Dimensions,
+  Animated, PanResponder, Dimensions, Easing,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -38,6 +39,36 @@ const MILESTONES = [7, 30, 100];
 /* Gladiator brand mark (transparent PNG). */
 const LOGO = require("./assets/gladiator-logo.png");
 
+/* Display name: set once in the profile, reused on every leaderboard. Cached so
+   challenge screens don't re-query (and so a profile edit reflects immediately). */
+let _cachedName = null;
+async function loadMyName() {
+  if (_cachedName) return _cachedName;
+  try {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u?.user?.id; if (!uid) return null;
+    const { data } = await supabase.from("profiles").select("name").eq("id", uid).maybeSingle();
+    _cachedName = data?.name?.trim() || null;
+    return _cachedName;
+  } catch (_) { return null; }
+}
+async function saveMyName(name) {
+  const clean = String(name || "").trim();
+  if (!clean) return;
+  try {
+    const { data: u } = await supabase.auth.getUser();
+    const uid = u?.user?.id; if (!uid) return;
+    await supabase.from("profiles").update({ name: clean }).eq("id", uid);
+    _cachedName = clean;
+  } catch (_) { /* ignore */ }
+}
+
+/* Split a Date into a "YYYY-MM-DD" date and an "HH:MM" time (local). */
+function isoDateParts(d) {
+  const pad = (n) => String(n).padStart(2, "0");
+  return { date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`, time: `${pad(d.getHours())}:${pad(d.getMinutes())}` };
+}
+
 /* ===================================================================== */
 export default function App() {
   const [session, setSession] = useState(null);
@@ -47,6 +78,28 @@ export default function App() {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setBooting(false); });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setSession(s));
     return () => sub.subscription.unsubscribe();
+  }, []);
+
+  // Auth deep links: email-confirmation and password-reset links open the app
+  // as cert://?code=<pkce_code>. Exchange it for a session. Challenge invites
+  // (cert://join?code=...) are handled in Main and skipped here.
+  useEffect(() => {
+    const handleAuthUrl = async (url) => {
+      if (!url) return;
+      try {
+        const parsed = Linking.parse(url);
+        const isJoin = /(^|\/)join/.test(parsed?.path || "") || parsed?.hostname === "join";
+        const code = parsed?.queryParams?.code;
+        if (code && !isJoin) {
+          const { error } = await supabase.auth.exchangeCodeForSession(String(code));
+          if (error) console.warn("Cert auth deep-link exchange failed:", error.message);
+          // onAuthStateChange flips to Main on success
+        }
+      } catch (_) { /* ignore malformed urls */ }
+    };
+    Linking.getInitialURL().then(handleAuthUrl);
+    const sub = Linking.addEventListener("url", (e) => handleAuthUrl(e.url));
+    return () => sub.remove();
   }, []);
 
   return (
@@ -60,16 +113,21 @@ export default function App() {
   );
 }
 
-/* ---------- AUTH: email one-time code ---------- */
-function Auth() {
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [stage, setStage] = useState("email"); // email | code
-  const [busy, setBusy] = useState(false);
+/* ---------- AUTH: email + password, or Google ---------- */
+const emailOk = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-  async function skipForNow() {
+function Auth() {
+  const [mode, setMode] = useState("signin"); // signin | signup
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [info, setInfo] = useState(null); // success/info banner (e.g. "confirm your email")
+
+  // Demo entry: real (anonymous) session, no email/password needed.
+  // Requires Supabase → Authentication → Providers → Anonymous = enabled.
+  async function enterDemo() {
     try {
-      setBusy(true);
+      setBusy(true); setInfo(null);
       const { error } = await supabase.auth.signInAnonymously();
       if (error) throw error;
       // onAuthStateChange flips to Main
@@ -82,21 +140,22 @@ function Auth() {
 
   async function signInWithGoogle() {
     try {
-      setBusy(true);
+      setBusy(true); setInfo(null);
       const redirectTo = Linking.createURL("/");
-      console.log("Cert redirect URL (add this to Supabase → Redirect URLs):", redirectTo);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo, skipBrowserRedirect: true },
       });
       if (error) throw error;
       const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-      if (result.type !== "success") return;
-      const code = Linking.parse(result.url)?.queryParams?.code;
-      if (code) {
-        const { error: e2 } = await supabase.auth.exchangeCodeForSession(String(code));
-        if (e2) throw e2;
-      }
+      if (result.type === "cancel" || result.type === "dismiss") return; // user closed the sheet
+      if (result.type !== "success") throw new Error("Google sign-in didn't complete. Please try again.");
+      const params = Linking.parse(result.url)?.queryParams || {};
+      if (params.error) throw new Error(String(params.error_description || params.error));
+      if (!params.code) throw new Error("No auth code returned from Google.");
+      const { error: e2 } = await supabase.auth.exchangeCodeForSession(String(params.code));
+      if (e2) throw e2;
+      // onAuthStateChange flips to Main
     } catch (e) {
       Alert.alert("Cert", e.message || "Google sign-in failed.");
     } finally {
@@ -104,57 +163,93 @@ function Auth() {
     }
   }
 
-  async function sendCode() {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Alert.alert("Cert", "Enter a valid email.");
-    setBusy(true);
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim() });
-    setBusy(false);
-    if (error) return Alert.alert("Cert", error.message);
-    setStage("code");
-  }
-  async function verify() {
-    setBusy(true);
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: "email" });
-    setBusy(false);
-    if (error) return Alert.alert("Cert", error.message);
-    // onAuthStateChange will flip to Main
+  async function submitEmail() {
+    const mail = email.trim();
+    if (!emailOk(mail)) return Alert.alert("Cert", "Enter a valid email address.");
+    if (password.length < 6) return Alert.alert("Cert", "Password must be at least 6 characters.");
+    try {
+      setBusy(true); setInfo(null);
+      if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
+          email: mail, password,
+          options: { emailRedirectTo: Linking.createURL("/") },
+        });
+        if (error) throw error;
+        // If "Confirm email" is on in Supabase, there's no session yet.
+        if (!data.session) {
+          setInfo("Account created. Check your email to confirm, then sign in.");
+          setMode("signin"); setPassword("");
+        }
+        // else onAuthStateChange flips to Main
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email: mail, password });
+        if (error) throw error;
+        // onAuthStateChange flips to Main
+      }
+    } catch (e) {
+      Alert.alert("Cert", e.message || "Something went wrong.");
+    } finally {
+      setBusy(false);
+    }
   }
 
+  async function forgotPassword() {
+    const mail = email.trim();
+    if (!emailOk(mail)) return Alert.alert("Cert", "Type your email above first, then tap “Forgot password”.");
+    try {
+      setBusy(true); setInfo(null);
+      const { error } = await supabase.auth.resetPasswordForEmail(mail, { redirectTo: Linking.createURL("/") });
+      if (error) throw error;
+      setInfo("Password reset link sent. Open it from your email on this phone.");
+    } catch (e) {
+      Alert.alert("Cert", e.message || "Could not send the reset email.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const isSignup = mode === "signup";
   return (
     <ScrollView contentContainerStyle={s.authWrap} keyboardShouldPersistTaps="handled">
       <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
       <Text style={s.kickerRed}>[ the streak you can't fake ]</Text>
-      <Text style={s.h1}>Start your{"\n"}streak</Text>
+      <Text style={s.h1}>{isSignup ? "Create your\naccount" : "Welcome\nback"}</Text>
       <Text style={s.lede}>One goal. A daily photo. An honest AI judge.</Text>
 
       <TouchableOpacity style={s.googleBtn} onPress={signInWithGoogle} disabled={busy}>
+        <Ionicons name="logo-google" size={18} color="#1f1f1f" style={{ marginRight: 9 }} />
         <Text style={s.googleText}>{busy ? "…" : "Continue with Google"}</Text>
-      </TouchableOpacity>
-
-      {/* DEV: skip login, work on the MVP with a real (anonymous) session */}
-      <TouchableOpacity style={s.skipBtn} onPress={skipForNow} disabled={busy}>
-        <Text style={s.skipText}>{busy ? "…" : "Skip for now (dev) →"}</Text>
       </TouchableOpacity>
 
       <Text style={s.orText}>— or with email —</Text>
 
-      {stage === "email" ? (
-        <View style={s.card}>
-          <Text style={s.label}>Email</Text>
-          <TextInput style={s.input} placeholder="you@email.com" placeholderTextColor={C.faint}
-            autoCapitalize="none" keyboardType="email-address" value={email} onChangeText={setEmail} />
-          <Btn label={busy ? "Sending…" : "Send code →"} onPress={sendCode} disabled={busy} />
-          <Text style={s.note}>We'll email you a 6-digit code. No password.</Text>
-        </View>
-      ) : (
-        <View style={s.card}>
-          <Text style={s.label}>Code from your email</Text>
-          <TextInput style={s.input} placeholder="123456" placeholderTextColor={C.faint}
-            keyboardType="number-pad" value={code} onChangeText={setCode} />
-          <Btn label={busy ? "Checking…" : "Verify & enter →"} onPress={verify} disabled={busy} />
-          <TouchableOpacity onPress={() => setStage("email")}><Text style={s.note}>← change email</Text></TouchableOpacity>
-        </View>
-      )}
+      {info ? <Text style={s.infoBanner}>{info}</Text> : null}
+
+      <View style={s.card}>
+        <Text style={s.label}>Email</Text>
+        <TextInput style={s.input} placeholder="you@email.com" placeholderTextColor={C.faint}
+          autoCapitalize="none" autoCorrect={false} keyboardType="email-address"
+          value={email} onChangeText={setEmail} />
+        <Text style={[s.label, { marginTop: 14 }]}>Password</Text>
+        <TextInput style={s.input} placeholder="••••••••" placeholderTextColor={C.faint}
+          secureTextEntry autoCapitalize="none" autoCorrect={false}
+          value={password} onChangeText={setPassword} />
+        <Btn label={busy ? "…" : isSignup ? "Create account →" : "Sign in →"} onPress={submitEmail} disabled={busy} />
+        {isSignup
+          ? <Text style={s.note}>At least 6 characters.</Text>
+          : <TouchableOpacity onPress={forgotPassword} disabled={busy}><Text style={s.note}>Forgot password?</Text></TouchableOpacity>}
+      </View>
+
+      <TouchableOpacity onPress={() => { setMode(isSignup ? "signin" : "signup"); setInfo(null); }} disabled={busy}>
+        <Text style={s.switchAuth}>
+          {isSignup ? "Already have an account?  Sign in" : "New here?  Create an account"}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Demo: enter without logging in (anonymous session) */}
+      <TouchableOpacity style={s.skipBtn} onPress={enterDemo} disabled={busy}>
+        <Text style={s.skipText}>{busy ? "…" : "Enter demo (no login) →"}</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -180,8 +275,10 @@ function Main({ session }) {
     const handle = (url) => {
       if (!url) return;
       try {
-        const code = Linking.parse(url)?.queryParams?.code;
-        if (code) { setJoinCode(String(code).toUpperCase()); setTab("challenges"); setScreen("challengeJoin"); }
+        const parsed = Linking.parse(url);
+        const isJoin = /(^|\/)join/.test(parsed?.path || "") || parsed?.hostname === "join";
+        const code = parsed?.queryParams?.code;
+        if (isJoin && code) { setJoinCode(String(code).toUpperCase()); setTab("challenges"); setScreen("challengeJoin"); }
       } catch (_) { /* ignore */ }
     };
     Linking.getInitialURL().then(handle);
@@ -343,6 +440,7 @@ function ProfileTab({ session, goals, certs, subs, onOpenCert, onOpenSettings })
   async function save() {
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ name: name.trim() }).eq("id", session.user.id);
+    if (!error) _cachedName = name.trim(); // keep challenge screens in sync
     setSaving(false);
     Alert.alert("Cert", error ? error.message : "Saved.");
   }
@@ -453,7 +551,10 @@ function SettingsScreen({ session, onBack }) {
 
 const DOW_NAMES = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 function goalCadence(goal) {
-  if (goal.type === "one_time") return "One-time";
+  if (goal.type === "one_time") {
+    if (goal.deadline) return `One-time · by ${goal.deadline}${goal.daily_deadline ? " " + goal.daily_deadline : ""}`;
+    return "One-time";
+  }
   let freq;
   if (goal.format === "custom") freq = (goal.custom_days || []).map((d) => DOW_NAMES[d]).join(", ") || "Custom";
   else freq = goal.format === "3x" ? "3× / week" : goal.format === "5x" ? "5× / week" : "Daily";
@@ -486,12 +587,14 @@ function NewGoal({ session, onDone, onBack }) {
   const [customDays, setCustomDays] = useState([]); // 0=Mon..6=Sun
   const [duration, setDuration] = useState(null);   // null=ongoing, or 7/30/100 (daily only)
   const [deadline, setDeadline] = useState(null);  // "HH:MM" or null
+  const [oneTimeDeadline, setOneTimeDeadline] = useState(null); // Date|null, for one_time goals
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
 
   async function create() {
     if (text.trim().length < 3) return Alert.alert("Cert", "Describe your goal first.");
     if (type === "recurring" && format === "custom" && customDays.length === 0) return Alert.alert("Cert", "Pick at least one day.");
+    if (type === "one_time" && !oneTimeDeadline) return Alert.alert("Cert", "Pick a deadline date & time.");
     setBusy(true);
     try {
       let spec = { en: null, ru: null };
@@ -501,6 +604,7 @@ function NewGoal({ session, onDone, onBack }) {
       } catch (_) { /* ignore — spec is optional */ }
 
       const recurring = type === "recurring";
+      const ot = !recurring && oneTimeDeadline ? isoDateParts(oneTimeDeadline) : null;
       const { error } = await supabase.from("goals").insert({
         user_id: session.user.id,
         text: text.trim(),
@@ -509,7 +613,8 @@ function NewGoal({ session, onDone, onBack }) {
         format: recurring ? format : null,
         custom_days: recurring && format === "custom" ? customDays : [],
         duration_days: recurring && format === "daily" ? duration : null,
-        daily_deadline: recurring ? deadline : null,
+        deadline: ot ? ot.date : null,            // one_time: deadline date
+        daily_deadline: recurring ? deadline : (ot ? ot.time : null), // recurring: time-of-day · one_time: deadline time
         proof_spec_en: spec.en,
         proof_spec_ru: spec.ru,
       });
@@ -525,9 +630,9 @@ function NewGoal({ session, onDone, onBack }) {
       <BackBar onBack={onBack} />
       <Text style={s.h2}>What will you prove?</Text>
       <Text style={s.lede}>Write it in your own words. The AI judge reads exactly this.</Text>
-      <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline
+      <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done"
         placeholder="e.g. Wake up and send a photo, or gym 45 min" placeholderTextColor={C.faint}
-        value={text} onChangeText={setText} />
+        value={text} onChangeText={(t) => setText(t.replace(/\n/g, " "))} />
 
       <Text style={[s.label, { marginTop: 14 }]}>Type</Text>
       <View style={s.rowGap}>
@@ -575,7 +680,13 @@ function NewGoal({ session, onDone, onBack }) {
           <TimeField value={deadline} onChange={setDeadline} allowClear placeholder="No deadline" />
           <Text style={s.note}>Pick any time. Proof after it won't count for the day. Judged in your local time.</Text>
         </>
-      ) : null}
+      ) : (
+        <>
+          <Text style={[s.label, { marginTop: 14 }]}>Deadline (date & time)</Text>
+          <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder="Pick deadline" />
+          <Text style={s.note}>Submit your proof before this. One photo, judged once.</Text>
+        </>
+      )}
 
       <Btn label={busy ? "Creating…" : "Start the streak →"} onPress={create} disabled={busy} />
     </ScrollView>
@@ -984,8 +1095,57 @@ function cadenceLabel(ch) {
 }
 const SPIN_FLAVOR = ["20 push-ups…", "goofy selfie…", "sing a song…", "30 squats…", "2-min plank…", "opera voice…", "15 burpees…", "clothes inside out…"];
 
+// Wheel-of-fortune dares — MUST mirror the server list in
+// supabase/functions/challenge/index.ts so the wheel can land on the chosen one.
+const WHEEL_DARES = [
+  "Do 20 push-ups, film it, send to the group. 💪",
+  "Post a goofy selfie to your story for 1 hour. 🤡",
+  "Send the group a voice message singing a song chorus. 🎤",
+  "Do 30 squats right now, on camera. 🏋️",
+  "Set a silly profile picture for 24 hours. 🖼️",
+  "Hold a 2-minute plank and film the timer. ⏱️",
+  "Text someone 'I lost a bet and now I owe you a coffee'. ☕",
+  "Read your last message out loud in an opera voice (voice memo). 🎭",
+  "Do 15 burpees and send proof to the group. 🔥",
+  "Wear your clothes inside out for an hour and send a pic. 👕",
+  "Do 10 jumping jacks counting in another language. 🌍",
+  "Send the group your goofiest camera-roll photo. 📸",
+];
+const WHEEL_COLORS = ["#e23b2e", "#1c1822", "#c9a227", "#241f29"];
+const dareEmoji = (d) => String(d || "").trim().split(/\s+/).pop() || "🎯";
+const dareIndex = (d) => { const i = WHEEL_DARES.indexOf(d); return i >= 0 ? i : 0; };
+
+// Animated wheel of fortune. Pass landIndex to spin + settle on that slice
+// (under the top pointer). N pie slices drawn with CSS-triangle wedges (no SVG dep).
+function WheelOfFortune({ landIndex, size = 268 }) {
+  const rot = useRef(new Animated.Value(0)).current;
+  const R = size / 2;
+  const N = WHEEL_DARES.length;
+  const seg = 360 / N;
+  const base = 2 * R * Math.tan((seg / 2) * Math.PI / 180); // slice base width at the rim
+  useEffect(() => {
+    if (landIndex == null) return;
+    rot.setValue(0);
+    const target = 360 * 5 - landIndex * seg; // 5 full turns, then slice center under the pointer
+    Animated.timing(rot, { toValue: target, duration: 3800, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [landIndex]);
+  const spin = rot.interpolate({ inputRange: [0, 360], outputRange: ["0deg", "360deg"] });
+  return (
+    <Animated.View style={{ width: size, height: size, borderRadius: R, overflow: "hidden", borderWidth: 5, borderColor: C.bronze, backgroundColor: C.bg, transform: [{ rotate: spin }] }}>
+      {WHEEL_DARES.map((d, i) => (
+        <View key={i} style={{ position: "absolute", width: size, height: size, transform: [{ rotate: `${i * seg}deg` }] }}>
+          <View style={{ position: "absolute", top: 0, left: (size - base) / 2, width: 0, height: 0, borderLeftWidth: base / 2, borderRightWidth: base / 2, borderTopWidth: R, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: WHEEL_COLORS[i % WHEEL_COLORS.length] }} />
+          <Text style={{ position: "absolute", top: 12, left: 0, width: size, textAlign: "center", fontSize: 20 }}>{dareEmoji(d)}</Text>
+        </View>
+      ))}
+      <View style={{ position: "absolute", top: R - 17, left: R - 17, width: 34, height: 34, borderRadius: 17, backgroundColor: C.bronze, borderWidth: 3, borderColor: C.bg }} />
+    </Animated.View>
+  );
+}
+
 function ChallengesScreen({ onOpen, onCreate, onJoin }) {
   const [rows, setRows] = useState(null);
+  const [showHistory, setShowHistory] = useState(false);
   const load = useCallback(async () => {
     const { data } = await supabase.from("challenge_members").select("challenge_id, final_rank, challenges(*)").order("joined_at", { ascending: false });
     setRows(data || []);
@@ -1016,8 +1176,12 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
             })}
             {past.length > 0 ? (
               <>
-                <Text style={[s.kicker, { marginTop: 22, marginBottom: 4 }]}>History · {past.length}</Text>
-                {past.map((m) => {
+                <TouchableOpacity style={s.historyHead} onPress={() => setShowHistory((v) => !v)} activeOpacity={0.7}>
+                  <Ionicons name="time-outline" size={16} color={C.mute} />
+                  <Text style={[s.kicker, { flex: 1 }]}>History · {past.length}</Text>
+                  <Ionicons name={showHistory ? "chevron-up" : "chevron-down"} size={18} color={C.mute} />
+                </TouchableOpacity>
+                {showHistory ? past.map((m) => {
                   const ch = m.challenges;
                   return (
                     <TouchableOpacity key={ch.id} style={[s.card, { opacity: 0.75 }]} onPress={() => onOpen(ch.id)}>
@@ -1031,7 +1195,7 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
                       </View>
                     </TouchableOpacity>
                   );
-                })}
+                }) : null}
               </>
             ) : null}
           </>
@@ -1044,19 +1208,25 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
 function CreateChallenge({ onCreated, onBack }) {
   const [goalText, setGoalText] = useState("");
   const [name, setName] = useState("");
+  const [hasProfileName, setHasProfileName] = useState(false);
   const [dur, setDur] = useState(7);
   const [type, setType] = useState("recurring"); // recurring | one_time
   const [format, setFormat] = useState("daily");  // daily | 3x | 5x
+  const [oneTimeDeadline, setOneTimeDeadline] = useState(null); // Date|null, for one_time
   const [judgeMode, setJudgeMode] = useState("ai"); // ai | peer
   const [busy, setBusy] = useState(false);
+  useEffect(() => { loadMyName().then((n) => { if (n) { setName(n); setHasProfileName(true); } }); }, []);
   async function create() {
     if (goalText.trim().length < 3) return Alert.alert("Cert", "Describe the shared goal.");
     if (!name.trim()) return Alert.alert("Cert", "Enter your name for the leaderboard.");
+    if (type === "one_time" && !oneTimeDeadline) return Alert.alert("Cert", "Pick a deadline date & time.");
     setBusy(true);
     try {
+      if (!hasProfileName) await saveMyName(name.trim());
       const { data, error } = await supabase.functions.invoke("challenge", { body: {
         action: "create", title: goalText.trim(), goalText: goalText.trim(), durationDays: dur,
         name: name.trim(), goalType: type, goalFormat: format, judgeMode,
+        endsAt: type === "one_time" && oneTimeDeadline ? oneTimeDeadline.toISOString() : null,
       } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -1068,10 +1238,14 @@ function CreateChallenge({ onCreated, onBack }) {
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled">
       <BackBar onBack={onBack} />
       <Text style={s.h2}>Create a challenge</Text>
-      <Text style={s.label}>Name (shown on leaderboard)</Text>
-      <TextInput style={s.input} placeholder="e.g. Zhanibek" placeholderTextColor={C.faint} value={name} onChangeText={setName} />
+      {hasProfileName
+        ? <Text style={[s.note, { marginTop: 4 }]}>Playing as <Text style={{ color: C.bronze, fontWeight: "800" }}>{name}</Text> · change it in Profile</Text>
+        : (<>
+            <Text style={s.label}>Your name (shown on leaderboard)</Text>
+            <TextInput style={s.input} placeholder="e.g. Zhanibek" placeholderTextColor={C.faint} value={name} onChangeText={(t) => setName(t.replace(/\n/g, " "))} />
+          </>)}
       <Text style={[s.label, { marginTop: 14 }]}>The shared goal everyone does</Text>
-      <TextInput style={[s.input, { height: 80, textAlignVertical: "top" }]} multiline placeholder="e.g. Gym 45 min, photo with equipment" placeholderTextColor={C.faint} value={goalText} onChangeText={setGoalText} />
+      <TextInput style={[s.input, { height: 80, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done" placeholder="e.g. Gym 45 min, photo with equipment" placeholderTextColor={C.faint} value={goalText} onChangeText={(t) => setGoalText(t.replace(/\n/g, " "))} />
 
       <Text style={[s.label, { marginTop: 14 }]}>Type</Text>
       <View style={s.rowGap}>
@@ -1090,10 +1264,20 @@ function CreateChallenge({ onCreated, onBack }) {
         </>
       ) : null}
 
-      <Text style={[s.label, { marginTop: 14 }]}>{type === "one_time" ? "Deadline window" : "How long?"}</Text>
-      <View style={s.rowGap}>
-        {[7, 14, 30].map((d) => <Pill key={d} label={d + " days"} active={dur === d} onPress={() => setDur(d)} />)}
-      </View>
+      {type === "one_time" ? (
+        <>
+          <Text style={[s.label, { marginTop: 14 }]}>Deadline (date & time)</Text>
+          <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder="Pick deadline" />
+          <Text style={s.note}>The challenge ends at this moment. Last place spins the wheel.</Text>
+        </>
+      ) : (
+        <>
+          <Text style={[s.label, { marginTop: 14 }]}>How long?</Text>
+          <View style={s.rowGap}>
+            {[7, 14, 30].map((d) => <Pill key={d} label={d + " days"} active={dur === d} onPress={() => setDur(d)} />)}
+          </View>
+        </>
+      )}
 
       <Text style={[s.label, { marginTop: 14 }]}>Who judges proofs?</Text>
       <View style={s.rowGap}>
@@ -1110,12 +1294,15 @@ function CreateChallenge({ onCreated, onBack }) {
 function JoinChallenge({ onJoined, onBack, initialCode }) {
   const [code, setCode] = useState(initialCode || "");
   const [name, setName] = useState("");
+  const [hasProfileName, setHasProfileName] = useState(false);
   const [busy, setBusy] = useState(false);
+  useEffect(() => { loadMyName().then((n) => { if (n) { setName(n); setHasProfileName(true); } }); }, []);
   async function join() {
     if (code.trim().length < 4) return Alert.alert("Cert", "Enter the challenge code.");
     if (!name.trim()) return Alert.alert("Cert", "Enter your name for the leaderboard.");
     setBusy(true);
     try {
+      if (!hasProfileName) await saveMyName(name.trim());
       const { data, error } = await supabase.functions.invoke("challenge", { body: { action: "join", code: code.trim(), name: name.trim() } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error === "not_found" ? "No challenge with that code." : data.error);
@@ -1129,8 +1316,12 @@ function JoinChallenge({ onJoined, onBack, initialCode }) {
       <Text style={s.h2}>Join a challenge</Text>
       <Text style={s.label}>Challenge code</Text>
       <TextInput style={s.input} placeholder="ABC123" placeholderTextColor={C.faint} autoCapitalize="characters" value={code} onChangeText={setCode} />
-      <Text style={[s.label, { marginTop: 14 }]}>Name (shown on leaderboard)</Text>
-      <TextInput style={s.input} placeholder="e.g. Zhanibek" placeholderTextColor={C.faint} value={name} onChangeText={setName} />
+      {hasProfileName
+        ? <Text style={[s.note, { marginTop: 12 }]}>Joining as <Text style={{ color: C.bronze, fontWeight: "800" }}>{name}</Text> · change it in Profile</Text>
+        : (<>
+            <Text style={[s.label, { marginTop: 14 }]}>Your name (shown on leaderboard)</Text>
+            <TextInput style={s.input} placeholder="e.g. Zhanibek" placeholderTextColor={C.faint} value={name} onChangeText={(t) => setName(t.replace(/\n/g, " "))} />
+          </>)}
       <Btn label={busy ? "Joining…" : "Join →"} onPress={join} disabled={busy} />
     </ScrollView>
   );
@@ -1138,15 +1329,34 @@ function JoinChallenge({ onJoined, onBack, initialCode }) {
 
 function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacement, onBack }) {
   const [board, setBoard] = useState(null);
-  const [spinning, setSpinning] = useState(false);
-  const [spinText, setSpinText] = useState("");
   const [peerBusy, setPeerBusy] = useState(false);
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const [wheelPreview, setWheelPreview] = useState(false);
+  const [landIndex, setLandIndex] = useState(null);   // slice the wheel settles on
+  const [revealed, setRevealed] = useState(null);     // dare text shown after the spin
+  const [spinningWheel, setSpinningWheel] = useState(false);
   const load = useCallback(async () => {
     const { data, error } = await supabase.functions.invoke("challenge", { body: { action: "board", challengeId } });
     if (error || data?.error) { Alert.alert("Cert", data?.error || error?.message || "Couldn't load."); return; }
     setBoard(data);
   }, [challengeId]);
   useEffect(() => { load(); }, [load]);
+
+  // Auto-show the wheel ONCE when an ended challenge opens (the result, or the
+  // spin prompt if you're last). Seen-state persists so it never re-pops.
+  useEffect(() => {
+    if (!board || !board.ended) return;
+    const key = "wheel_seen_" + challengeId;
+    let cancelled = false;
+    AsyncStorage.getItem(key).then((seen) => {
+      if (cancelled || seen) return;
+      if (board.dare) { setLandIndex(dareIndex(board.dare)); setRevealed(board.dare); setWheelPreview(false); setWheelOpen(true); AsyncStorage.setItem(key, "1"); }
+      else if (board.canSpin) { setLandIndex(null); setRevealed(null); setWheelPreview(false); setWheelOpen(true); AsyncStorage.setItem(key, "1"); }
+    });
+    return () => { cancelled = true; };
+  }, [board, challengeId]);
+
+  function closeWheel() { setWheelOpen(false); setWheelPreview(false); setSpinningWheel(false); setLandIndex(null); setRevealed(null); }
 
   async function submitPeer() {
     const perm = await ImagePicker.requestCameraPermissionsAsync();
@@ -1166,17 +1376,19 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
     finally { setPeerBusy(false); }
   }
 
-  function spin() {
-    setSpinning(true);
-    const anim = setInterval(() => setSpinText(SPIN_FLAVOR[Math.floor(Math.random() * SPIN_FLAVOR.length)]), 90);
+  // Real spin: ask the server for the dare, then land the wheel on it.
+  function doSpin() {
+    setSpinningWheel(true);
     supabase.functions.invoke("challenge", { body: { action: "spin", challengeId } })
-      .then(({ data }) => setTimeout(async () => {
-        clearInterval(anim); setSpinning(false);
-        if (data?.dare) await load();
-        else Alert.alert("Cert", data?.error || "Spin failed.");
-      }, 1700))
-      .catch((e) => { clearInterval(anim); setSpinning(false); Alert.alert("Cert", e.message || "Spin failed."); });
+      .then(({ data }) => {
+        if (!data?.dare) { setSpinningWheel(false); Alert.alert("Cert", data?.error || "Spin failed."); return; }
+        setLandIndex(dareIndex(data.dare)); // wheel animates ~3.8s
+        setTimeout(async () => { setRevealed(data.dare); setSpinningWheel(false); await load(); }, 3900);
+      })
+      .catch((e) => { setSpinningWheel(false); Alert.alert("Cert", e.message || "Spin failed."); });
   }
+  function openResultWheel() { setWheelPreview(false); setLandIndex(dareIndex(board.dare)); setRevealed(board.dare); setWheelOpen(true); }
+  function openSpinWheel() { setWheelPreview(false); setLandIndex(null); setRevealed(null); setWheelOpen(true); }
 
   if (!board) return <Center><ActivityIndicator color={C.bronze} /></Center>;
   const ch = board.challenge;
@@ -1185,10 +1397,11 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
     const link = Linking.createURL("join", { queryParams: { code: ch.code } });
     Share.share({ message: `Join my Cert challenge "${ch.goal_text}" — tap to join:\n${link}\n\n(or enter code ${ch.code} in the app)` });
   };
-  const PREVIEW_DARES = ["Do 20 push-ups on camera 💪", "Goofy selfie to your story 🤡", "Sing a chorus in a voice message 🎤", "30 squats, filmed 🏋️", "2-minute plank ⏱️", "Read a text in an opera voice 🎭"];
   function previewWheel() {
-    const d = PREVIEW_DARES[Math.floor(Math.random() * PREVIEW_DARES.length)];
-    Alert.alert("🎰 Wheel of fortune (preview)", `If you finish last, you might spin:\n\n${d}\n\nThe real spin happens when the challenge ends and you're in last place.`);
+    const idx = Math.floor(Math.random() * WHEEL_DARES.length);
+    setWheelPreview(true); setRevealed(null); setLandIndex(null); setWheelOpen(true);
+    setTimeout(() => setLandIndex(idx), 60);          // start the spin
+    setTimeout(() => setRevealed(WHEEL_DARES[idx]), 4000); // reveal after it settles
   }
   function endNow() {
     Alert.alert("End challenge now?", "Ends it for everyone and locks the leaderboard. Last place spins the wheel.", [
@@ -1262,20 +1475,14 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
               <Text style={[s.kicker, { color: C.red }]}>🎰 Wheel of fortune</Text>
               <Text style={s.goalText}>{board.loser ? board.loser.name : "Last place"} must:</Text>
               <Text style={[s.h2, { color: C.bronze }]}>{board.dare}</Text>
+              <BtnGhost label="🎰 Replay the spin" onPress={openResultWheel} />
             </>
           ) : board.canSpin ? (
-            spinning ? (
-              <>
-                <Text style={[s.kicker, { color: C.red }]}>🎰 Spinning…</Text>
-                <Text style={[s.h2, { color: C.bronze }]}>{spinText || "…"}</Text>
-              </>
-            ) : (
-              <>
-                <Text style={[s.kicker, { color: C.red }]}>You came last 😅</Text>
-                <Text style={s.lede}>Spin the wheel of fortune and accept your dare.</Text>
-                <Btn label="🎰 Spin the wheel" onPress={spin} />
-              </>
-            )
+            <>
+              <Text style={[s.kicker, { color: C.red }]}>You came last 😅</Text>
+              <Text style={s.lede}>Spin the wheel of fortune and accept your dare.</Text>
+              <Btn label="🎰 Spin the wheel" onPress={openSpinWheel} />
+            </>
           ) : (
             <>
               <Text style={[s.kicker, { color: C.bronze }]}>🏆 Winner: {board.members[0]?.name}</Text>
@@ -1288,6 +1495,36 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
       {board.ended ? (
         <Btn label="🏆 Share your placement" onPress={() => onSharePlacement((board.members.find((m) => m.isMe)?.rank) || board.members.length, ch.goal_text)} />
       ) : null}
+
+      {/* Wheel of fortune — spinning modal (auto-opens once when an ended challenge loads) */}
+      <Modal visible={wheelOpen} transparent animationType="fade" onRequestClose={closeWheel}>
+        <View style={s.wheelBackdrop}>
+          <Text style={s.wheelTitle}>🎰 Wheel of fortune</Text>
+          <Text style={s.wheelSub}>
+            {wheelPreview ? "Preview — what a spin looks like"
+              : board?.loser ? `${board.loser.name}${board.loser.isMe ? " (you)" : ""} finished last`
+              : "Spin for your dare"}
+          </Text>
+          <View style={s.wheelStage}>
+            <View style={s.wheelPointer} />
+            <WheelOfFortune landIndex={landIndex} />
+          </View>
+          {revealed ? (
+            <View style={s.wheelResult}>
+              <Text style={[s.kicker, { color: C.red, textAlign: "center" }]}>{wheelPreview ? "Could be…" : "The dare"}</Text>
+              <Text style={s.wheelDare}>{revealed}</Text>
+            </View>
+          ) : null}
+          <View style={{ width: "100%", maxWidth: 320, marginTop: 18 }}>
+            {(!wheelPreview && board?.canSpin && !revealed)
+              ? <Btn label={spinningWheel ? "Spinning…" : "🎰 Spin the wheel"} onPress={doSpin} disabled={spinningWheel} />
+              : null}
+            {(revealed || wheelPreview || (!board?.canSpin))
+              ? <BtnGhost label={revealed ? "Done" : "Close"} onPress={closeWheel} disabled={spinningWheel} />
+              : null}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1337,20 +1574,34 @@ function SwipeReview({ onBack }) {
         </View>
       ) : (
         <>
-          <Animated.View {...panResponder.panHandlers} style={[s.swipeCard, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] }]}>
-            <Animated.View style={[s.swipeStamp, { borderColor: C.green, left: 16, opacity: okOpacity }]}><Text style={[s.swipeStampT, { color: C.green }]}>APPROVE</Text></Animated.View>
-            <Animated.View style={[s.swipeStamp, { borderColor: C.red, right: 16, opacity: noOpacity }]}><Text style={[s.swipeStampT, { color: C.red }]}>DECLINE</Text></Animated.View>
-            {current.photoUrl
-              ? <Image source={{ uri: current.photoUrl }} style={s.swipePhoto} resizeMode="cover" />
-              : <View style={[s.swipePhoto, { alignItems: "center", justifyContent: "center" }]}><Text style={s.note}>no photo</Text></View>}
-            <Text style={[s.lbName, { marginTop: 12 }]}>{current.name}</Text>
-            <Text style={s.note}>{current.goalText} · {current.day}</Text>
-          </Animated.View>
+          <View style={{ position: "relative", justifyContent: "center" }}>
+            {/* swipe affordance: arrows hint which way to drag */}
+            <View pointerEvents="none" style={[s.swipeHint, { left: 2 }]}>
+              <Ionicons name="arrow-back-circle" size={30} color={C.red} />
+              <Text style={[s.swipeHintT, { color: C.red }]}>Decline</Text>
+            </View>
+            <View pointerEvents="none" style={[s.swipeHint, { right: 2 }]}>
+              <Ionicons name="arrow-forward-circle" size={30} color={C.green} />
+              <Text style={[s.swipeHintT, { color: C.green }]}>Approve</Text>
+            </View>
+            <Animated.View {...panResponder.panHandlers} style={[s.swipeCard, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] }]}>
+              <Animated.View style={[s.swipeStamp, { borderColor: C.green, left: 16, opacity: okOpacity }]}><Text style={[s.swipeStampT, { color: C.green }]}>APPROVE</Text></Animated.View>
+              <Animated.View style={[s.swipeStamp, { borderColor: C.red, right: 16, opacity: noOpacity }]}><Text style={[s.swipeStampT, { color: C.red }]}>DECLINE</Text></Animated.View>
+              {current.photoUrl
+                ? <Image source={{ uri: current.photoUrl }} style={s.swipePhoto} resizeMode="cover" />
+                : <View style={[s.swipePhoto, { alignItems: "center", justifyContent: "center" }]}><Text style={s.note}>no photo</Text></View>}
+              <Text style={[s.lbName, { marginTop: 12 }]}>{current.name}</Text>
+              <Text style={s.note}>{current.goalText} · {current.day}</Text>
+            </Animated.View>
+          </View>
           <View style={{ flexDirection: "row", gap: 14, marginTop: 16 }}>
             <View style={{ flex: 1 }}><BtnGhost label="✕ Decline" onPress={() => swipe("left")} /></View>
             <View style={{ flex: 1 }}><Btn label="✓ Approve" onPress={() => swipe("right")} /></View>
           </View>
-          <Text style={[s.note, { textAlign: "center" }]}>Swipe right to approve, left to decline · {queue.length - idx} left</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 6 }}>
+            <Ionicons name="swap-horizontal" size={16} color={C.faint} />
+            <Text style={s.note}>Swipe the photo · {queue.length - idx} left</Text>
+          </View>
         </>
       )}
     </View>
@@ -1415,6 +1666,46 @@ function TimeField({ value, onChange, allowClear, placeholder = "Pick a time" })
     </View>
   );
 }
+// Date + time picker. value/onChange use a Date (or null). Android chains a
+// date dialog then a time dialog; iOS shows a single datetime spinner in a modal.
+function DateTimeField({ value, onChange, placeholder = "Pick date & time" }) {
+  const [show, setShow] = useState(false);           // ios modal
+  const [androidStep, setAndroidStep] = useState(null); // "date" | "time" | null
+  const [temp, setTemp] = useState(null);
+  const base = () => { if (value) return new Date(value); const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(23, 59, 0, 0); return d; };
+  const fmt = (d) => d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  function open() { setTemp(base()); if (Platform.OS === "android") setAndroidStep("date"); else setShow(true); }
+  function onAndroidChange(e, d) {
+    if (e.type !== "set" || !d) { setAndroidStep(null); return; }
+    if (androidStep === "date") {
+      const picked = new Date(temp || base()); picked.setFullYear(d.getFullYear(), d.getMonth(), d.getDate());
+      setTemp(picked); setAndroidStep("time");
+    } else {
+      const picked = new Date(temp || base()); picked.setHours(d.getHours(), d.getMinutes(), 0, 0);
+      setAndroidStep(null); onChange(picked);
+    }
+  }
+  return (
+    <View style={{ marginTop: 6 }}>
+      <TouchableOpacity style={[s.chip, value && s.chipOn]} onPress={open}>
+        <Text style={[s.chipText, value && { color: C.ink }]}>📅 {value ? fmt(value) : placeholder}</Text>
+      </TouchableOpacity>
+      {Platform.OS === "android" && androidStep ? (
+        <DateTimePicker value={temp || base()} mode={androidStep} is24Hour display="default" minimumDate={new Date()} onChange={onAndroidChange} />
+      ) : null}
+      {Platform.OS === "ios" ? (
+        <Modal visible={show} transparent animationType="fade" onRequestClose={() => setShow(false)}>
+          <View style={s.modalWrap}>
+            <View style={s.modalCard}>
+              <DateTimePicker value={temp || base()} mode="datetime" display="spinner" minimumDate={new Date()} textColor={C.ink} themeVariant="dark" onChange={(e, d) => { if (d) setTemp(d); }} />
+              <Btn label="Done" onPress={() => { onChange(temp || base()); setShow(false); }} />
+            </View>
+          </View>
+        </Modal>
+      ) : null}
+    </View>
+  );
+}
 function Center({ children }) { return <View style={[s.safe, { justifyContent: "center", alignItems: "center" }]}>{children}</View>; }
 
 const s = StyleSheet.create({
@@ -1437,11 +1728,13 @@ const s = StyleSheet.create({
   btnText: { color: "#120606", fontWeight: "800", fontSize: 15, letterSpacing: 1 },
   btnGhost: { borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 16, marginTop: 10, alignItems: "center" },
   btnGhostText: { color: C.ink, fontWeight: "700", fontSize: 14 },
-  googleBtn: { backgroundColor: "#fff", borderRadius: 10, padding: 15, marginTop: 8, alignItems: "center" },
+  googleBtn: { backgroundColor: "#fff", borderRadius: 10, padding: 15, marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" },
   googleText: { color: "#1f1f1f", fontWeight: "700", fontSize: 15 },
-  skipBtn: { borderWidth: 1, borderColor: C.bronze, borderRadius: 10, padding: 13, marginTop: 10, alignItems: "center" },
-  skipText: { color: C.bronze, fontWeight: "700", fontSize: 14 },
   orText: { color: C.faint, fontSize: 12, textAlign: "center", marginVertical: 14 },
+  infoBanner: { color: C.green, backgroundColor: "rgba(52,199,89,0.08)", borderWidth: 1, borderColor: "#1f3b25", borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 18 },
+  switchAuth: { color: C.bronze, fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 20 },
+  skipBtn: { borderWidth: 1, borderColor: C.bronze, borderRadius: 10, padding: 13, marginTop: 22, alignItems: "center" },
+  skipText: { color: C.bronze, fontWeight: "700", fontSize: 14 },
   pill: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 12, alignItems: "center" },
   pillOn: { borderColor: C.red, backgroundColor: "rgba(226,59,46,0.1)" },
   pillText: { color: C.mute, fontSize: 13 },
@@ -1454,6 +1747,16 @@ const s = StyleSheet.create({
   swipePhoto: { width: "100%", height: 360, borderRadius: 12, backgroundColor: "#0d0c11" },
   swipeStamp: { position: "absolute", top: 28, zIndex: 2, borderWidth: 3, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, transform: [{ rotate: "-12deg" }] },
   swipeStampT: { fontSize: 22, fontWeight: "800", letterSpacing: 2 },
+  historyHead: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 22, marginBottom: 4, paddingVertical: 4 },
+  swipeHint: { position: "absolute", zIndex: 0, alignItems: "center", gap: 2 },
+  swipeHintT: { fontSize: 10, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" },
+  wheelBackdrop: { flex: 1, backgroundColor: "rgba(5,4,6,0.95)", alignItems: "center", justifyContent: "center", padding: 24 },
+  wheelTitle: { color: C.ink, fontSize: 24, fontWeight: "800" },
+  wheelSub: { color: C.red, fontSize: 12, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginTop: 6, marginBottom: 16, textAlign: "center" },
+  wheelStage: { alignItems: "center", justifyContent: "center", paddingTop: 18 },
+  wheelPointer: { position: "absolute", top: 0, zIndex: 5, width: 0, height: 0, borderLeftWidth: 13, borderRightWidth: 13, borderTopWidth: 24, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: C.ink },
+  wheelResult: { marginTop: 20, borderWidth: 1, borderColor: C.red, borderRadius: 12, padding: 16, backgroundColor: C.card, maxWidth: 320 },
+  wheelDare: { color: C.bronze, fontSize: 18, fontWeight: "800", textAlign: "center", lineHeight: 24, marginTop: 6 },
   backBar: { flexDirection: "row", alignItems: "center", gap: 2, marginBottom: 10, alignSelf: "flex-start", paddingVertical: 4, paddingRight: 8 },
   backText: { color: C.ink, fontSize: 15, fontWeight: "600" },
   avatar: { width: 92, height: 92, borderRadius: 46, borderWidth: 2, borderColor: C.bronze },

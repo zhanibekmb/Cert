@@ -74,6 +74,7 @@ Deno.serve(async (req) => {
       type: recurring ? "recurring" : "one_time",
       format: recurring ? (ch.goal_format || "daily") : null,
       duration_days: recurring ? ch.duration_days : null,
+      deadline: recurring ? null : (ch.ends_at ? String(ch.ends_at).slice(0, 10) : null), // one_time: deadline date
       proof_spec_en: ch.proof_spec_en, proof_spec_ru: ch.proof_spec_ru,
       challenge_id: ch.id,
     }).select("id").single();
@@ -97,7 +98,12 @@ Deno.serve(async (req) => {
       if (!clash) break;
       code = genCode();
     }
-    const endsAt = new Date(Date.now() + durationDays * 86400000).toISOString();
+    // one_time challenges end at an explicit date+time; recurring ones run for N days
+    let endsAt = new Date(Date.now() + durationDays * 86400000).toISOString();
+    if (goalType === "one_time" && body.endsAt) {
+      const dt = new Date(body.endsAt);
+      if (!isNaN(dt.getTime())) endsAt = dt.toISOString();
+    }
     const { data: ch, error: e1 } = await svc.from("challenges").insert({
       code, title, goal_text: goalText, duration_days: durationDays, host_user_id: user.id, ends_at: endsAt,
       goal_type: goalType, goal_format: goalFormat, judge_mode: judgeMode,
