@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<!-- NOTE: starter privacy policy. Have a lawyer review before public launch / store submission. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CERT — Privacy Policy</title>
+<meta name="description" content="How Cert collects, uses, and protects your data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/cert.css">
+<style>
+  body { background: var(--bg); min-height: 100vh; }
+  .legal-hero { padding: 130px 24px 24px; text-align: center; }
+  .legal-hero h1 { font-size: clamp(34px, 6vw, 60px); margin: 0; }
+  .legal-hero .updated { margin-top: 14px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-ghost); }
+  .legal { max-width: 760px; margin: 0 auto; padding: 8px 24px 80px; }
+  .legal h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--ink); margin: 38px 0 10px; }
+  .legal p, .legal li { font-family: var(--font-text); font-size: 15px; line-height: 1.8; color: var(--ink-mute); }
+  .legal ul { margin: 6px 0 0; padding-left: 20px; }
+  .legal li { margin-bottom: 6px; }
+  .legal a { color: var(--red); text-decoration: none; }
+  .legal a:hover { text-decoration: underline; }
+  .legal .intro { font-size: 16px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="brand">
+    <img src="assets/gladiator-logo.png" alt="">
+    <span>CERT</span>
+  </a>
+  <div class="topbar-links">
+    <a href="index.html" class="navlink" id="nav-home">Home</a>
+    <a href="pricing.html" class="navlink" id="nav-pricing">Pricing</a>
+    <a href="index.html#waitlist" class="navlink" id="nav-app">Waitlist</a>
+    <div class="lang-toggle">
+      <button class="lang-btn" data-l="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" data-l="ru" onclick="setLang('ru')">RU</button>
+    </div>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer style="padding:30px 24px 40px;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;color:var(--ink-ghost);background:#050406;">
+  CERT · THE STREAK YOU CAN'T FAKE · © 2026
+</footer>
+
+<script src="scripts/i18n.js"></script>
+<script>
+function setLang(l) { CertI18n.set(l); render(); }
+
+function render() {
+  document.querySelectorAll('.lang-btn').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-l') === CertI18n.lang);
+  });
+  document.getElementById('nav-home').textContent = T('Home', 'Главная');
+  document.getElementById('nav-pricing').textContent = T('Pricing', 'Цены');
+  document.getElementById('nav-app').textContent = T('Waitlist', 'В бету');
+
+  var email = 'janibek190906@gmail.com';
+  var h = '';
+
+  h += '<section class="legal-hero">';
+  h += '<h1 class="display">' + T('Privacy Policy', 'Политика конфиденциальности') + '</h1>';
+  h += '<div class="updated">' + T('Last updated: 29 June 2026', 'Обновлено: 29 июня 2026') + '</div>';
+  h += '</section>';
+
+  h += '<section class="legal">';
+
+  h += '<p class="intro">' + T(
+    'This policy explains what data Cert ("we", "us") collects, how we use it, and the choices you have. By using the Cert app or website, you agree to this policy.',
+    'Эта политика объясняет, какие данные собирает Cert («мы»), как мы их используем и какие у вас есть права. Пользуясь приложением или сайтом Cert, вы соглашаетесь с этой политикой.') + '</p>';
+
+  h += '<h2>' + T('1. Data we collect', '1. Какие данные мы собираем') + '</h2>';
+  h += '<ul>';
+  h += '<li>' + T('<strong>Account</strong>: your email address (and name/avatar if you sign in with Google).', '<strong>Аккаунт</strong>: адрес электронной почты (а также имя/аватар, если вы входите через Google).') + '</li>';
+  h += '<li>' + T('<strong>Waitlist</strong>: your email, an optional goal you enter, and an approximate country/currency derived from your IP.', '<strong>Вайтлист</strong>: ваша почта, необязательная цель и приблизительная страна/валюта, определённая по IP.') + '</li>';
+  h += '<li>' + T('<strong>Proof photos</strong>: the photos you submit to verify a goal.', '<strong>Фото-доказательства</strong>: фотографии, которые вы отправляете для подтверждения цели.') + '</li>';
+  h += '<li>' + T('<strong>Location</strong> (optional): if you enable geo-verified proofs, the approximate location attached to a photo.', '<strong>Геоданные</strong> (опционально): если вы включаете гео-проверку, приблизительное место, привязанное к фото.') + '</li>';
+  h += '<li>' + T('<strong>Challenge data</strong>: your display name and progress, shown to other members of challenges you join.', '<strong>Данные челленджей</strong>: ваше отображаемое имя и прогресс, видимые другим участникам челленджей.') + '</li>';
+  h += '<li>' + T('<strong>Usage analytics</strong>: aggregate, privacy-friendly page metrics (via Vercel Web Analytics — no advertising cookies).', '<strong>Аналитика</strong>: агрегированные метрики страниц (через Vercel Web Analytics — без рекламных cookie).') + '</li>';
+  h += '</ul>';
+
+  h += '<h2>' + T('2. How we use your data', '2. Как мы используем данные') + '</h2>';
+  h += '<p>' + T(
+    'To create your account, run the AI judge that verifies your proof photos, power friend challenges and leaderboards, build timelapses from your proofs, send you the app and product updates, and improve the service.',
+    'Чтобы создать аккаунт, запускать ИИ-судью для проверки фото, обеспечивать челленджи и лидерборды, собирать таймлапсы из ваших фото, присылать приложение и обновления и улучшать сервис.') + '</p>';
+
+  h += '<h2>' + T('3. AI processing of photos', '3. Обработка фото с помощью ИИ') + '</h2>';
+  h += '<p>' + T(
+    'When you submit a proof photo, it is sent to an AI vision model (Google Gemini) to judge whether it matches the goal you wrote. In peer challenges, your photo may also be shown to other members so they can vote.',
+    'Когда вы отправляете фото-доказательство, оно передаётся ИИ-модели зрения (Google Gemini), чтобы оценить соответствие вашей цели. В челленджах с голосованием фото может показываться другим участникам для оценки.') + '</p>';
+
+  h += '<h2>' + T('4. Service providers', '4. Сервис-провайдеры') + '</h2>';
+  h += '<p>' + T(
+    'We rely on trusted providers who process data on our behalf: Supabase (database, authentication, photo storage), Vercel (website hosting and analytics), and Google (Google Sign-In and the Gemini AI model). Each processes data under their own terms and security.',
+    'Мы используем доверенных провайдеров, обрабатывающих данные от нашего имени: Supabase (база данных, аутентификация, хранение фото), Vercel (хостинг сайта и аналитика) и Google (вход через Google и модель Gemini). Каждый обрабатывает данные по своим условиям и мерам безопасности.') + '</p>';
+
+  h += '<h2>' + T('5. Sharing', '5. Передача данных') + '</h2>';
+  h += '<p>' + T(
+    'We do not sell your personal data. Inside a challenge, your display name and progress are visible to other members. We may disclose data if required by law.',
+    'Мы не продаём ваши персональные данные. Внутри челленджа ваше имя и прогресс видны другим участникам. Мы можем раскрыть данные, если этого требует закон.') + '</p>';
+
+  h += '<h2>' + T('6. Retention', '6. Срок хранения') + '</h2>';
+  h += '<p>' + T(
+    'We keep your data while your account is active. You can ask us to delete your account and associated data at any time by contacting us.',
+    'Мы храним данные, пока ваш аккаунт активен. Вы можете в любой момент попросить удалить аккаунт и связанные данные, написав нам.') + '</p>';
+
+  h += '<h2>' + T('7. Your rights', '7. Ваши права') + '</h2>';
+  h += '<p>' + T(
+    'You can request access to, correction of, or deletion of your personal data. To exercise any of these, email us at ',
+    'Вы можете запросить доступ, исправление или удаление ваших персональных данных. Чтобы воспользоваться этим, напишите нам на ') + '<a href="mailto:' + email + '">' + email + '</a>.</p>';
+
+  h += '<h2>' + T('8. Security', '8. Безопасность') + '</h2>';
+  h += '<p>' + T(
+    'We use reasonable technical measures to protect your data, including scoped database access and private photo storage. No method of storage or transmission is 100% secure.',
+    'Мы применяем разумные технические меры для защиты данных, включая ограниченный доступ к базе и приватное хранение фото. Ни один способ хранения или передачи не защищён на 100%.') + '</p>';
+
+  h += '<h2>' + T('9. Children', '9. Дети') + '</h2>';
+  h += '<p>' + T(
+    'Cert is not directed to children under 13. We do not knowingly collect data from children under 13.',
+    'Cert не предназначен для детей младше 13 лет. Мы сознательно не собираем данные детей младше 13 лет.') + '</p>';
+
+  h += '<h2>' + T('10. Changes', '10. Изменения') + '</h2>';
+  h += '<p>' + T(
+    'We may update this policy. The "last updated" date above shows the latest version. Significant changes will be highlighted in the app or on the site.',
+    'Мы можем обновлять эту политику. Дата «Обновлено» выше показывает последнюю версию. О существенных изменениях мы сообщим в приложении или на сайте.') + '</p>';
+
+  h += '<h2>' + T('11. Contact', '11. Контакты') + '</h2>';
+  h += '<p>' + T('Questions about your privacy? Email ', 'Вопросы о конфиденциальности? Пишите на ') + '<a href="mailto:' + email + '">' + email + '</a>.</p>';
+
+  h += '</section>';
+
+  document.getElementById('main').innerHTML = h;
+}
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!-- NOTE: starter terms of service. Have a lawyer review before public launch / store submission. Set the governing-law country in section 11. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CERT — Terms of Service</title>
+<meta name="description" content="The terms for using Cert.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/cert.css">
+<style>
+  body { background: var(--bg); min-height: 100vh; }
+  .legal-hero { padding: 130px 24px 24px; text-align: center; }
+  .legal-hero h1 { font-size: clamp(34px, 6vw, 60px); margin: 0; }
+  .legal-hero .updated { margin-top: 14px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-ghost); }
+  .legal { max-width: 760px; margin: 0 auto; padding: 8px 24px 80px; }
+  .legal h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--ink); margin: 38px 0 10px; }
+  .legal p, .legal li { font-family: var(--font-text); font-size: 15px; line-height: 1.8; color: var(--ink-mute); }
+  .legal ul { margin: 6px 0 0; padding-left: 20px; }
+  .legal li { margin-bottom: 6px; }
+  .legal a { color: var(--red); text-decoration: none; }
+  .legal a:hover { text-decoration: underline; }
+  .legal .intro { font-size: 16px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="brand">
+    <img src="assets/gladiator-logo.png" alt="">
+    <span>CERT</span>
+  </a>
+  <div class="topbar-links">
+    <a href="index.html" class="navlink" id="nav-home">Home</a>
+    <a href="pricing.html" class="navlink" id="nav-pricing">Pricing</a>
+    <a href="index.html#waitlist" class="navlink" id="nav-app">Waitlist</a>
+    <div class="lang-toggle">
+      <button class="lang-btn" data-l="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" data-l="ru" onclick="setLang('ru')">RU</button>
+    </div>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer style="padding:30px 24px 40px;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;color:var(--ink-ghost);background:#050406;">
+  CERT · THE STREAK YOU CAN'T FAKE · © 2026
+</footer>
+
+<script src="scripts/i18n.js"></script>
+<script>
+function setLang(l) { CertI18n.set(l); render(); }
+
+function render() {
+  document.querySelectorAll('.lang-btn').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-l') === CertI18n.lang);
+  });
+  document.getElementById('nav-home').textContent = T('Home', 'Главная');
+  document.getElementById('nav-pricing').textContent = T('Pricing', 'Цены');
+  document.getElementById('nav-app').textContent = T('Waitlist', 'В бету');
+
+  var email = 'janibek190906@gmail.com';
+  var h = '';
+
+  h += '<section class="legal-hero">';
+  h += '<h1 class="display">' + T('Terms of Service', 'Условия использования') + '</h1>';
+  h += '<div class="updated">' + T('Last updated: 29 June 2026', 'Обновлено: 29 июня 2026') + '</div>';
+  h += '</section>';
+
+  h += '<section class="legal">';
+
+  h += '<p class="intro">' + T(
+    'These terms govern your use of the Cert app and website. By creating an account or using Cert, you agree to them. If you do not agree, do not use Cert.',
+    'Эти условия регулируют использование приложения и сайта Cert. Создавая аккаунт или пользуясь Cert, вы соглашаетесь с ними. Если не согласны — не используйте Cert.') + '</p>';
+
+  h += '<h2>' + T('1. The service', '1. Сервис') + '</h2>';
+  h += '<p>' + T(
+    'Cert is an app for building verified streaks: you set a goal, submit a daily photo, and an AI judge decides whether it counts. You can compete with friends in challenges where the last place may receive a playful dare.',
+    'Cert — приложение для заверенных стриков: вы ставите цель, отправляете фото в день, и ИИ-судья решает, засчитано ли. Можно соревноваться с друзьями в челленджах, где последнее место может получить шуточное задание.') + '</p>';
+
+  h += '<h2>' + T('2. Your account', '2. Ваш аккаунт') + '</h2>';
+  h += '<p>' + T(
+    'You are responsible for activity under your account and for keeping your login secure. Provide accurate information and do not impersonate others.',
+    'Вы отвечаете за действия в вашем аккаунте и за безопасность входа. Указывайте достоверные данные и не выдавайте себя за других.') + '</p>';
+
+  h += '<h2>' + T('3. Your content', '3. Ваш контент') + '</h2>';
+  h += '<p>' + T(
+    'You keep ownership of the photos and goals you submit. You grant Cert a limited license to store and process them to operate the service — including AI judging and, in peer challenges, showing a photo to other members for voting.',
+    'Вы сохраняете права на отправленные фото и цели. Вы предоставляете Cert ограниченную лицензию хранить и обрабатывать их для работы сервиса — включая проверку ИИ и, в челленджах с голосованием, показ фото другим участникам.') + '</p>';
+
+  h += '<h2>' + T('4. Acceptable use', '4. Допустимое использование') + '</h2>';
+  h += '<ul>';
+  h += '<li>' + T('Do not submit illegal, harmful, or infringing content.', 'Не отправляйте незаконный, вредный или нарушающий права контент.') + '</li>';
+  h += '<li>' + T('Do not try to fake, trick, or game the AI judge or leaderboards.', 'Не пытайтесь подделать или обмануть ИИ-судью или лидерборды.') + '</li>';
+  h += '<li>' + T('Do not harass other members or post abusive content in challenges.', 'Не оскорбляйте других участников и не публикуйте абьюзивный контент в челленджах.') + '</li>';
+  h += '<li>' + T('Do not attempt to disrupt or reverse-engineer the service.', 'Не пытайтесь нарушить работу или провести реверс-инжиниринг сервиса.') + '</li>';
+  h += '</ul>';
+
+  h += '<h2>' + T('5. AI judgments', '5. Решения ИИ') + '</h2>';
+  h += '<p>' + T(
+    'Verdicts are produced by an automated model and may sometimes be wrong. Streaks, approvals, and rejections are provided as-is. Where an appeal option is offered, you may use it, but decisions are final.',
+    'Вердикты выносит автоматическая модель, и иногда они могут быть ошибочными. Стрики, одобрения и отказы предоставляются «как есть». Где доступна апелляция, вы можете ею воспользоваться, но решения окончательны.') + '</p>';
+
+  h += '<h2>' + T('6. Plans and payments', '6. Тарифы и оплата') + '</h2>';
+  h += '<p>' + T(
+    'Cert offers a free plan and a paid Cert Pro plan. When paid plans launch, billing is handled through the relevant app store. Prices may change with notice. Consumable items such as streak freezes are non-refundable once used.',
+    'Cert предлагает бесплатный план и платный Cert Pro. После запуска платных планов оплата проходит через соответствующий магазин приложений. Цены могут меняться с уведомлением. Расходуемые элементы, например заморозки стрика, не возвращаются после использования.') + '</p>';
+
+  h += '<h2>' + T('7. Friend challenges', '7. Челленджи с друзьями') + '</h2>';
+  h += '<p>' + T(
+    'Challenges and any dares are created and carried out by users. You take part voluntarily and are responsible for your own conduct. Cert is not responsible for what members do outside the app.',
+    'Челленджи и задания создаются и выполняются пользователями. Вы участвуете добровольно и отвечаете за своё поведение. Cert не отвечает за действия участников вне приложения.') + '</p>';
+
+  h += '<h2>' + T('8. Disclaimer', '8. Отказ от гарантий') + '</h2>';
+  h += '<p>' + T(
+    'Cert is provided "as is" and "as available", without warranties of any kind. We do not guarantee that the service will be uninterrupted, error-free, or that AI judgments will be accurate.',
+    'Cert предоставляется «как есть» и «как доступно», без каких-либо гарантий. Мы не гарантируем бесперебойную работу, отсутствие ошибок или точность решений ИИ.') + '</p>';
+
+  h += '<h2>' + T('9. Limitation of liability', '9. Ограничение ответственности') + '</h2>';
+  h += '<p>' + T(
+    'To the maximum extent permitted by law, Cert and its team are not liable for indirect or consequential damages arising from your use of the service.',
+    'В максимальной степени, разрешённой законом, Cert и его команда не несут ответственности за косвенный или сопутствующий ущерб, связанный с использованием сервиса.') + '</p>';
+
+  h += '<h2>' + T('10. Termination', '10. Прекращение') + '</h2>';
+  h += '<p>' + T(
+    'You can stop using Cert at any time. We may suspend or terminate accounts that violate these terms.',
+    'Вы можете прекратить пользоваться Cert в любой момент. Мы можем приостановить или удалить аккаунты, нарушающие эти условия.') + '</p>';
+
+  h += '<h2>' + T('11. Governing law', '11. Применимое право') + '</h2>';
+  h += '<p>' + T(
+    'These terms are governed by the laws of the country where the Cert provider is established, without regard to conflict-of-law rules.',
+    'Эти условия регулируются законами страны, где учреждён поставщик Cert, без учёта коллизионных норм.') + '</p>';
+
+  h += '<h2>' + T('12. Contact', '12. Контакты') + '</h2>';
+  h += '<p>' + T('Questions about these terms? Email ', 'Вопросы по условиям? Пишите на ') + '<a href="mailto:' + email + '">' + email + '</a>.</p>';
+
+  h += '</section>';
+
+  document.getElementById('main').innerHTML = h;
+}
+
+render();
+</script>
+</body>
+</html>

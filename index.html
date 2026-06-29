@@ -31,6 +31,16 @@
   .bet-no:hover{border-color:#cbc5bd!important;}
   .lang-btn{background:none;border:none;padding:5px 9px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#7d7770;cursor:pointer;}
   .lang-btn.active{background:#e23b2e;color:#120606;}
+  /* store buttons (top-right) — signal "mobile app" instantly */
+  .store-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid #2a2530;border-radius:9px;background:rgba(12,10,16,.55);text-decoration:none;color:#e9e4dc;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;transition:border-color .15s,background .15s,transform .15s;}
+  .store-pill:hover{border-color:#e23b2e;background:rgba(226,59,46,.12);transform:translateY(-1px);}
+  .store-pill svg{flex:none;display:block;}
+  .feat-ico{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border:1px solid #3a2a2a;border-radius:12px;background:rgba(226,59,46,.08);}
+  @media(max-width:600px){.store-pill span{display:none;}.store-pill{padding:7px 9px;}}
+  /* footer */
+  .ft-h{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#6f6a63;margin-bottom:16px;}
+  .ft-l{display:block;font-family:'JetBrains Mono',monospace;font-size:13px;color:#9a948d;text-decoration:none;margin-bottom:11px;transition:color .15s;}
+  .ft-l:hover{color:#e23b2e;}
   /* scroll reveal */
   .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
   .reveal.in{opacity:1;transform:none;}
@@ -76,6 +86,14 @@
   <div style="display:flex;align-items:center;gap:14px;pointer-events:auto;">
     <a href="pricing.html" class="topnav-link" data-k="navPricing" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9a948d;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
     <a href="#waitlist" class="topnav-link" data-k="navApp" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e23b2e;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
+    <a href="#waitlist" class="store-pill" title="Download on the App Store" aria-label="App Store">
+      <svg width="14" height="16" viewBox="0 0 24 24" fill="#f4efe8" aria-hidden="true"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.47 7.84 1.31 10.41.87 1.26 1.9 2.67 3.26 2.62 1.31-.05 1.8-.85 3.39-.85 1.58 0 2.03.85 3.41.82 1.41-.02 2.3-1.28 3.16-2.55.99-1.46 1.4-2.88 1.42-2.95-.03-.01-2.72-1.04-2.75-4.13M14.6 4.59c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.58 3.03-1.45"/></svg>
+      <span>iOS</span>
+    </a>
+    <a href="#waitlist" class="store-pill" title="Get it on Google Play" aria-label="Google Play">
+      <svg width="14" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.3c-.2.2-.3.5-.3.9v17.6c0 .4.1.7.3.9l.1.1L13.3 12v-.2L3.7 2.2l-.1.1z" fill="#7d7770"/><path d="M16.7 15.3 13.3 12v-.2l3.4-3.3.1.1 4 2.3c1.1.6 1.1 1.7 0 2.3l-4 2.3-.1-.2z" fill="#e23b2e"/><path d="M16.8 15.2 13.3 11.9 3.6 21.5c.4.4 1 .4 1.6.1l11.6-6.4" fill="#c0c0c0" opacity=".55"/><path d="M16.8 8.8 5.2 2.4c-.6-.3-1.2-.3-1.6.1l9.7 9.5 3.5-3.2z" fill="#f4efe8" opacity=".85"/></svg>
+      <span>Play</span>
+    </a>
     <div style="display:flex;border:1px solid #2a2530;">
       <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
       <button id="lang-ru" class="lang-btn" onclick="setLang('ru')">RU</button>
@@ -89,16 +107,16 @@
   <section id="top" style="position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:104px 24px 72px;">
     <div class="hero-row" style="animation:rise 1s ease-out both;">
       <div class="hero-copy">
-        <div class="day-strip" style="display:flex;flex-direction:column;gap:6px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.28em;color:#8a847c;text-transform:uppercase;margin-bottom:30px;">
-          <span data-k="day1"></span>
-          <span data-k="day2"></span>
-          <span data-k="day3" style="color:#c8c2ba;"></span>
-        </div>
         <h1 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,7vw,88px);line-height:.93;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 44px rgba(0,0,0,.85);"><span data-k="heroBig1"></span><br><span data-k="heroBig2"></span></h1>
-        <div style="margin-top:18px;font-family:'JetBrains Mono',monospace;font-size:14px;letter-spacing:.32em;text-transform:uppercase;color:#e23b2e;" data-k="heroAlt"></div>
-        <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:8px;" class="store-badges">
-          <span style="display:inline-flex;align-items:center;gap:7px;border:1px solid #2a2530;background:rgba(12,10,16,.6);padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:#cfc8bf;">▼ iOS · App Store</span>
-          <span style="display:inline-flex;align-items:center;gap:7px;border:1px solid #2a2530;background:rgba(12,10,16,.6);padding:7px 13px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.08em;color:#cfc8bf;">▼ Android · Google Play</span>
+        <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;" class="store-badges">
+          <a href="#waitlist" style="display:inline-flex;align-items:center;gap:9px;border:1px solid #2a2530;border-radius:10px;background:rgba(12,10,16,.6);padding:9px 15px;text-decoration:none;color:#f4efe8;">
+            <svg width="18" height="20" viewBox="0 0 24 24" fill="#f4efe8" aria-hidden="true"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.47 7.84 1.31 10.41.87 1.26 1.9 2.67 3.26 2.62 1.31-.05 1.8-.85 3.39-.85 1.58 0 2.03.85 3.41.82 1.41-.02 2.3-1.28 3.16-2.55.99-1.46 1.4-2.88 1.42-2.95-.03-.01-2.72-1.04-2.75-4.13M14.6 4.59c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.58 3.03-1.45"/></svg>
+            <span style="display:flex;flex-direction:column;line-height:1.1;"><span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#9a948d;">Download on the</span><span style="font-family:'Tektur',sans-serif;font-weight:700;font-size:15px;letter-spacing:.01em;">App Store</span></span>
+          </a>
+          <a href="#waitlist" style="display:inline-flex;align-items:center;gap:9px;border:1px solid #2a2530;border-radius:10px;background:rgba(12,10,16,.6);padding:9px 15px;text-decoration:none;color:#f4efe8;">
+            <svg width="18" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.3c-.2.2-.3.5-.3.9v17.6c0 .4.1.7.3.9l.1.1L13.3 12v-.2L3.7 2.2l-.1.1z" fill="#7d7770"/><path d="M16.7 15.3 13.3 12v-.2l3.4-3.3.1.1 4 2.3c1.1.6 1.1 1.7 0 2.3l-4 2.3-.1-.2z" fill="#e23b2e"/><path d="M16.8 15.2 13.3 11.9 3.6 21.5c.4.4 1 .4 1.6.1l11.6-6.4" fill="#c0c0c0" opacity=".55"/><path d="M16.8 8.8 5.2 2.4c-.6-.3-1.2-.3-1.6.1l9.7 9.5 3.5-3.2z" fill="#f4efe8" opacity=".85"/></svg>
+            <span style="display:flex;flex-direction:column;line-height:1.1;"><span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#9a948d;">Get it on</span><span style="font-family:'Tektur',sans-serif;font-weight:700;font-size:15px;letter-spacing:.01em;">Google Play</span></span>
+          </a>
         </div>
         <p style="margin:24px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="heroSub"></p>
         <a href="#waitlist" class="btn-cta cta-pulse" style="display:inline-block;margin-top:30px;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px 36px;text-decoration:none;" data-k="heroCta"></a>
@@ -110,50 +128,76 @@
           <!-- notch -->
           <div style="position:absolute;top:13px;left:50%;transform:translateX(-50%);width:118px;height:22px;background:#050406;border-radius:0 0 14px 14px;z-index:4;"></div>
           <!-- screen -->
-          <div style="position:relative;width:100%;height:100%;border-radius:33px;overflow:hidden;background:#070608;display:flex;flex-direction:column;">
+          <div style="position:relative;width:100%;height:100%;border-radius:33px;overflow:hidden;background:linear-gradient(180deg,#0b0a0e,#070608);display:flex;flex-direction:column;">
+            <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 16%);z-index:3;"></div>
             <!-- status bar -->
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 22px 4px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#cfc8bf;">
-              <span style="font-weight:700;">9:41</span>
-              <span style="letter-spacing:.12em;font-size:10px;">●●● ▰▰▰▰</span>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 24px 6px;">
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#f4efe8;">9:41</span>
+              <div style="display:flex;align-items:center;gap:7px;">
+                <svg width="17" height="11" viewBox="0 0 17 11" fill="#f4efe8"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.3" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
+                <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#f4efe8" stroke-width="1.4" stroke-linecap="round"><path d="M2 4.1a9 9 0 0 1 12 0"/><path d="M4.4 6.6a5.5 5.5 0 0 1 7.2 0"/></svg>
+                <svg width="24" height="12" viewBox="0 0 24 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#f4efe8" stroke-opacity=".45"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#f4efe8"/><rect x="21.6" y="4" width="1.8" height="4" rx="1" fill="#f4efe8" fill-opacity=".5"/></svg>
+              </div>
             </div>
             <!-- app header -->
-            <div style="display:flex;align-items:center;gap:8px;padding:8px 18px 14px;border-bottom:1px solid #1c1822;">
-              <img src="assets/gladiator-logo.png" alt="" style="height:24px;width:24px;image-rendering:pixelated;">
-              <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:15px;letter-spacing:.16em;color:#f4efe8;">CERT</span>
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 14px;border-bottom:1px solid #16131b;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <img src="assets/gladiator-logo.png" alt="" style="height:24px;width:24px;image-rendering:pixelated;">
+                <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:15px;letter-spacing:.16em;color:#f4efe8;">CERT</span>
+              </div>
+              <div style="width:27px;height:27px;border-radius:50%;border:1px solid #2a2530;background:linear-gradient(140deg,#2a2230,#15121a);display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:12px;color:#cbc5bd;">Z</div>
             </div>
             <!-- body -->
             <div style="flex:1;padding:15px 15px 0;position:relative;">
               <!-- streak card -->
-              <div style="border:1px solid #241f29;background:#120f14;border-radius:14px;padding:17px;">
-                <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:62px;line-height:.85;color:#e23b2e;text-shadow:0 2px 0 #000,0 0 30px rgba(226,59,46,.4);">14</div>
-                <div style="margin-top:7px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#6f6a63;">day streak · verified by the judge</div>
-                <div style="margin-top:13px;font-family:'Tektur',sans-serif;font-weight:700;font-size:17px;color:#f4efe8;">Gym — every day</div>
-                <div style="margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#9a948d;">📸 you, mid-workout, in the gym</div>
-                <div style="margin-top:13px;display:inline-flex;align-items:center;gap:8px;border:1px solid #1f3b25;background:rgba(52,199,89,.09);border-radius:8px;padding:7px 11px;">
-                  <span style="font-size:13px;">✅</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#34c759;">APPROVED — today counts</span>
+              <div style="border:1px solid #241f29;border-radius:16px;padding:16px;background:linear-gradient(165deg,#15121a,#100e13);box-shadow:0 14px 32px -18px rgba(0,0,0,.85);">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;">
+                  <div>
+                    <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:54px;line-height:.8;color:#e23b2e;text-shadow:0 0 28px rgba(226,59,46,.45);">14</div>
+                    <div style="margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#6f6a63;">day streak</div>
+                  </div>
+                  <div style="display:inline-flex;align-items:center;gap:5px;border:1px solid #2a2530;border-radius:999px;padding:5px 10px;">
+                    <svg width="10" height="13" viewBox="0 0 16 20" fill="#e23b2e"><path d="M8 0c.5 3 3 4 3 8a3 3 0 0 1-6 0c0-1 .5-1.5.5-2.5C3.5 7 2 9 2 12a6 6 0 0 0 12 0C14 6 9 5 8 0z"/></svg>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;color:#cbc5bd;">BEST 21</span>
+                  </div>
                 </div>
-                <div style="margin-top:13px;background:#e23b2e;border-radius:8px;text-align:center;padding:12px;font-family:'Tektur',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.07em;color:#120606;">📷 SUBMIT TODAY'S PROOF</div>
+                <div style="margin-top:12px;font-family:'Tektur',sans-serif;font-weight:700;font-size:16px;color:#f4efe8;">Gym — every day</div>
+                <div style="position:relative;margin-top:11px;height:114px;border-radius:12px;overflow:hidden;border:1px solid #241f29;background:radial-gradient(120% 90% at 28% 18%,rgba(226,59,46,.20),transparent 58%),radial-gradient(110% 100% at 82% 92%,rgba(201,162,39,.14),transparent 60%),linear-gradient(158deg,#1c1722,#0c0a10);display:flex;align-items:center;justify-content:center;">
+                  <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#f4efe8" stroke-opacity=".2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9v6M5 7.5v9M19 7.5v9M22 9v6M7 12h10"/></svg>
+                  <div style="position:absolute;top:9px;left:10px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;color:#e9e4dc;background:rgba(0,0,0,.5);padding:3px 7px;border-radius:5px;">TODAY · 18:32</div>
+                  <div style="position:absolute;bottom:9px;left:10px;display:inline-flex;align-items:center;gap:5px;background:rgba(52,199,89,.18);border:1px solid #1f3b25;border-radius:6px;padding:4px 8px;">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
+                    <span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.08em;color:#34c759;">VERIFIED BY AI</span>
+                  </div>
+                </div>
+                <div style="margin-top:12px;background:linear-gradient(180deg,#ef4a3d,#e23b2e);border-radius:10px;text-align:center;padding:12px;font-family:'Tektur',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.07em;color:#120606;box-shadow:0 8px 20px -8px rgba(226,59,46,.6);">SUBMIT TODAY'S PROOF</div>
               </div>
               <!-- friends challenge card -->
-              <div style="margin-top:13px;border:1px solid #241f29;background:#120f14;border-radius:14px;padding:14px 15px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:11px;">
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:#6f6a63;">Challenge · 4 friends</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;color:#e23b2e;">● LIVE</span>
+              <div style="margin-top:13px;border:1px solid #241f29;border-radius:16px;padding:15px;background:linear-gradient(165deg,#15121a,#100e13);">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#6f6a63;">Challenge · 4 friends</span>
+                  <span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.14em;color:#e23b2e;"><span style="width:6px;height:6px;border-radius:50%;background:#e23b2e;box-shadow:0 0 6px #e23b2e;"></span>LIVE</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 0;">
-                  <span style="color:#f4efe8;">🥇 You</span><span style="color:#c9a227;font-weight:700;">14 🔥</span>
+                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
+                  <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #c9a227;background:#1a1620;display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:11px;color:#f4efe8;">Y</div>
+                  <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;color:#f4efe8;">You</span>
+                  <span style="display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#c9a227;">14<svg width="9" height="11" viewBox="0 0 16 20" fill="#e23b2e"><path d="M8 0c.5 3 3 4 3 8a3 3 0 0 1-6 0c0-1 .5-1.5.5-2.5C3.5 7 2 9 2 12a6 6 0 0 0 12 0C14 6 9 5 8 0z"/></svg></span>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 0;">
-                  <span style="color:#cbc5bd;">🥈 Alex</span><span style="color:#9a948d;">12 🔥</span>
+                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
+                  <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #b8bcc4;background:#1a1620;display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:11px;color:#cbc5bd;">A</div>
+                  <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbc5bd;">Alex</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#9a948d;">12</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;padding:4px 0;">
-                  <span style="color:#cbc5bd;">🥉 Sam</span><span style="color:#9a948d;">9 🔥</span>
+                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
+                  <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #b5793f;background:#1a1620;display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:11px;color:#cbc5bd;">S</div>
+                  <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbc5bd;">Sam</span>
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#9a948d;">9</span>
                 </div>
               </div>
               <!-- bottom fade -->
-              <div style="position:absolute;left:0;right:0;bottom:0;height:54px;background:linear-gradient(180deg,rgba(7,6,8,0),#070608);pointer-events:none;"></div>
+              <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(180deg,rgba(7,6,8,0),#070608);pointer-events:none;"></div>
             </div>
+            <div style="position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:108px;height:5px;border-radius:3px;background:#3a3540;z-index:4;"></div>
           </div>
         </div>
       </div>
@@ -173,19 +217,16 @@
         <div class="step-card reveal" data-delay="0" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
           <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">01</div>
           <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s1t"></div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#6f6a63;margin:6px 0 16px;" data-k="s1alt"></div>
           <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s1d"></p>
         </div>
         <div class="step-card reveal" data-delay="130" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
           <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">02</div>
           <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s2t"></div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#6f6a63;margin:6px 0 16px;" data-k="s2alt"></div>
           <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s2d"></p>
         </div>
         <div class="step-card reveal" data-delay="260" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #3a1c1a;background:rgba(20,9,8,.6);">
           <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">03</div>
           <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s3t"></div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#6f6a63;margin:6px 0 16px;" data-k="s3alt"></div>
           <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s3d"></p>
         </div>
       </div>
@@ -214,7 +255,6 @@
   <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.6),rgba(20,8,8,.72));">
     <div style="max-width:760px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
       <h2 class="breathe" style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(34px,6.4vw,72px);line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 40px rgba(226,59,46,.25);" data-k="shameH"></h2>
-      <div style="margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.32em;text-transform:uppercase;color:#e23b2e;" data-k="shameAlt"></div>
       <p style="margin:30px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:17px;line-height:1.75;color:#c2bcb4;text-shadow:0 2px 10px #000;"><span data-k="shameBody"></span><span style="color:#e23b2e;" data-k="shameAccent"></span></p>
     </div>
   </section>
@@ -223,17 +263,37 @@
   <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.66),rgba(7,6,8,.7));">
     <div style="max-width:760px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
       <h2 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(32px,6vw,68px);line-height:1.02;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000;"><span data-k="judgeH1"></span><br><span data-k="judgeH2"></span></h2>
-      <div style="margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.3em;text-transform:uppercase;color:#e23b2e;" data-k="judgeAlt"></div>
       <p style="margin:30px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:17px;line-height:1.75;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="judgeBody"></p>
     </div>
   </section>
 
-  <!-- MANIFESTO -->
-  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:80px 24px;background:linear-gradient(180deg,rgba(20,8,8,.42),rgba(7,6,8,.7));">
-    <div style="max-width:880px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
-      <div style="font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.08em;color:#e23b2e;margin-bottom:26px;">✶ ✶ ✶</div>
-      <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(30px,5.4vw,60px);line-height:1.08;letter-spacing:-.01em;color:#f4efe8;text-shadow:0 3px 0 #000;" data-k="manifestoH"></div>
-      <p style="margin:26px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.75;color:#b8b2ab;" data-k="manifestoSub"></p>
+  <!-- FEATURES -->
+  <section style="padding:96px 24px;background:linear-gradient(180deg,rgba(20,8,8,.42),rgba(7,6,8,.7));">
+    <div style="width:100%;max-width:1000px;margin:0 auto;">
+      <div class="reveal" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:40px;" data-k="featKicker"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;">
+        <div class="reveal" data-delay="0" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
+          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4.5v1.5A2.5 2.5 0 0 0 7 10M17 6h2.5v1.5A2.5 2.5 0 0 1 17 10"/><path d="M12 14v3M9.5 21h5M10 17.5h4V21h-4z"/></svg></div>
+          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat1t"></div>
+          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat1d"></p>
+        </div>
+        <div class="reveal" data-delay="90" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
+          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h18M3 14.5h18M8 5v14M16 5v14"/></svg></div>
+          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat2t"></div>
+          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat2d"></p>
+        </div>
+        <div class="reveal" data-delay="180" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
+          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.5C12 21.5 19 15.5 19 9.5A7 7 0 0 0 5 9.5C5 15.5 12 21.5 12 21.5Z"/><path d="M8.8 9.6l2.2 2.2 4-4.2"/></svg></div>
+          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat3t"></div>
+          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat3d"></p>
+        </div>
+        <div class="reveal" data-delay="270" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #3a1c1a;background:rgba(20,9,8,.6);">
+          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17M6.5 20.5h11M4 7.5h16M12 4.2l-8 3.3M12 4.2l8 3.3"/><path d="M4 7.5l-2.2 4.6a2.6 2.6 0 0 0 4.4 0L4 7.5zM20 7.5l-2.2 4.6a2.6 2.6 0 0 0 4.4 0L20 7.5z"/></svg></div>
+          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat4t"></div>
+          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat4d"></p>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;color:#6f6a63;" data-k="featNote"></div>
     </div>
   </section>
 
@@ -301,7 +361,51 @@
     </div>
   </section>
 
-  <footer style="padding:30px 24px 40px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;color:#5a554f;background:#050406;">CERT · THE STREAK YOU CAN'T FAKE · © 2026</footer>
+  <footer style="background:#050406;border-top:1px solid #1a1620;padding:64px 24px 34px;">
+    <div style="max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:48px 64px;justify-content:space-between;">
+      <!-- brand -->
+      <div style="max-width:300px;">
+        <a href="#top" style="display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:16px;">
+          <img src="assets/gladiator-logo.png" alt="" style="height:32px;width:32px;image-rendering:pixelated;">
+          <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:18px;letter-spacing:.16em;color:#f4efe8;">CERT</span>
+        </a>
+        <p data-k="ftTagline" style="margin:0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:#7d7770;"></p>
+        <div style="display:flex;gap:10px;margin-top:18px;">
+          <a href="#waitlist" class="store-pill" title="Download on the App Store" aria-label="App Store">
+            <svg width="14" height="16" viewBox="0 0 24 24" fill="#f4efe8" aria-hidden="true"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.47 7.84 1.31 10.41.87 1.26 1.9 2.67 3.26 2.62 1.31-.05 1.8-.85 3.39-.85 1.58 0 2.03.85 3.41.82 1.41-.02 2.3-1.28 3.16-2.55.99-1.46 1.4-2.88 1.42-2.95-.03-.01-2.72-1.04-2.75-4.13M14.6 4.59c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.58 3.03-1.45"/></svg>
+            <span>iOS</span>
+          </a>
+          <a href="#waitlist" class="store-pill" title="Get it on Google Play" aria-label="Google Play">
+            <svg width="14" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.3c-.2.2-.3.5-.3.9v17.6c0 .4.1.7.3.9l.1.1L13.3 12v-.2L3.7 2.2l-.1.1z" fill="#7d7770"/><path d="M16.7 15.3 13.3 12v-.2l3.4-3.3.1.1 4 2.3c1.1.6 1.1 1.7 0 2.3l-4 2.3-.1-.2z" fill="#e23b2e"/><path d="M16.8 15.2 13.3 11.9 3.6 21.5c.4.4 1 .4 1.6.1l11.6-6.4" fill="#c0c0c0" opacity=".55"/><path d="M16.8 8.8 5.2 2.4c-.6-.3-1.2-.3-1.6.1l9.7 9.5 3.5-3.2z" fill="#f4efe8" opacity=".85"/></svg>
+            <span>Play</span>
+          </a>
+        </div>
+      </div>
+      <!-- link columns -->
+      <div style="display:flex;gap:56px;flex-wrap:wrap;">
+        <div>
+          <div class="ft-h" data-k="ftProduct"></div>
+          <a class="ft-l" href="#top" data-k="navHome"></a>
+          <a class="ft-l" href="pricing.html" data-k="navPricing"></a>
+          <a class="ft-l" href="#waitlist" data-k="navApp"></a>
+        </div>
+        <div>
+          <div class="ft-h" data-k="ftLegal"></div>
+          <a class="ft-l" href="privacy.html" data-k="ftPrivacy"></a>
+          <a class="ft-l" href="terms.html" data-k="ftTerms"></a>
+        </div>
+        <div>
+          <div class="ft-h" data-k="ftConnect"></div>
+          <a class="ft-l" href="mailto:janibek190906@gmail.com">janibek190906@gmail.com</a>
+          <a class="ft-l" href="https://instagram.com/cert_app" target="_blank" rel="noopener">@cert_app</a>
+        </div>
+      </div>
+    </div>
+    <div style="max-width:1080px;margin:40px auto 0;padding-top:24px;border-top:1px solid #1a1620;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#5a554f;">
+      <span>© 2026 CERT — <span data-k="ftRights"></span></span>
+      <span data-k="ftMade"></span>
+    </div>
+  </footer>
 
 </main>
 
@@ -320,11 +424,11 @@ const dict = {
   en: {
     day1:"Day 1 — anyone can start.", day2:"Day 4 — most quit.", day3:"Day 30 — your streak is real.",
     heroBig1:"Prove it", heroBig2:"every day", heroAlt:"докажи каждый день",
-    heroSub:"The app for one goal, a daily photo, and an honest AI judge that can't be fooled. Go solo or run challenges with friends — the streak you build is one you can't fake. iOS & Android. Free to start.",
-    hiwKicker:"How it works", hiwAlt:"three steps",
-    s1t:"Set one goal", s1alt:"одна цель", s1d:"Name what you'll do daily, in your own words. The AI judge reads exactly that.",
-    s2t:"Prove it daily", s2alt:"докажи", s2d:"Snap a photo in the app. The judge decides in seconds: counts or not. No appeals.",
-    s3t:"Build the streak", s3alt:"стрик", s3d:"Every approved day stacks. Go solo or challenge friends — miss one and it resets to zero. No faking it.",
+    heroSub:"Set a goal, prove it daily with a photo, and an AI judge you can't fool keeps you honest. Go solo or challenge friends. iOS & Android — free to start.",
+    hiwKicker:"How to play", hiwAlt:"three steps",
+    s1t:"Set a goal", s1alt:"одна цель", s1d:"Pick one daily goal — go solo, or start a challenge and invite friends with a code.",
+    s2t:"Prove it daily", s2alt:"докажи", s2d:"Snap a photo in the app. The AI judge approves or rejects in seconds — no checkboxes, no faking.",
+    s3t:"Win the streak", s3alt:"стрик", s3d:"Verified days stack up. In a challenge the leaderboard is live — last place spins the wheel of fortune.",
     shameH:"Can't be faked", shameAlt:"стрик, который не подделать", shameBody:"Other apps let you tap a checkbox. Here every single day is verified by an impartial judge. ", shameAccent:"That's what makes your streak mean something.",
     judgeH1:"The judge is code,", judgeH2:"not you", judgeAlt:"судит код, не ты",
     judgeBody:"You can't argue with it, bribe it, or talk yourself into a pass. It looks at the photo and your goal, and decides. That's the whole point.",
@@ -334,9 +438,18 @@ const dict = {
     betLabel:"", betYes:"", betNo:"", skip:"",
     doneTitle:"You're in", doneAlt:"7 days of Pro reserved", queueLabel:"early access", doneBody:"We'll send you the iOS & Android app the moment it's live, with 7 days of Cert Pro free reserved for your email. Go solo or bring friends.",
     errEmail:"That email looks off.", errChallenge:"Name your goal — even a rough one.",
-    heroCta:"Join the waitlist →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Waitlist",
+    heroCta:"Join the waitlist →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Waitlist", navHome:"Home",
+    ftTagline:"The streak you can't fake. Prove your goals every day — solo or against friends.",
+    ftProduct:"Product", ftLegal:"Legal", ftConnect:"Connect",
+    ftPrivacy:"Privacy Policy", ftTerms:"Terms of Service",
+    ftRights:"All rights reserved.", ftMade:"Built for people who finish what they start.",
     stat1l:"% impartial judge", stat2l:"money on the line", stat3l:"AI judge on duty",
-    manifestoH:"Motivation dies by day three. A verified streak doesn't.", manifestoSub:"Willpower is a terrible referee, so we replaced it with one that can't be fooled. What's left is a streak you actually earned.",
+    featKicker:"What's inside",
+    feat1t:"Friend challenges", feat1d:"Compete on one goal. Live leaderboard — last place spins the wheel of fortune.",
+    feat2t:"Timelapse", feat2d:"Your daily proof photos auto-stitch into a shareable progress video.",
+    feat3t:"Geo-verified", feat3d:"Proofs can be confirmed at the place they happened. Harder to fake.",
+    feat4t:"AI judge", feat4d:"Every photo checked against your goal. No checkboxes, no bargaining.",
+    featNote:"Timelapse & geo-verified proofs — rolling out to Pro.",
     faqKicker:"Questions", faqAlt:"before you start",
     faq:[
       {q:"Is it really free?", a:"Yes. One goal, a daily photo, and the AI judge are free forever. Pro adds more goals, unlimited checks, and streak freezes."},
@@ -351,11 +464,11 @@ const dict = {
   ru: {
     day1:"День 1 — начать может каждый.", day2:"День 4 — большинство бросает.", day3:"День 30 — твой стрик настоящий.",
     heroBig1:"Докажи", heroBig2:"каждый день", heroAlt:"prove it every day",
-    heroSub:"Приложение для одной цели, фото в день и честного ИИ-судьи, которого не обмануть. Соло или челленджи с друзьями — стрик, который ты собираешь, нельзя подделать. iOS и Android. Бесплатно для старта.",
-    hiwKicker:"Как это работает", hiwAlt:"три шага",
-    s1t:"Одна цель", s1alt:"set one goal", s1d:"Опиши, что будешь делать каждый день, своими словами. ИИ-судья читает именно это.",
-    s2t:"Докажи фото", s2alt:"prove daily", s2d:"Сфоткай в приложении. Судья решает за секунды: засчитано или нет. Без апелляций.",
-    s3t:"Собери стрик", s3alt:"the streak", s3d:"Каждый зачтённый день копится. Соло или челлендж с друзьями — пропустил день, и обнуление. Подделать нельзя.",
+    heroSub:"Поставь цель, доказывай каждый день фото — ИИ-судья, которого не обмануть, держит тебя честным. Соло или челлендж с друзьями. iOS и Android — бесплатно для старта.",
+    hiwKicker:"Как играть", hiwAlt:"три шага",
+    s1t:"Поставь цель", s1alt:"set one goal", s1d:"Одна цель на день — соло, или создай челлендж и позови друзей по коду.",
+    s2t:"Докажи фото", s2alt:"prove daily", s2d:"Сфоткай в приложении. ИИ-судья за секунды засчитывает или нет — без галочек и без обмана.",
+    s3t:"Выиграй стрик", s3alt:"the streak", s3d:"Зачтённые дни копятся. В челлендже лидерборд живой — последнее место крутит колесо фортуны.",
     shameH:"Не подделать", shameAlt:"the streak you can't fake", shameBody:"В других приложениях ты сам ставишь галочку. Здесь каждый день заверяет беспристрастный судья. ", shameAccent:"Поэтому твой стрик чего-то стоит.",
     judgeH1:"Судит код,", judgeH2:"не ты", judgeAlt:"the judge is code, not you",
     judgeBody:"С ним не поспоришь, не уговоришь и не обманешь себя. Он смотрит на фото и твою цель — и решает. В этом весь смысл.",
@@ -365,9 +478,18 @@ const dict = {
     betLabel:"", betYes:"", betNo:"", skip:"",
     doneTitle:"Ты в деле", doneAlt:"7 дней Pro забронированы", queueLabel:"ранний доступ", doneBody:"Пришлём приложение для iOS и Android, как только оно выйдет, и забронируем 7 дней Cert Pro бесплатно для твоей почты. Соло или с друзьями.",
     errEmail:"Похоже на неправильную почту.", errChallenge:"Назови цель — пусть даже грубо.",
-    heroCta:"В список ожидания →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"В бету",
+    heroCta:"В список ожидания →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"В бету", navHome:"Главная",
+    ftTagline:"Стрик, который не подделать. Доказывай цели каждый день — соло или против друзей.",
+    ftProduct:"Продукт", ftLegal:"Правовое", ftConnect:"Контакты",
+    ftPrivacy:"Политика конфиденциальности", ftTerms:"Условия использования",
+    ftRights:"Все права защищены.", ftMade:"Для тех, кто доводит до конца.",
     stat1l:"% беспристрастный судья", stat2l:"денег на кону", stat3l:"ИИ-судья на посту",
-    manifestoH:"Мотивация умирает на третий день. Заверенный стрик — нет.", manifestoSub:"Сила воли — паршивый судья, поэтому мы заменили её той, что не обмануть. Остаётся стрик, который ты реально заработал.",
+    featKicker:"Что внутри",
+    feat1t:"Челленджи с друзьями", feat1d:"Соревнуйтесь на одной цели. Живой лидерборд — последнее место крутит колесо фортуны.",
+    feat2t:"Таймлапс", feat2d:"Ежедневные фото-доказательства сами собираются в видео прогресса.",
+    feat3t:"Гео-проверка", feat3d:"Доказательство можно подтвердить по месту съёмки. Сложнее подделать.",
+    feat4t:"ИИ-судья", feat4d:"Каждое фото сверяется с целью. Без галочек и без торга.",
+    featNote:"Таймлапс и гео-проверка — скоро в Pro.",
     faqKicker:"Вопросы", faqAlt:"перед стартом",
     faq:[
       {q:"Это правда бесплатно?", a:"Да. Одна цель, фото в день и ИИ-судья — бесплатно навсегда. Pro добавляет больше целей, безлимит проверок и заморозки стрика."},
@@ -686,5 +808,8 @@ const arenaConfig = { language:'English', showEmperor:true, fightSpeed:1, ambien
   requestAnimationFrame(loop);
 })();
 </script>
+
+<!-- Vercel Web Analytics (static site — no build step needed) -->
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

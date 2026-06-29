@@ -84,7 +84,7 @@ function render() {
     { q: T('Is there really a free plan?', 'Есть правда бесплатный план?'),
       a: T('Yes — free forever. One goal, a daily photo, the AI judge, and your full unfakeable streak. No credit card, no trial clock.', 'Да — бесплатно навсегда. Одна цель, фото в день, ИИ-судья и твой полный неподдельный стрик. Без карты и без таймера триала.') },
     { q: T('What do I get with Pro?', 'Что даёт Pro?'),
-      a: T('Several goals at once, unlimited daily photo checks, streak freezes, and stats. Friend challenges land in Pro when they ship.', 'Несколько целей сразу, безлимит проверок фото в день, заморозки стрика и статистика. Челленджи с друзьями появятся в Pro, когда выйдут.') },
+      a: T('Several goals at once, unlimited daily photo checks, streak freezes, stats, plus timelapse video export and geo-verified proofs. Friend challenges are free for everyone.', 'Несколько целей сразу, безлимит проверок фото в день, заморозки стрика, статистика, плюс экспорт таймлапс-видео и гео-проверка. Челленджи с друзьями бесплатны для всех.') },
     { q: T('Why is the free plan one goal only?', 'Почему на бесплатном только одна цель?'),
       a: T('One goal is enough to build a real, unfakeable streak — that is the whole product. Pro is for running several at once.', 'Одной цели достаточно, чтобы собрать настоящий неподдельный стрик — это и есть весь продукт. Pro — когда хочешь вести несколько сразу.') },
     { q: T('Why only 2 photo checks a day on free?', 'Почему на бесплатном 2 проверки в день?'),
@@ -124,6 +124,7 @@ function render() {
   html += '<li>' + T('AI judge on every photo', 'ИИ-судья на каждом фото') + '</li>';
   html += '<li>' + T('2 photo checks / day', '2 проверки фото / день') + '</li>';
   html += '<li>' + T('Full unfakeable streak', 'Полный неподдельный стрик') + '</li>';
+  html += '<li>' + T('Friend challenges', 'Челленджи с друзьями') + '</li>';
   html += '</ul>';
   html += '<a href="index.html#waitlist" class="btn btn-ghost btn-block">' + T('Start free →', 'Начать бесплатно →') + '</a>';
   html += '</div>';
@@ -138,9 +139,9 @@ function render() {
   html += '<ul class="price-feats">';
   html += '<li>' + T('Multiple goals at once', 'Несколько целей сразу') + '</li>';
   html += '<li>' + T('Unlimited photo checks', 'Безлимит проверок фото') + '</li>';
-  html += '<li>' + T('Streak freezes', 'Заморозки стрика') + '</li>';
-  html += '<li>' + T('Stats & history', 'Статистика и история') + '</li>';
-  html += '<li>' + T('Friends challenges (soon)', 'Челленджи с друзьями (скоро)') + '</li>';
+  html += '<li>' + T('Timelapse video export', 'Экспорт таймлапс-видео') + '</li>';
+  html += '<li>' + T('Geo-verified proofs', 'Гео-проверка доказательств') + '</li>';
+  html += '<li>' + T('Streak freezes & stats', 'Заморозки стрика и статистика') + '</li>';
   html += '</ul>';
   html += '<a href="index.html#waitlist" class="btn btn-red btn-block">' + T('Get Pro →', 'Взять Pro →') + '</a>';
   html += '</div>';
@@ -202,5 +203,8 @@ function toggleFaq(i) { faqOpen = (faqOpen === i ? null : i); render(); }
 render();
 CertPrice.load(render); // re-render with local currency once geo resolves
 </script>
+
+<!-- Vercel Web Analytics (static site — no build step needed) -->
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
