@@ -79,20 +79,27 @@ const tinyPhoto = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC
   ok(res.status === 200 && res.data.verdict.approved === true, 'submit approved (forced)');
   ok(res.data.goal.streak === 1, 'streak incremented to 1');
 
-  // submit -> reject x3 -> block
+  // once approved today, the same goal can't be submitted again (no double count)
+  res = await call('POST', `/api/goals/${goalId}/submit`, { photo: tinyPhoto, forceApprove: true }, token);
+  ok(res.status === 409 && res.data.error === 'already_done_today', 'second submit same day blocked');
+
+  // strike -> block path uses a FRESH goal (rejecting an already-approved goal
+  // is now blocked by the once-per-day guard, so test strikes in isolation)
+  res = await call('POST', '/api/goals', { text: 'Read 20 pages daily', category: 'read', format: 'daily' }, token);
+  const blockGoalId = res.data.goal.id;
   for (let i = 0; i < 3; i++) {
-    res = await call('POST', `/api/goals/${goalId}/submit`, { photo: tinyPhoto, forceReject: true }, token);
+    res = await call('POST', `/api/goals/${blockGoalId}/submit`, { photo: tinyPhoto, forceReject: true }, token);
   }
   ok(res.data.goal.strikes >= 3, 'three rejects = 3 strikes');
   ok(res.data.goal.blocked === true, 'blocked after 3 strikes');
   ok(res.data.goal.streak === 0, 'streak burned on block');
 
   // submit to a blocked goal -> 409
-  res = await call('POST', `/api/goals/${goalId}/submit`, { photo: tinyPhoto, forceApprove: true }, token);
+  res = await call('POST', `/api/goals/${blockGoalId}/submit`, { photo: tinyPhoto, forceApprove: true }, token);
   ok(res.status === 409, 'cannot submit to blocked goal');
 
   // reactivate
-  res = await call('POST', `/api/goals/${goalId}/reactivate`, {}, token);
+  res = await call('POST', `/api/goals/${blockGoalId}/reactivate`, {}, token);
   ok(res.status === 200 && res.data.goal.blocked === false, 'reactivate unblocks');
   ok(res.data.goal.strikes === 0 && res.data.goal.streak === 0, 'reactivate resets strikes, keeps streak 0');
 

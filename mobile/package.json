@@ -8,26 +8,34 @@
     "ios": "expo start --ios"
   },
   "dependencies": {
-    "@expo/vector-icons": "^15.0.3",
+    "@expo/vector-icons": "~15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "8.4.4",
     "@supabase/supabase-js": "^2.45.4",
     "babel-preset-expo": "~54.0.10",
     "expo": "~54.0.0",
+    "expo-apple-authentication": "~8.0.8",
     "expo-asset": "~12.0.0",
     "expo-camera": "~17.0.10",
+    "expo-constants": "~18.0.13",
+    "expo-dev-client": "~6.0.21",
     "expo-image-picker": "~17.0.0",
     "expo-linking": "~8.0.12",
     "expo-location": "~19.0.8",
     "expo-notifications": "~0.32.17",
     "expo-sharing": "~14.0.8",
     "expo-status-bar": "~3.0.0",
+    "expo-updates": "~29.0.18",
     "expo-web-browser": "~15.0.11",
     "react": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-purchases": "^8.12.0",
     "react-native-safe-area-context": "~5.6.0",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-view-shot": "4.0.3"
+  },
+  "overrides": {
+    "expo-font": "14.0.12"
   },
   "private": true
 }

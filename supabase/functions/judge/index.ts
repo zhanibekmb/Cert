@@ -75,7 +75,7 @@ function dailyRequirement(day: string, goalId: string): { en: string; ru: string
   const fw = n < 5 ? "пальца" : "пальцев";
   return { en: `With your free hand, hold up ${n} fingers somewhere in the frame.`, ru: `Свободной рукой покажи ${n} ${fw} где-нибудь в кадре.` };
 }
-function buildJudgePrompt(goalText: string, proofSpec?: string, dailyReq?: string): string {
+function buildJudgePrompt(goalText: string, proofSpec?: string, dailyReq?: string, reasonLang = "English"): string {
   const lines = [
     "You are a FRIENDLY, GENEROUS AI judge for a habit app called Cert. Your job is to ENCOURAGE people who showed up, not to fail them on technicalities. Default to APPROVE — when in doubt, approve.",
     `User goal: "${goalText}"`,
@@ -84,24 +84,24 @@ function buildJudgePrompt(goalText: string, proofSpec?: string, dailyReq?: strin
     "ONLY reject when it is OBVIOUS the photo is one of: a completely unrelated/different activity, blank or black, a screenshot, a meme, a stock/internet image, or clearly faked. A borderline, messy, or imperfect but genuine attempt MUST be approved.",
   ];
   if (dailyReq) lines.push(`Freshness check (anti-cheat): the photo should also show "${dailyReq}". If the required fingers are present in ANY clear form, accept. Only reject for this if the fingers are plainly absent — and then explain kindly what to add.`);
-  lines.push('Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, in the user goal\'s language>", "confidence": <0..1>}.');
+  lines.push(`Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, written in ${reasonLang}>", "confidence": <0..1>}.`);
   return lines.join("\n");
 }
-function buildTimelapsePrompt(goalText: string, proofSpec?: string): string {
+function buildTimelapsePrompt(goalText: string, proofSpec?: string, reasonLang = "English"): string {
   return [
     "You are a FRIENDLY, GENEROUS AI judge for a habit app called Cert. You are shown SEVERAL FRAMES captured a few seconds apart as a TIMELAPSE of the user's session. Judge whether they show the user genuinely DOING the goal over time. Default to APPROVE — when in doubt, approve.",
     `User goal: "${goalText}"`,
     proofSpec ? `Loose hint of what doing it looks like (not a strict checklist): "${proofSpec}"` : "",
     "APPROVE if the frames plausibly show the activity happening across time: progress, movement, change, or sustained presence at the activity. The user shoots solo with no special equipment or ideal location — never require any of those. Be forgiving about angle, lighting, framing, distance and quality.",
     "ONLY reject if it is OBVIOUS the timelapse is faked or invalid: every frame is identical/static (a propped single photo, not a real session), a completely unrelated activity, blank/black frames, a screen recording, a stock/internet clip, or clearly staged. A messy but genuine real attempt MUST be approved.",
-    'Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, in the user goal\'s language>", "confidence": <0..1>}.',
+    `Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, written in ${reasonLang}>", "confidence": <0..1>}.`,
   ].filter(Boolean).join("\n");
 }
-async function judgeTimelapse(opts: { frames: string[]; goalText: string; proofSpec?: string }) {
+async function judgeTimelapse(opts: { frames: string[]; goalText: string; proofSpec?: string; reasonLang?: string }) {
   const parts: any[] = [{ text: `Judge this timelapse of ${opts.frames.length} frames (in order). Reply with ONLY the JSON object.` }];
   for (const f of opts.frames) { const img = parseImage(f); parts.push({ inline_data: { mime_type: img.mimeType, data: img.data } }); }
   const data = await geminiCall({
-    system_instruction: { parts: [{ text: buildTimelapsePrompt(opts.goalText, opts.proofSpec) }] },
+    system_instruction: { parts: [{ text: buildTimelapsePrompt(opts.goalText, opts.proofSpec, opts.reasonLang) }] },
     contents: [{ role: "user", parts }],
     generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
   });
@@ -109,10 +109,10 @@ async function judgeTimelapse(opts: { frames: string[]; goalText: string; proofS
   if (!p) throw new Error("no parseable verdict");
   return { approved: !!p.approved, reason: String(p.reason || (p.approved ? "Session confirmed." : "Not proven.")).slice(0, 200), confidence: typeof p.confidence === "number" ? p.confidence : (p.approved ? 0.8 : 0.3) };
 }
-async function judgePhoto(opts: { photo: string; goalText: string; proofSpec?: string; dailyReq?: string }) {
+async function judgePhoto(opts: { photo: string; goalText: string; proofSpec?: string; dailyReq?: string; reasonLang?: string }) {
   const img = parseImage(opts.photo);
   const data = await geminiCall({
-    system_instruction: { parts: [{ text: buildJudgePrompt(opts.goalText, opts.proofSpec, opts.dailyReq) }] },
+    system_instruction: { parts: [{ text: buildJudgePrompt(opts.goalText, opts.proofSpec, opts.dailyReq, opts.reasonLang) }] },
     contents: [{ role: "user", parts: [{ text: "Judge this photo. Reply with ONLY the JSON object." }, { inline_data: { mime_type: img.mimeType, data: img.data } }] }],
     generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
   });
@@ -152,7 +152,8 @@ Deno.serve(async (req) => {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "bad_body" }, 400); }
-  const { goalId, photo, frames, geo, forceReject, peek } = body || {};
+  const { goalId, photo, frames, geo, forceReject, peek, lang } = body || {};
+  const reasonLang = lang === "ru" ? "Russian" : "English"; // verdict reason language
   const isTimelapse = Array.isArray(frames) && frames.length > 0;
   const geoLat = geo && typeof geo.lat === "number" ? geo.lat : null;
   const geoLng = geo && typeof geo.lng === "number" ? geo.lng : null;
@@ -226,10 +227,10 @@ Deno.serve(async (req) => {
   if (forceReject) {
     verdict = { approved: false, reason: "Demo: forced reject.", confidence: 0.3 };
   } else if (isTimelapse) {
-    try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: goal.proof_spec_en }); }
+    try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
     catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   } else {
-    try { verdict = await judgePhoto({ photo, goalText: goal.text, proofSpec: goal.proof_spec_en, dailyReq: daily.en }); }
+    try { verdict = await judgePhoto({ photo, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, dailyReq: daily.en, reasonLang }); }
     catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   }
 
@@ -252,6 +253,8 @@ Deno.serve(async (req) => {
 
   const streakBefore = goal.streak || 0;
   let newStreak = streakBefore, newBest = goal.best_streak || 0, newStatus = goal.status, completedAt: string | null = null;
+  // Eternal counter — verified days NEVER reset (cushions the streak reset).
+  const newVerified = (goal.verified_days_total || 0) + (verdict.approved ? 1 : 0);
   if (isWeekly) {
     // weekly streak = consecutive weeks meeting quota; a single reject doesn't break it
     if (verdict.approved) {
@@ -269,14 +272,19 @@ Deno.serve(async (req) => {
     if (newStreak > newBest) newBest = newStreak;
     if (goal.type === "one_time") { newStatus = "completed"; completedAt = new Date().toISOString(); }
     else if (goal.duration_days && newStreak >= goal.duration_days) { newStatus = "completed"; completedAt = new Date().toISOString(); }
-  } else { newStreak = 0; }
+  } else {
+    // A reject does NOT break the streak while attempts remain — the user can
+    // retry today. A day truly ends unsatisfied only at the nightly sweep,
+    // which resets the streak (or spends a freeze) for the whole ended day.
+    newStreak = streakBefore;
+  }
 
   const { data: sub } = await svc.from("submissions").insert({
     goal_id: goalId, user_id: user.id, day, status: verdict.approved ? "approved" : "rejected",
     reason: verdict.reason, confidence: verdict.confidence, photo_path: photoPath, streak_before: streakBefore,
     lat: geoLat, lng: geoLng, place: geoPlace,
   }).select("id").single();
-  await svc.from("goals").update({ streak: newStreak, best_streak: newBest, status: newStatus, completed_at: completedAt }).eq("id", goalId);
+  await svc.from("goals").update({ streak: newStreak, best_streak: newBest, status: newStatus, completed_at: completedAt, verified_days_total: newVerified }).eq("id", goalId);
   if (newStatus === "completed") await svc.from("certs").insert({ user_id: user.id, goal_id: goalId, title: goal.text, days: newBest });
 
   const { data: updatedGoal } = await svc.from("goals").select("*").eq("id", goalId).single();

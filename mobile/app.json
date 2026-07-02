@@ -6,6 +6,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
+    "newArchEnabled": false,
     "backgroundColor": "#070608",
     "icon": "./assets/gladiator-logo.png",
     "splash": {
@@ -16,7 +17,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.cert.mobile",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "usesAppleSignIn": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "app.cert.mobile",
@@ -24,8 +29,14 @@
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "foregroundImage": "./assets/gladiator-logo.png",
-        "backgroundColor": "#070608"
-      }
+        "backgroundColor": "#F4EFE8"
+      },
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       [
@@ -49,7 +60,20 @@
       "expo-asset",
       "expo-web-browser",
       "expo-notifications",
+      "expo-apple-authentication",
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "685bfa75-5f2f-454a-a276-0d5ce64f9ddc"
+      }
+    },
+    "owner": "zhanibekm",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/685bfa75-5f2f-454a-a276-0d5ce64f9ddc"
+    }
   }
 }

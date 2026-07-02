@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
       duration_days: recurring ? ch.duration_days : null,
       deadline: recurring ? null : (ch.ends_at ? String(ch.ends_at).slice(0, 10) : null), // one_time: deadline date
       proof_spec_en: ch.proof_spec_en, proof_spec_ru: ch.proof_spec_ru,
+      proof_type: ch.proof_type || "photo", // members inherit the challenge's proof type
       challenge_id: ch.id,
     }).select("id").single();
     return g?.id ?? null;
@@ -90,6 +91,9 @@ Deno.serve(async (req) => {
     const goalType = body.goalType === "one_time" ? "one_time" : "recurring";
     const goalFormat = ["daily", "3x", "5x"].includes(body.goalFormat) ? body.goalFormat : "daily";
     const judgeMode = body.judgeMode === "peer" ? "peer" : "ai";
+    // Timelapse proof only makes sense for AI-judged challenges (peer voting on a
+    // frame reel isn't built); force photo otherwise.
+    const proofType = (body.proofType === "timelapse" && judgeMode === "ai") ? "timelapse" : "photo";
     if (goalText.length < 3) return json({ error: "goal_too_short" }, 400);
 
     let code = genCode();
@@ -106,7 +110,7 @@ Deno.serve(async (req) => {
     }
     const { data: ch, error: e1 } = await svc.from("challenges").insert({
       code, title, goal_text: goalText, duration_days: durationDays, host_user_id: user.id, ends_at: endsAt,
-      goal_type: goalType, goal_format: goalFormat, judge_mode: judgeMode,
+      goal_type: goalType, goal_format: goalFormat, judge_mode: judgeMode, proof_type: proofType,
     }).select("*").single();
     if (e1 || !ch) return json({ error: "create_failed", detail: e1?.message }, 500);
 
@@ -181,6 +185,7 @@ Deno.serve(async (req) => {
     // Has the requester already satisfied today / this week? (so the UI adapts)
     let doneToday = false;
     let awaitingVotes = false;
+    let rejectedToday = false; // peer: a friends-declined proof today closes the day (no resubmit)
     let weekly: { quota: number; thisWeek: number; weekDone: boolean } | null = null;
     if (myGoal) {
       const { data: prof } = await svc.from("profiles").select("timezone").eq("id", user.id).maybeSingle();
@@ -190,8 +195,13 @@ Deno.serve(async (req) => {
         doneToday = true;
       } else {
         const { data: t } = await svc.from("submissions").select("status").eq("goal_id", myGoal.id).eq("day", today);
-        doneToday = (t || []).some((x: any) => x.status === "approved" || x.status === "frozen" || x.status === "pending");
-        awaitingVotes = (t || []).some((x: any) => x.status === "pending");
+        const approved = (t || []).some((x: any) => x.status === "approved" || x.status === "frozen");
+        const pending = (t || []).some((x: any) => x.status === "pending");
+        doneToday = approved || pending;
+        awaitingVotes = pending;
+        // In peer mode there is ONE attempt per day: a decline ends the day.
+        // (AI mode keeps its own retry/attempts logic via the judge, so don't lock it here.)
+        rejectedToday = ch.judge_mode === "peer" && !approved && !pending && (t || []).some((x: any) => x.status === "rejected");
       }
       if (myGoal.type === "recurring" && (myGoal.format === "3x" || myGoal.format === "5x")) {
         const quota = myGoal.format === "5x" ? 5 : 3;
@@ -215,7 +225,7 @@ Deno.serve(async (req) => {
         }
       }
     }
-    return json({ challenge: ch, ended, members: rows, loser, dare: ch.dare || null, canSpin, myGoal, doneToday, awaitingVotes, weekly, isHost: ch.host_user_id === user.id, judgeMode: ch.judge_mode, pendingForMe });
+    return json({ challenge: ch, ended, members: rows, loser, dare: ch.dare || null, canSpin, myGoal, doneToday, awaitingVotes, rejectedToday, weekly, isHost: ch.host_user_id === user.id, judgeMode: ch.judge_mode, pendingForMe });
   }
 
   // ---- SPIN (last place only, no reroll) ----
@@ -261,7 +271,12 @@ Deno.serve(async (req) => {
     const tz = prof?.timezone || "UTC";
     const day = new Date().toLocaleDateString("en-CA", { timeZone: tz });
     const { data: t } = await svc.from("submissions").select("status").eq("goal_id", mem.goal_id).eq("day", day);
-    if ((t || []).some((x: any) => x.status === "approved" || x.status === "frozen" || x.status === "pending")) return json({ error: "already_today" }, 409);
+    // One attempt per day in peer mode: a resolved (approved/rejected) OR pending
+    // proof today closes the day. A decline does NOT let you re-submit until friends pass it.
+    if ((t || []).some((x: any) => ["approved", "frozen", "pending", "rejected"].includes(x.status))) {
+      const wasRejected = (t || []).some((x: any) => x.status === "rejected");
+      return json({ error: wasRejected ? "rejected_today" : "already_today" }, 409);
+    }
     let photoPath: string | null = null;
     try {
       const m = /^data:([^;]+);base64,(.*)$/s.exec(String(photo));

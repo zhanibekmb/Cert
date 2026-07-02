@@ -60,7 +60,12 @@ function applyVerdict(goal, approved, reason, confidence, photoPath, tz) {
   let { streak, best_streak, strikes, blocked } = goal;
   let status;
   if (approved) {
-    streak += 1; if (streak > best_streak) best_streak = streak; status = 'approved';
+    // One approved count per day. Without this guard a second approved photo
+    // on the same day bumped the streak again (the "2 tasks = +2 days" bug).
+    if (goal.last_submit !== today) {
+      streak += 1; if (streak > best_streak) best_streak = streak;
+    }
+    status = 'approved';
   } else {
     strikes += 1; status = 'rejected';
     if (strikes >= 3) { blocked = 1; streak = 0; }
@@ -230,6 +235,12 @@ app.post('/api/goals/:id/submit', requireAuth, async (req, res) => {
     if (isFinite(age) && age > 24 * 60 * 60 * 1000) {
       return res.status(422).json({ error: 'photo_too_old', message: 'Photo must be from the last 24 hours.' });
     }
+  }
+
+  // Already satisfied today → don't spend an AI call or risk a double count.
+  const todayKey = todayFor(req.user.timezone);
+  if (Q.subsByGoal.all(g.id).some((s) => s.date === todayKey && (s.status === 'approved' || s.status === 'frozen'))) {
+    return res.status(409).json({ error: 'already_done_today' });
   }
 
   let verdict;
