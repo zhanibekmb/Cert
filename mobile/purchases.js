@@ -46,14 +46,26 @@ export async function initPurchases(supabaseUserId) {
 }
 
 // Returns the store products we care about, split into freeze packs + pro.
+// Android returns subscriptions/one-time products as "productId:basePlanId"
+// (e.g. "cert_pro_monthly:monthly"); iOS returns the flat id. We normalize to
+// the flat product id so the UI (which keys off product ids) works on both,
+// and buyProduct() re-fetches by that flat id (accepted by both stores).
 export async function getProducts() {
   const P = load();
   if (!P) throw new Error("payments_unavailable");
   const ids = [...FREEZE_PACK_PRODUCTS, ...PRO_PRODUCTS];
-  const products = await P.getProducts(ids);
+  const raw = await P.getProducts(ids);
+  const seen = new Set();
+  const norm = [];
+  for (const p of raw) {
+    const id = (p.identifier || "").split(":")[0];
+    if (seen.has(id)) continue; // one entry per product (first base plan)
+    seen.add(id);
+    norm.push({ identifier: id, priceString: p.priceString, price: p.price, title: p.title });
+  }
   return {
-    freezePacks: products.filter((p) => FREEZE_PACK_PRODUCTS.includes(p.identifier)),
-    pro: products.filter((p) => PRO_PRODUCTS.includes(p.identifier)),
+    freezePacks: norm.filter((p) => FREEZE_PACK_PRODUCTS.includes(p.identifier)),
+    pro: norm.filter((p) => PRO_PRODUCTS.includes(p.identifier)),
   };
 }
 

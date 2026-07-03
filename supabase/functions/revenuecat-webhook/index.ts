@@ -58,7 +58,8 @@ Deno.serve(async (req) => {
   if (!ev) return json({ error: "no_event" }, 400);
 
   const uid: string = ev.app_user_id;
-  const productId: string = ev.product_id || "";
+  // Android may report "productId:basePlanId" — normalize to the flat product id.
+  const productId: string = (ev.product_id || "").split(":")[0];
   const eventId: string = ev.id || ev.transaction_id || "";
   const type: string = ev.type || "";
   if (!uid || !eventId) return json({ error: "missing_fields" }, 400);
