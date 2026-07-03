@@ -2353,6 +2353,30 @@ function SwipeReview({ onBack }) {
     Animated.timing(pan, { toValue: { x: dir === "right" ? SCREEN_W * 1.5 : -SCREEN_W * 1.5, y: 0 }, duration: 220, useNativeDriver: false })
       .start(() => { pan.setValue({ x: 0, y: 0 }); setIdx((i) => i + 1); });
   }
+  // UGC moderation (App Store 1.2): report objectionable content, block a user.
+  function reportProof() {
+    if (!current) return;
+    const item = current;
+    Alert.alert(t("Report this proof?"), t("Report content that's objectionable or abusive. We review reports within 24 hours."), [
+      { text: t("Cancel"), style: "cancel" },
+      { text: t("Report"), style: "destructive", onPress: async () => {
+        try { await supabase.functions.invoke("challenge", { body: { action: "report", submissionId: item.submissionId, reportedUserId: item.userId, reason: "objectionable" } }); } catch (_) {}
+        Alert.alert("Cert", t("Thanks — we'll review this within 24 hours."));
+        pan.setValue({ x: 0, y: 0 }); setIdx((i) => i + 1);
+      } },
+    ]);
+  }
+  function blockUser() {
+    if (!current) return;
+    const item = current;
+    Alert.alert(t("Block {name}?", { name: item.name }), t("You won't see their proofs again. This can't be undone in the app."), [
+      { text: t("Cancel"), style: "cancel" },
+      { text: t("Block"), style: "destructive", onPress: async () => {
+        try { await supabase.functions.invoke("challenge", { body: { action: "block", blockedUserId: item.userId } }); } catch (_) {}
+        pan.setValue({ x: 0, y: 0 }); setIdx((i) => i + 1);
+      } },
+    ]);
+  }
   const panResponder = PanResponder.create({
     onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 8,
     onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
@@ -2406,6 +2430,16 @@ function SwipeReview({ onBack }) {
           <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 6 }}>
             <Ionicons name="swap-horizontal" size={16} color={C.faint} />
             <Text style={s.note}>{t("Swipe the photo · {n} left", { n: queue.length - idx })}</Text>
+          </View>
+          <View style={{ flexDirection: "row", justifyContent: "center", gap: 26, marginTop: 14 }}>
+            <TouchableOpacity onPress={reportProof} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <Ionicons name="flag-outline" size={15} color={C.faint} />
+              <Text style={s.note}>{t("Report")}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={blockUser} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <Ionicons name="ban-outline" size={15} color={C.faint} />
+              <Text style={s.note}>{t("Block")}</Text>
+            </TouchableOpacity>
           </View>
         </>
       )}

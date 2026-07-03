@@ -421,6 +421,13 @@ const RU = {
   "Approve": "Одобрить",
   "no photo": "нет фото",
   "Swipe the photo · {n} left": "Свайпай фото · осталось {n}",
+  "Report": "Пожаловаться",
+  "Block": "Заблокировать",
+  "Report this proof?": "Пожаловаться на это фото?",
+  "Report content that's objectionable or abusive. We review reports within 24 hours.": "Сообщите о недопустимом или оскорбительном контенте. Мы рассматриваем жалобы в течение 24 часов.",
+  "Thanks — we'll review this within 24 hours.": "Спасибо — мы рассмотрим это в течение 24 часов.",
+  "Block {name}?": "Заблокировать {name}?",
+  "You won't see their proofs again. This can't be undone in the app.": "Вы больше не увидите его пруфы. Отменить в приложении нельзя.",
 
   // --- freeze packs (explicit to keep Russian plurals correct) ---
   "3 freezes": "3 заморозки",

@@ -304,13 +304,16 @@ Deno.serve(async (req) => {
     const subIds = (subs || []).map((s: any) => s.id);
     const voted = new Set<string>();
     if (subIds.length) { const { data: v } = await svc.from("challenge_votes").select("submission_id").eq("voter_id", user.id).in("submission_id", subIds); for (const x of v || []) voted.add(x.submission_id); }
+    // filter out proofs from users this reviewer has blocked (UGC moderation)
+    const { data: blk } = await svc.from("user_blocks").select("blocked_id").eq("blocker_id", user.id);
+    const blocked = new Set((blk || []).map((b: any) => b.blocked_id));
     const queue = [];
     for (const sub of subs || []) {
-      if (sub.user_id === user.id || voted.has(sub.id)) continue;
+      if (sub.user_id === user.id || voted.has(sub.id) || blocked.has(sub.user_id)) continue;
       const info = goalInfo[sub.goal_id]; if (!info) continue;
       let photoUrl: string | null = null;
       if (sub.photo_path) { const { data: signed } = await svc.storage.from("proofs").createSignedUrl(sub.photo_path, 3600); photoUrl = signed?.signedUrl || null; }
-      queue.push({ submissionId: sub.id, name: info.name, goalText: chById[info.challengeId]?.goal_text || "", day: sub.day, photoUrl });
+      queue.push({ submissionId: sub.id, userId: sub.user_id, name: info.name, goalText: chById[info.challengeId]?.goal_text || "", day: sub.day, photoUrl });
     }
     return json({ queue });
   }
@@ -356,6 +359,26 @@ Deno.serve(async (req) => {
     if (ch.host_user_id !== user.id) return json({ error: "not_host" }, 403);
     if (ch.status === "ended") return json({ ok: true, already: true });
     await svc.from("challenges").update({ status: "ended", ends_at: new Date().toISOString() }).eq("id", challengeId);
+    return json({ ok: true });
+  }
+
+  // ---- BLOCK (hide an abusive user's proofs from my review queue) ----
+  if (action === "block") {
+    const blockedId = body.blockedUserId;
+    if (!blockedId || blockedId === user.id) return json({ error: "bad_target" }, 400);
+    await svc.from("user_blocks").upsert({ blocker_id: user.id, blocked_id: blockedId }, { onConflict: "blocker_id,blocked_id" });
+    return json({ ok: true });
+  }
+
+  // ---- REPORT (flag objectionable proof content for manual review) ----
+  if (action === "report") {
+    await svc.from("content_reports").insert({
+      reporter_id: user.id,
+      reported_user_id: body.reportedUserId || null,
+      submission_id: body.submissionId || null,
+      challenge_id: body.challengeId || null,
+      reason: String(body.reason || "").slice(0, 500),
+    });
     return json({ ok: true });
   }
 
