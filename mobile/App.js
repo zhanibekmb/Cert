@@ -877,7 +877,15 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
         </>
       ) : null}
 
-      <Text style={[s.note, { textAlign: "center", marginTop: 18 }]}>{t("Manage or cancel anytime in your store account.")}</Text>
+      <Text style={[s.note, { textAlign: "center", marginTop: 18 }]}>{t("Cert Pro is an auto-renewing subscription that renews at the price shown for the same period, unless cancelled at least 24 hours before the period ends. Manage or cancel anytime in your store account.")}</Text>
+      <View style={{ flexDirection: "row", justifyContent: "center", gap: 22, marginTop: 10 }}>
+        <TouchableOpacity onPress={() => Linking.openURL("https://www.certapp.pro/terms.html")}>
+          <Text style={{ color: C.bronze, fontSize: 12, textDecorationLine: "underline" }}>{t("Terms of Use")}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => Linking.openURL("https://www.certapp.pro/privacy.html")}>
+          <Text style={{ color: C.bronze, fontSize: 12, textDecorationLine: "underline" }}>{t("Privacy Policy")}</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }

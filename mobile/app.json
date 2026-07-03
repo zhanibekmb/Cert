@@ -8,7 +8,7 @@
     "userInterfaceStyle": "dark",
     "newArchEnabled": false,
     "backgroundColor": "#070608",
-    "icon": "./assets/gladiator-logo.png",
+    "icon": "./assets/app-icon.png",
     "splash": {
       "image": "./assets/gladiator-logo.png",
       "resizeMode": "contain",
@@ -28,8 +28,8 @@
       "versionCode": 1,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/gladiator-logo.png",
-        "backgroundColor": "#F4EFE8"
+        "foregroundImage": "./assets/app-icon.png",
+        "backgroundColor": "#0D0D0D"
       },
       "permissions": [
         "android.permission.RECORD_AUDIO",
@@ -42,7 +42,8 @@
       [
         "expo-image-picker",
         {
-          "cameraPermission": "Cert needs the camera to take your daily proof photo."
+          "cameraPermission": "Cert uses the camera so you can take your daily proof photo — for example, a shot at the gym to verify today's workout goal.",
+          "photosPermission": "Cert accesses your photo library so you can choose a photo as your daily proof — for example, picking a photo of your run to verify today's goal."
         }
       ],
       [
