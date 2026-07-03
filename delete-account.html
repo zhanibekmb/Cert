@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CERT — Delete your account</title>
+<meta name="description" content="How to delete your Cert account and all associated data.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/cert.css">
+<style>
+  body { background: var(--bg); min-height: 100vh; }
+  .legal-hero { padding: 130px 24px 24px; text-align: center; }
+  .legal-hero h1 { font-size: clamp(34px, 6vw, 60px); margin: 0; }
+  .legal-hero .updated { margin-top: 14px; font-family: var(--font-mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-ghost); }
+  .legal { max-width: 760px; margin: 0 auto; padding: 8px 24px 80px; }
+  .legal h2 { font-family: var(--font-display); font-weight: 700; font-size: 20px; color: var(--ink); margin: 38px 0 10px; }
+  .legal p, .legal li { font-family: var(--font-text); font-size: 15px; line-height: 1.8; color: var(--ink-mute); }
+  .legal ul, .legal ol { margin: 6px 0 0; padding-left: 20px; }
+  .legal li { margin-bottom: 6px; }
+  .legal a { color: var(--red); text-decoration: none; }
+  .legal a:hover { text-decoration: underline; }
+  .legal .intro { font-size: 16px; color: var(--ink-soft); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <a href="index.html" class="brand">
+    <img src="assets/gladiator-logo.png" alt="">
+    <span>CERT</span>
+  </a>
+  <div class="topbar-links">
+    <a href="index.html" class="navlink" id="nav-home">Home</a>
+    <a href="pricing.html" class="navlink" id="nav-pricing">Pricing</a>
+    <a href="index.html#waitlist" class="navlink" id="nav-app">Waitlist</a>
+    <div class="lang-toggle">
+      <button class="lang-btn" data-l="en" onclick="setLang('en')">EN</button>
+      <button class="lang-btn" data-l="ru" onclick="setLang('ru')">RU</button>
+    </div>
+  </div>
+</div>
+
+<main id="main"></main>
+
+<footer style="padding:30px 24px 40px;text-align:center;font-family:var(--font-mono);font-size:11px;letter-spacing:.2em;color:var(--ink-ghost);background:#050406;">
+  CERT · THE STREAK YOU CAN'T FAKE · © 2026
+</footer>
+
+<script src="scripts/i18n.js"></script>
+<script>
+function setLang(l) { CertI18n.set(l); render(); }
+
+function render() {
+  document.querySelectorAll('.lang-btn').forEach(function (b) {
+    b.classList.toggle('active', b.getAttribute('data-l') === CertI18n.lang);
+  });
+  document.getElementById('nav-home').textContent = T('Home', 'Главная');
+  document.getElementById('nav-pricing').textContent = T('Pricing', 'Цены');
+  document.getElementById('nav-app').textContent = T('Waitlist', 'В бету');
+
+  var email = 'janibek190906@gmail.com';
+  var h = '';
+
+  h += '<section class="legal-hero">';
+  h += '<h1 class="display">' + T('Delete your account', 'Удаление аккаунта') + '</h1>';
+  h += '<div class="updated">' + T('Cert · account & data deletion', 'Cert · удаление аккаунта и данных') + '</div>';
+  h += '</section>';
+
+  h += '<section class="legal">';
+
+  h += '<p class="intro">' + T(
+    'You can permanently delete your Cert account and all associated data at any time. Here is how.',
+    'Вы можете в любой момент навсегда удалить аккаунт Cert и все связанные с ним данные. Вот как это сделать.') + '</p>';
+
+  h += '<h2>' + T('Delete in the app', 'Удаление в приложении') + '</h2>';
+  h += '<ol>';
+  h += '<li>' + T('Open the Cert app and sign in.', 'Откройте приложение Cert и войдите.') + '</li>';
+  h += '<li>' + T('Go to <strong>Profile → Settings</strong>.', 'Перейдите в <strong>Профиль → Настройки</strong>.') + '</li>';
+  h += '<li>' + T('Tap <strong>Delete account</strong> and confirm.', 'Нажмите <strong>Удалить аккаунт</strong> и подтвердите.') + '</li>';
+  h += '</ol>';
+  h += '<p>' + T(
+    'Your account and data are removed immediately and you are signed out.',
+    'Аккаунт и данные удаляются сразу, и вы выходите из аккаунта.') + '</p>';
+
+  h += '<h2>' + T('What gets deleted', 'Что удаляется') + '</h2>';
+  h += '<ul>';
+  h += '<li>' + T('Your account and login (email / Google / Apple).', 'Ваш аккаунт и вход (почта / Google / Apple).') + '</li>';
+  h += '<li>' + T('All goals, streaks and daily submissions.', 'Все цели, серии и ежедневные отправки.') + '</li>';
+  h += '<li>' + T('All proof photos and timelapses stored for you.', 'Все фото-доказательства и таймлапсы, хранящиеся для вас.') + '</li>';
+  h += '<li>' + T('Your challenge membership, display name and stats.', 'Ваше участие в челленджах, имя и статистику.') + '</li>';
+  h += '<li>' + T('Your freeze balance and purchase records on our side.', 'Ваш баланс заморозок и записи о покупках на нашей стороне.') + '</li>';
+  h += '</ul>';
+  h += '<p>' + T(
+    'Deletion is permanent and cannot be undone. Active store subscriptions are managed in your Google Play or App Store account — cancel them there to stop billing.',
+    'Удаление необратимо. Активные подписки управляются в вашем аккаунте Google Play или App Store — отмените их там, чтобы прекратить списания.') + '</p>';
+
+  h += '<h2>' + T('Can\'t access the app?', 'Нет доступа к приложению?') + '</h2>';
+  h += '<p>' + T(
+    'Email us from the address on your account and we will delete your account and data within 30 days: ',
+    'Напишите нам с почты, привязанной к аккаунту, и мы удалим аккаунт и данные в течение 30 дней: ') + '<a href="mailto:' + email + '?subject=Delete%20my%20Cert%20account">' + email + '</a>.</p>';
+
+  h += '<h2>' + T('Data we may retain', 'Какие данные мы можем сохранить') + '</h2>';
+  h += '<p>' + T(
+    'After deletion we keep nothing tied to your account, except limited records we are legally required to retain (for example, tax records of a purchase). See our ',
+    'После удаления мы не храним ничего, связанного с вашим аккаунтом, кроме ограниченных записей, которые обязаны хранить по закону (например, налоговые данные о покупке). См. нашу ') + '<a href="privacy.html">' + T('Privacy Policy', 'Политику конфиденциальности') + '</a>.</p>';
+
+  h += '</section>';
+
+  document.getElementById('main').innerHTML = h;
+}
+
+render();
+</script>
+</body>
+</html>
