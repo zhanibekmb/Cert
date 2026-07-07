@@ -198,6 +198,23 @@ const RU = {
   "Dare for the loser (optional)": "Фант проигравшему (необязательно)",
   "e.g. Sing a song chorus 🎤": "напр. спой припев песни 🎤",
   "Last place spins the wheel of everyone's dares.": "Последний крутит колесо из фантов всех.",
+  // --- deadline reminders ---
+  "Deadline soon": "Скоро дедлайн",
+  "\"{goal}\" is due at {time} — send your proof.": "«{goal}» до {time} — отправь пруф.",
+  "\"{goal}\" is due soon — submit your proof.": "«{goal}» скоро дедлайн — отправь пруф.",
+  // --- flexible duration ---
+  "Other": "Другое",
+  "weeks": "недель",
+  // --- cert delete + share type chooser ---
+  "Delete this Cert?": "Удалить этот сертификат?",
+  "Removes it for good. This can't be undone.": "Удалит навсегда. Отменить нельзя.",
+  "Card": "Карточка",
+  "Photo": "Фото",
+  "Sticker": "Стикер",
+  "Change photo": "Сменить фото",
+  "Choose a photo": "Выбрать фото",
+  "Transparent — save it, then layer over your own photo.": "Прозрачный — сохрани и наложи на своё фото.",
+  "Save to gallery": "Сохранить в галерею",
   "Not there right now? Skip this — your FIRST check-in will pin the place.": "Сейчас не там? Пропусти — место закрепит твой ПЕРВЫЙ чекин.",
   "Be there from (optional)": "Быть там с (необязательно)",
   "Any time": "В любое время",

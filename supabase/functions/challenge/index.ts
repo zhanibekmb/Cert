@@ -183,6 +183,13 @@ Deno.serve(async (req) => {
       const { data: gs } = await svc.from("goals").select("*").in("id", goalIds);
       for (const g of gs || []) goalsById[g.id] = g;
     }
+    // avatars for the leaderboard
+    const avatarByUser: Record<string, string | null> = {};
+    const memberIds = (members || []).map((m: any) => m.user_id);
+    if (memberIds.length) {
+      const { data: profs } = await svc.from("profiles").select("id,avatar_url").in("id", memberIds);
+      for (const p of profs || []) avatarByUser[p.id] = p.avatar_url || null;
+    }
     // verified days per goal = approved submissions
     const verifiedByGoal: Record<string, number> = {};
     if (goalIds.length) {
@@ -193,7 +200,7 @@ Deno.serve(async (req) => {
     let rows = (members || []).map((m: any) => {
       const g = m.goal_id ? goalsById[m.goal_id] : null;
       return {
-        userId: m.user_id, name: m.name, isMe: m.user_id === user.id,
+        userId: m.user_id, name: m.name, isMe: m.user_id === user.id, avatar: avatarByUser[m.user_id] || null,
         verifiedDays: m.goal_id ? (verifiedByGoal[m.goal_id] || 0) : 0,
         streak: g?.streak || 0, bestStreak: g?.best_streak || 0, joinedAt: m.joined_at,
       };

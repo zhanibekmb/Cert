@@ -71,6 +71,55 @@ export async function disableReminder() {
   await AsyncStorage.setItem(KEY_ENABLED, "0");
 }
 
+const KEY_DEADLINE_IDS = "deadline_reminder_ids";
+const REMIND_BEFORE_MIN = 60; // nudge 1h before a goal's deadline
+
+// Auto-schedule a "deadline soon" reminder for every active goal/challenge with
+// a deadline. Cancels only the ones it scheduled before (leaves the user's own
+// daily reminder alone). No-op unless notification permission is already
+// granted, so it never nags. Call whenever goals reload.
+export async function syncDeadlineReminders(goals) {
+  try {
+    const perm = await Notifications.getPermissionsAsync();
+    if (perm.status !== "granted") return;
+    await ensureChannel();
+    const prevRaw = await AsyncStorage.getItem(KEY_DEADLINE_IDS);
+    const prev = prevRaw ? JSON.parse(prevRaw) : [];
+    for (const id of prev) { try { await Notifications.cancelScheduledNotificationAsync(id); } catch (_) { /* */ } }
+
+    const ids = [];
+    for (const g of goals || []) {
+      if (!g || g.status !== "active") continue;
+      const short = String(g.text || "").slice(0, 40);
+      // recurring goal with a time-of-day deadline → daily reminder before it
+      if (g.type === "recurring" && g.daily_deadline) {
+        const [h, m] = String(g.daily_deadline).split(":").map((x) => parseInt(x, 10));
+        if (isNaN(h)) continue;
+        let mins = h * 60 + (isNaN(m) ? 0 : m) - REMIND_BEFORE_MIN;
+        if (mins < 0) mins += 1440;
+        const id = await Notifications.scheduleNotificationAsync({
+          content: { title: t("Deadline soon"), body: t("\"{goal}\" is due at {time} — send your proof.", { goal: short, time: g.daily_deadline }) },
+          trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour: Math.floor(mins / 60), minute: mins % 60, channelId: "reminders" },
+        });
+        ids.push(id);
+      }
+      // one-time goal/challenge with a date+time deadline → single reminder before it
+      if (g.type === "one_time" && g.deadline) {
+        const when = new Date(`${g.deadline}T${g.daily_deadline || "23:59"}:00`);
+        when.setMinutes(when.getMinutes() - REMIND_BEFORE_MIN);
+        if (when.getTime() > Date.now()) {
+          const id = await Notifications.scheduleNotificationAsync({
+            content: { title: t("Deadline soon"), body: t("\"{goal}\" is due soon — submit your proof.", { goal: short }) },
+            trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when, channelId: "reminders" },
+          });
+          ids.push(id);
+        }
+      }
+    }
+    await AsyncStorage.setItem(KEY_DEADLINE_IDS, JSON.stringify(ids));
+  } catch (_) { /* best-effort — reminders never block the app */ }
+}
+
 // Re-apply the schedule (e.g. after a language change) only if reminders are on.
 export async function refreshReminderLanguage() {
   const { enabled, time } = await getReminderPref();

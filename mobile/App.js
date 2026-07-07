@@ -25,7 +25,7 @@ import * as Sharing from "expo-sharing";
 import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
 import { supabase } from "./lib/supabase";
-import { getReminderPref, enableReminder, disableReminder, refreshReminderLanguage } from "./lib/reminders";
+import { getReminderPref, enableReminder, disableReminder, refreshReminderLanguage, syncDeadlineReminders } from "./lib/reminders";
 import { registerForPush } from "./lib/push";
 import { initPurchases, purchasesEnabled, buyProduct, getProducts, restorePurchases } from "./purchases";
 import { FREEZE_PACK_PRODUCTS, PRO_PRODUCTS } from "./config";
@@ -643,6 +643,7 @@ function Main({ session }) {
     setCerts(cRes.data || []);
     setSubs(sRes.data || []);
     setProfile(pRes.data || null);
+    syncDeadlineReminders(gRes.data || []).catch(() => {}); // auto "deadline soon" nudges
   }, [session.user.id]);
   useEffect(() => { load(); }, [load]);
 
@@ -712,6 +713,18 @@ function Main({ session }) {
     ]);
   }
 
+  // Delete a Cert (the achievement is the user's to remove).
+  function deleteCert(cert) {
+    Alert.alert(t("Delete this Cert?"), t("Removes it for good. This can't be undone."), [
+      { text: t("Cancel"), style: "cancel" },
+      { text: t("Delete"), style: "destructive", onPress: async () => {
+        const { error } = await supabase.from("certs").delete().eq("id", cert.id);
+        if (error) Alert.alert("Cert", error.message);
+        else await load();
+      } },
+    ]);
+  }
+
   // Free tier = 1 active personal goal; a 2nd goal is a Pro upsell moment.
   function startNewGoal() {
     setCreateChooser(false);
@@ -749,7 +762,7 @@ function Main({ session }) {
         {tab === "home" && (
           <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
             freezes={freezes} onBuyFreezes={openPaywall}
-            onNew={startNewGoal} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} onDelete={deleteGoal} />
+            onNew={startNewGoal} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} onDelete={deleteGoal} onDeleteCert={deleteCert} />
         )}
         {tab === "challenges" && (
           <ChallengesScreen onOpen={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }}
@@ -796,7 +809,7 @@ function TabBar({ tab, setTab, onCreate }) {
   );
 }
 
-function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuyFreezes, onNew, onSubmit, onOpenCert, onReel, onDelete }) {
+function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuyFreezes, onNew, onSubmit, onOpenCert, onReel, onDelete, onDeleteCert }) {
   const [showDone, setShowDone] = useState(false);
   const [showCerts, setShowCerts] = useState(false); // collapsed by default — keeps home clean
   const myGoals = (goals || []).filter((g) => !g.challenge_id); // challenge goals live under Versus
@@ -833,6 +846,11 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
                 <Text style={s.certRowTitle} numberOfLines={1}>{c.title}</Text>
                 <Text style={s.note}>{t("verified days · tap to share")}</Text>
               </View>
+              {onDeleteCert ? (
+                <TouchableOpacity onPress={() => onDeleteCert(c)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  <Ionicons name="trash-outline" size={17} color={C.faint} />
+                </TouchableOpacity>
+              ) : null}
               <Text style={s.certRowChevron}>›</Text>
             </TouchableOpacity>
           )) : null}
@@ -1465,7 +1483,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const [geoPinning, setGeoPinning] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
   const [mapInitial, setMapInitial] = useState(null); // where the map opens centered
-  const [windowStart, setWindowStart] = useState(null); // "HH:MM" — geo: be there FROM this time
+  const [customDur, setCustomDur] = useState(false); // "Custom" length → number input
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
   const isGeo = proofType === "geo";
@@ -1517,7 +1535,6 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
         duration_days: recurring ? duration : null,
         deadline: ot ? ot.date : null,            // one_time: deadline date
         daily_deadline: recurring ? deadline : (ot ? ot.time : null), // recurring: time-of-day · one_time: deadline time
-        daily_start: recurring && isGeo ? windowStart : null, // geo: be there FROM this time
         proof_type: proofType,                    // 'photo' | 'timelapse' | 'geo'
         geo_lat: isGeo && geoAnchor ? geoAnchor.lat : null,
         geo_lng: isGeo && geoAnchor ? geoAnchor.lng : null,
@@ -1569,7 +1586,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       ) : null}
 
       <Text style={[s.label, { marginTop: 16 }]}>{t("Type")}</Text>
-      <TabSwitch value={type} onChange={(v) => { setDuration(null); setType(v); }}
+      <TabSwitch value={type} onChange={(v) => { setDuration(null); setCustomDur(false); setType(v); }}
         options={[{ value: "recurring", label: t("Repeating") }, { value: "one_time", label: t("One-time") }]} />
 
       {type === "recurring" ? (
@@ -1579,7 +1596,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
             {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom")]].map(([v, label]) => {
               const on = format === v;
               return (
-                <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => { setDuration(null); setFormat(v); }}>
+                <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => { setDuration(null); setCustomDur(false); setFormat(v); }}>
                   <Text style={[s.chipText, on && { color: C.ink }]}>{label}</Text>
                 </TouchableOpacity>
               );
@@ -1595,14 +1612,22 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
             </View>
           ) : null}
           <Text style={[s.label, { marginTop: 14 }]}>{t("Length")}</Text>
-          <View style={s.rowGap}>
-            {durationOpts.map(([v, label]) => <Pill key={label} label={label} active={duration === v} onPress={() => setDuration(v)} />)}
+          <View style={s.chipRow}>
+            {durationOpts.map(([v, label]) => (
+              <TouchableOpacity key={label} style={[s.chip, !customDur && duration === v && s.chipOn]} onPress={() => { setCustomDur(false); setDuration(v); }}>
+                <Text style={[s.chipText, !customDur && duration === v && { color: C.ink }]}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={[s.chip, customDur && s.chipOn]} onPress={() => { setCustomDur(true); setDuration(null); }}>
+              <Text style={[s.chipText, customDur && { color: C.ink }]}>{t("Other")}</Text>
+            </TouchableOpacity>
           </View>
-          {isGeo ? (
-            <>
-              <Text style={[s.label, { marginTop: 14 }]}>{t("From (optional)")}</Text>
-              <TimeField value={windowStart} onChange={setWindowStart} allowClear placeholder={t("Any time")} />
-            </>
+          {customDur ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 }}>
+              <TextInput style={[s.input, { flex: 1 }]} keyboardType="number-pad" placeholder="—" placeholderTextColor={C.faint}
+                value={duration ? String(duration) : ""} onChangeText={(v) => { const n = parseInt(String(v).replace(/[^0-9]/g, ""), 10); setDuration(!n || n <= 0 ? null : n); }} />
+              <Text style={[s.note, { marginTop: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
+            </View>
           ) : null}
           <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (optional)")}</Text>
           <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("Any time")} />
@@ -2048,7 +2073,9 @@ function ShareScreen({ kind, days, title, subtitle, rank, onBack }) {
   const cardRef = useRef();
   const [busy, setBusy] = useState(false);
   const [bg, setBg] = useState(null); // photo behind the card (Strava-style)
-  const [sticker, setSticker] = useState(false); // transparent overlay mode
+  const [mode, setMode] = useState("card"); // card | photo | sticker
+  const isSticker = mode === "sticker" && kind !== "placement";
+  const usePhoto = mode === "photo" && kind !== "placement";
   const shareLabel = kind === "placement" ? "↗ Share my result" : kind === "milestone" ? "↗ Share my badge" : "↗ Share my Cert";
 
   async function share() {
@@ -2086,31 +2113,26 @@ function ShareScreen({ kind, days, title, subtitle, rank, onBack }) {
   return (
     <ScrollView contentContainerStyle={s.wrap}>
       <BackBar onBack={onBack} />
-      <View style={{ paddingHorizontal: 16, marginTop: 8, borderRadius: 22, backgroundColor: sticker ? (C.isDark ? "#17131c" : "#eee3d6") : "transparent", paddingVertical: sticker ? 12 : 0 }}>
-        <ShareableCard cardRef={cardRef} kind={kind} days={days} title={title} rank={rank} bg={kind === "placement" ? null : bg} sticker={kind === "placement" ? false : sticker} />
+      <View style={{ paddingHorizontal: 16, marginTop: 8, borderRadius: 22, backgroundColor: isSticker ? (C.isDark ? "#17131c" : "#eee3d6") : "transparent", paddingVertical: isSticker ? 12 : 0 }}>
+        <ShareableCard cardRef={cardRef} kind={kind} days={days} title={title} rank={rank} bg={usePhoto ? bg : null} sticker={isSticker} />
       </View>
+
       {kind !== "placement" ? (
-        sticker ? (
-          <>
-            <Btn label={busy ? "…" : t("Save sticker to gallery")} onPress={saveSticker} disabled={busy} />
-            <BtnGhost label={t("Back to card")} onPress={() => setSticker(false)} />
-            <Text style={[s.note, { textAlign: "center" }]}>{t("Transparent PNG — the checkered-looking backdrop here won't be saved.")}</Text>
-          </>
-        ) : (
-          <>
-            <BtnGhost label={bg ? t("Change photo background") : t("📷 Add photo background")} onPress={pickBg} />
-            {bg
-              ? <TouchableOpacity onPress={() => setBg(null)}><Text style={[s.note, { textAlign: "center" }]}>{t("Remove background")}</Text></TouchableOpacity>
-              : <Text style={[s.note, { textAlign: "center" }]}>{t("Your photo underneath, your Cert on top — like Strava.")}</Text>}
-            <BtnGhost label={t("✨ Sticker for your own photos")} onPress={() => setSticker(true)} />
-          </>
-        )
+        <>
+          <TabSwitch value={mode} onChange={(m) => { setMode(m); if (m === "photo" && !bg) pickBg(); }}
+            options={[{ value: "card", label: t("Card") }, { value: "photo", label: t("Photo") }, { value: "sticker", label: t("Sticker") }]} />
+          {usePhoto ? (
+            <TouchableOpacity onPress={pickBg}><Text style={[s.note, { textAlign: "center" }]}>{bg ? t("Change photo") : t("Choose a photo")}</Text></TouchableOpacity>
+          ) : isSticker ? (
+            <Text style={[s.note, { textAlign: "center" }]}>{t("Transparent — save it, then layer over your own photo.")}</Text>
+          ) : null}
+        </>
       ) : null}
-      {sticker && kind !== "placement" ? null : <Btn label={busy ? "Preparing…" : shareLabel} onPress={share} disabled={busy} />}
+
+      {isSticker
+        ? <Btn label={busy ? "…" : t("Save to gallery")} onPress={saveSticker} disabled={busy} />
+        : <Btn label={busy ? "Preparing…" : shareLabel} onPress={share} disabled={busy} />}
       {subtitle ? <Text style={[s.note, { textAlign: "center" }]}>{subtitle}</Text> : null}
-      <Text style={s.note}>{kind === "placement"
-        ? "Your finish was earned against real friends — verified, not faked."
-        : `Every one of these ${days} days was a fresh photo an AI judge approved. That's why it means something.`}</Text>
     </ScrollView>
   );
 }
@@ -2697,7 +2719,8 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
 
       {board.members.map((m) => (
         <View key={m.userId} style={[s.lbRow, m.isMe && { borderColor: C.bronze }]}>
-          <Text style={s.lbRank}>{medal(m.rank)}</Text>
+          <Text style={[s.lbRank, { minWidth: 26 }]}>{m.rank <= 3 ? medal(m.rank) : m.rank}</Text>
+          <Avatar uri={m.avatar} name={m.name} size={38} />
           <View style={{ flex: 1 }}>
             <Text style={s.lbName}>{m.name}{m.isMe ? " (" + t("you") + ")" : ""}</Text>
             <Text style={s.note}>{m.verifiedDays} {t("verified")} · {m.streak}{isWk ? t("w") : t("d")} {t("streak")}</Text>
@@ -3006,6 +3029,16 @@ function ProofSelect({ value, onChange, isPro, onUpgrade, withGeo }) {
         </View>
       ) : null}
     </>
+  );
+}
+/* Round avatar — photo if set, else the name's initial on a bronze circle. */
+function Avatar({ uri, name, size = 38 }) {
+  const initial = (String(name || "?").trim().charAt(0) || "?").toUpperCase();
+  if (uri) return <Image source={{ uri }} style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.card }} />;
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ color: C.bronze, fontWeight: "800", fontSize: Math.round(size * 0.42) }}>{initial}</Text>
+    </View>
   );
 }
 function Pill({ label, active, onPress }) {
