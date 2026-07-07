@@ -798,6 +798,7 @@ function TabBar({ tab, setTab, onCreate }) {
 
 function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuyFreezes, onNew, onSubmit, onOpenCert, onReel, onDelete }) {
   const [showDone, setShowDone] = useState(false);
+  const [showCerts, setShowCerts] = useState(false); // collapsed by default — keeps home clean
   const myGoals = (goals || []).filter((g) => !g.challenge_id); // challenge goals live under Versus
   const activeGoals = myGoals.filter((g) => g.status !== "completed");
   const doneGoals = myGoals.filter((g) => g.status === "completed");
@@ -820,8 +821,12 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
 
       {certs.length > 0 ? (
         <View style={{ marginTop: 8, marginBottom: 6 }}>
-          <Text style={[s.kicker, { color: C.bronze, marginBottom: 8 }]}>🏅 {t("Your Certs")} · {certs.length}</Text>
-          {certs.map((c) => (
+          <TouchableOpacity onPress={() => setShowCerts((v) => !v)} activeOpacity={0.7}
+            style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 }}>
+            <Text style={[s.kicker, { color: C.bronze, flex: 1 }]}>🏅 {t("Your Certs")} · {certs.length}</Text>
+            <Ionicons name={showCerts ? "chevron-up" : "chevron-down"} size={18} color={C.bronze} />
+          </TouchableOpacity>
+          {showCerts ? certs.map((c) => (
             <TouchableOpacity key={c.id} style={s.certRow} onPress={() => onOpenCert(c)}>
               <Text style={s.certRowDays}>{c.days}</Text>
               <View style={{ flex: 1 }}>
@@ -830,7 +835,7 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
               </View>
               <Text style={s.certRowChevron}>›</Text>
             </TouchableOpacity>
-          ))}
+          )) : null}
         </View>
       ) : null}
 
@@ -1531,12 +1536,6 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const durationOpts = isWeekly
     ? [[null, t("Ongoing")], [4, t("4 wks")], [12, t("12 wks")]]
     : [[null, t("Ongoing")], [30, t("30 d")], [100, t("100 d")]];
-  const cadenceVal = type === "one_time" ? "one_time" : format;
-  function setCadence(v) {
-    setDuration(null); // target unit differs (days vs weeks)
-    if (v === "one_time") setType("one_time");
-    else { setType("recurring"); setFormat(v); }
-  }
 
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
@@ -1549,11 +1548,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       <Text style={[s.note, { textAlign: "left" }]}>{t("Add a time if you want — e.g. \"gym at 19:00\".")}</Text>
 
       <Text style={[s.label, { marginTop: 16 }]}>{t("Proof")}</Text>
-      <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One quick photo.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-      <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={proofType === "timelapse"}
-        onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
-      <OptionCard icon="location-outline" title={t("📍 Location")} locked={!isPro} desc={t("Be at a place.")} active={isGeo}
-        onPress={() => { if (isPro) setProofType("geo"); else onUpgrade && onUpgrade(); }} />
+      <ProofSelect value={proofType} onChange={setProofType} isPro={isPro} onUpgrade={onUpgrade} withGeo />
       {isGeo ? (
         <View style={[s.card, { marginTop: 10 }]}>
           {geoAnchor ? (
@@ -1573,30 +1568,32 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
         </View>
       ) : null}
 
-      <Text style={[s.label, { marginTop: 16 }]}>{t("Cadence")}</Text>
-      <View style={s.chipRow}>
-        {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom")], ["one_time", t("One-time")]].map(([v, label]) => {
-          const on = cadenceVal === v;
-          return (
-            <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => setCadence(v)}>
-              <Text style={[s.chipText, on && { color: C.ink }]}>{label}</Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      {type === "recurring" && format === "custom" ? (
-        <View style={[s.chipRow, { marginTop: 8 }]}>
-          {WEEKDAYS.map(([label, d]) => (
-            <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
-              <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      ) : null}
+      <Text style={[s.label, { marginTop: 16 }]}>{t("Type")}</Text>
+      <TabSwitch value={type} onChange={(v) => { setDuration(null); setType(v); }}
+        options={[{ value: "recurring", label: t("Repeating") }, { value: "one_time", label: t("One-time") }]} />
 
       {type === "recurring" ? (
         <>
+          <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
+          <View style={s.chipRow}>
+            {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom")]].map(([v, label]) => {
+              const on = format === v;
+              return (
+                <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => { setDuration(null); setFormat(v); }}>
+                  <Text style={[s.chipText, on && { color: C.ink }]}>{label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+          {format === "custom" ? (
+            <View style={[s.chipRow, { marginTop: 8 }]}>
+              {WEEKDAYS.map(([label, d]) => (
+                <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
+                  <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
           <Text style={[s.label, { marginTop: 14 }]}>{t("Length")}</Text>
           <View style={s.rowGap}>
             {durationOpts.map(([v, label]) => <Pill key={label} label={label} active={duration === v} onPress={() => setDuration(v)} />)}
@@ -2492,19 +2489,19 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
           </>
         ) : step === 1 ? (
           <>
-            <Text style={[s.label, { marginTop: 18 }]}>{t("Cadence")}</Text>
-            <View style={s.chipRow}>
-              {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["one_time", t("One-time")]].map(([v, label]) => {
-                const on = v === "one_time" ? type === "one_time" : (type === "recurring" && format === v);
-                return (
-                  <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => { if (v === "one_time") setType("one_time"); else { setType("recurring"); setFormat(v); } }}>
-                    <Text style={[s.chipText, on && { color: C.ink }]}>{label}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <Text style={[s.label, { marginTop: 18 }]}>{t("Type")}</Text>
+            <TabSwitch value={type} onChange={setType}
+              options={[{ value: "recurring", label: t("Repeating") }, { value: "one_time", label: t("One-time") }]} />
             {type === "recurring" ? (
               <>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
+                <View style={s.chipRow}>
+                  {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")]].map(([v, label]) => (
+                    <TouchableOpacity key={v} style={[s.chip, format === v && s.chipOn]} onPress={() => setFormat(v)}>
+                      <Text style={[s.chipText, format === v && { color: C.ink }]}>{label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
                 <Text style={[s.label, { marginTop: 14 }]}>{t("How long?")}</Text>
                 <View style={s.rowGap}>
                   {[7, 14, 30].map((d) => <Pill key={d} label={t("{n} days", { n: d })} active={dur === d} onPress={() => setDur(d)} />)}
@@ -2520,14 +2517,12 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
         ) : (
           <>
             <Text style={[s.label, { marginTop: 18 }]}>{t("Who judges proofs?")}</Text>
-            <OptionCard icon="shield-checkmark-outline" title={t("AI judge")} desc={t("AI checks each photo.")} active={judgeMode === "ai"} onPress={() => setJudgeMode("ai")} />
-            <OptionCard icon="people-outline" title={t("Friends vote")} desc={t("Friends vote by swiping.")} active={judgeMode === "peer"} onPress={() => setJudgeMode("peer")} />
+            <TabSwitch value={judgeMode} onChange={setJudgeMode}
+              options={[{ value: "ai", label: t("AI judge") }, { value: "peer", label: t("Friends vote") }]} />
             {judgeMode === "ai" ? (
               <>
                 <Text style={[s.label, { marginTop: 14 }]}>{t("Proof")}</Text>
-                <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One photo each.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-                <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip each.")} active={proofType === "timelapse"}
-                  onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
+                <ProofSelect value={proofType} onChange={setProofType} isPro={isPro} onUpgrade={onUpgrade} />
               </>
             ) : null}
             <Text style={[s.label, { marginTop: 16 }]}>{t("Dare for the loser (optional)")}</Text>
@@ -2974,6 +2969,45 @@ function OptionCard({ icon, title, desc, active, locked, onPress }) {
 function BtnGhost({ label, onPress, disabled }) {
   return <TouchableOpacity style={[s.btnGhost, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled}><Text style={s.btnGhostText}>{label}</Text></TouchableOpacity>;
 }
+/* Rounded segmented control (iOS-style tab switcher). options: [{value,label}]. */
+function TabSwitch({ options, value, onChange }) {
+  return (
+    <View style={s.tabSwitch}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <TouchableOpacity key={o.value} style={[s.tabSwitchItem, on && s.tabSwitchItemOn]} onPress={() => onChange(o.value)} activeOpacity={0.85}>
+            <Text style={[s.tabSwitchText, on && s.tabSwitchTextOn]}>{o.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+/* Proof-type picker as a collapsed dropdown — shows just the current choice
+   until tapped, so the creation screen isn't a wall of cards. */
+function ProofSelect({ value, onChange, isPro, onUpgrade, withGeo }) {
+  const [open, setOpen] = useState(false);
+  const meta = { photo: ["camera-outline", t("📷 Photo")], timelapse: ["videocam-outline", t("🎥 Video")], geo: ["location-outline", t("📍 Location")] };
+  const [icon, label] = meta[value] || meta.photo;
+  const pick = (v, locked) => { if (locked) { onUpgrade && onUpgrade(); return; } onChange(v); setOpen(false); };
+  return (
+    <>
+      <TouchableOpacity style={s.dropdown} onPress={() => setOpen((o) => !o)} activeOpacity={0.8}>
+        <Ionicons name={icon} size={20} color={C.bronze} />
+        <Text style={s.dropdownText}>{label}</Text>
+        <Ionicons name={open ? "chevron-up" : "chevron-down"} size={18} color={C.mute} />
+      </TouchableOpacity>
+      {open ? (
+        <View style={{ marginTop: 2 }}>
+          <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One quick photo.")} active={value === "photo"} onPress={() => pick("photo", false)} />
+          <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={value === "timelapse"} onPress={() => pick("timelapse", !isPro)} />
+          {withGeo ? <OptionCard icon="location-outline" title={t("📍 Location")} locked={!isPro} desc={t("Be at a place.")} active={value === "geo"} onPress={() => pick("geo", !isPro)} /> : null}
+        </View>
+      ) : null}
+    </>
+  );
+}
 function Pill({ label, active, onPress }) {
   return <TouchableOpacity style={[s.pill, active && s.pillOn]} onPress={onPress}><Text style={[s.pillText, active && { color: C.ink }]}>{label}</Text></TouchableOpacity>;
 }
@@ -3139,6 +3173,13 @@ function makeStyles() { return StyleSheet.create({
   langChip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
   langChipOn: { backgroundColor: C.bronze, borderColor: C.bronze },
   langChipT: { color: C.mute, fontSize: 12, fontWeight: "800", letterSpacing: 0.5 },
+  tabSwitch: { flexDirection: "row", backgroundColor: C.inputBg, borderRadius: 12, padding: 4, borderWidth: 1, borderColor: C.inputLine, marginTop: 8 },
+  tabSwitchItem: { flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: "center" },
+  tabSwitchItemOn: { backgroundColor: C.bronze },
+  tabSwitchText: { color: C.mute, fontWeight: "800", fontSize: 14, letterSpacing: 0.3 },
+  tabSwitchTextOn: { color: "#1a1200" },
+  dropdown: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.inputBg, borderWidth: 1, borderColor: C.inputLine, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, marginTop: 8 },
+  dropdownText: { flex: 1, color: C.ink, fontSize: 15, fontWeight: "700" },
   optCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
   optCardOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(154,122,28,0.08)" },
   optIcon: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: C.bg },
