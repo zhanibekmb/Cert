@@ -179,6 +179,11 @@ Deno.serve(async (req) => {
   const { data: goal } = await svc.from("goals").select("*").eq("id", goalId).single();
   if (!goal || goal.user_id !== user.id) return json({ error: "not_found" }, 404);
 
+  // Geo check-in goals: the proof is BEING at the goal's pinned place (within
+  // its radius) — no photo, no Gemini. The place locks on the first check-in
+  // if it wasn't pinned at creation.
+  const isGeo = goal.proof_type === "geo";
+
   const { data: profile } = await svc.from("profiles").select("plan,timezone").eq("id", user.id).single();
   const tz = profile?.timezone || "UTC";
   const paid = profile?.plan === "monthly" || profile?.plan === "yearly";
@@ -208,6 +213,9 @@ Deno.serve(async (req) => {
   // optional time-of-day deadline (e.g. "07:00" = must submit before 7am local)
   const deadline = goal.type === "recurring" && goal.daily_deadline ? String(goal.daily_deadline) : null;
   const pastDeadline = !!deadline && localHHMM(tz) > deadline;
+  // optional window start ("be there FROM 19:00") — mainly for geo check-ins
+  const windowStart = goal.daily_start ? String(goal.daily_start) : null;
+  const beforeStart = !!windowStart && localHHMM(tz) < windowStart;
 
   // PEEK: the Submit screen asks, before shooting, for today's anti-cheat check,
   // how many attempts remain, and the last un-appealed rejection (so it can open
@@ -222,20 +230,42 @@ Deno.serve(async (req) => {
         if (!ap) lastReject = { submissionId: last.id, reason: last.reason || "Not approved." };
       }
     }
-    return json({ dailyReq: daily, day, attemptsLeft, done, lastReject, deadline, pastDeadline, scheduledToday, weekly: isWeekly ? { quota, thisWeek: weekApprovedBefore, weekDone: weekDoneBefore } : null });
+    // geo rejects can't be appealed (the appeal reviewer re-judges a photo,
+    // and a check-in has none) — hide the appeal path for geo goals.
+    if (isGeo && lastReject) lastReject = { ...lastReject, submissionId: null as any };
+    return json({ dailyReq: daily, day, attemptsLeft, done, lastReject, deadline, pastDeadline, windowStart, beforeStart, scheduledToday, isGeo, geoAnchorSet: isGeo ? (goal.geo_lat != null && goal.geo_lng != null) : undefined, geoPlace: goal.geo_place || null, weekly: isWeekly ? { quota, thisWeek: weekApprovedBefore, weekDone: weekDoneBefore } : null });
   }
 
   if (goal.status !== "active") return json({ error: "goal_not_active" }, 409);
-  if (!photo && !isTimelapse) return json({ error: "missing_photo" }, 400);
+  if (!isGeo && !photo && !isTimelapse) return json({ error: "missing_photo" }, 400);
   if (!scheduledToday) return json({ error: "not_scheduled_today" }, 409);
   if (done) return json({ error: "already_done_today" }, 409);
   if (weekDoneBefore) return json({ error: "week_done", quota }, 409);
+  if (beforeStart) return json({ error: "before_start", windowStart }, 409);
   if (pastDeadline) return json({ error: "past_deadline", deadline }, 409);
   if ((todays?.length || 0) >= limit) return json({ error: "no_checks_left", limit }, 429);
 
+  const fmtDist = (km: number) => km < 1 ? `${Math.round(km * 1000)} m` : `${km.toFixed(1)} km`;
   let verdict;
   if (forceReject) {
     verdict = { approved: false, reason: "Demo: forced reject.", confidence: 0.3 };
+  } else if (isGeo) {
+    if (geoLat === null || geoLng === null) return json({ error: "no_location" }, 400);
+    const ru = lang === "ru";
+    if (geo && geo.mocked === true) {
+      // Android reports mock-location providers — a faked GPS never counts.
+      verdict = { approved: false, reason: ru ? "Похоже на подменённые координаты (fake GPS). Выключи подмену и попробуй снова." : "This looks like mocked GPS. Turn off fake location and try again.", confidence: 0.2 };
+    } else if (goal.geo_lat == null || goal.geo_lng == null) {
+      // first check-in pins the goal's place
+      await svc.from("goals").update({ geo_lat: geoLat, geo_lng: geoLng, geo_place: geoPlace }).eq("id", goalId);
+      verdict = { approved: true, reason: ru ? `Место зафиксировано${geoPlace ? ": " + geoPlace : ""}. Теперь отмечайся отсюда.` : `Place pinned${geoPlace ? ": " + geoPlace : ""}. Check in from here from now on.`, confidence: 0.95 };
+    } else {
+      const km = haversineKm(goal.geo_lat, goal.geo_lng, geoLat, geoLng);
+      const radiusKm = (goal.geo_radius_m || 200) / 1000;
+      verdict = km <= radiusKm
+        ? { approved: true, reason: ru ? `Ты на месте${goal.geo_place ? " — " + goal.geo_place : ""}. Засчитано.` : `You're at the spot${goal.geo_place ? " — " + goal.geo_place : ""}. Counted.`, confidence: 0.95 }
+        : { approved: false, reason: ru ? `Ты в ${fmtDist(km)} от места цели. Приди туда и отметься снова.` : `You're ${fmtDist(km)} away from the goal's place. Get there and check in again.`, confidence: 0.9 };
+    }
   } else if (isTimelapse) {
     try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
     catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
@@ -266,7 +296,7 @@ Deno.serve(async (req) => {
   // a big mismatch lowers stored confidence + flags the row for review/appeal
   // tooling, but NEVER flips an approval.
   let geoSuspect = false;
-  if (geoLat !== null && geoLng !== null) {
+  if (!isGeo && geoLat !== null && geoLng !== null) {
     const { data: anchor } = await svc.from("submissions").select("lat,lng")
       .eq("goal_id", goalId).in("status", ["approved", "frozen"]).not("lat", "is", null)
       .order("created_at", { ascending: true }).limit(1).maybeSingle();
@@ -322,5 +352,7 @@ Deno.serve(async (req) => {
   const milestone = !isWeekly && verdict.approved && MILESTONES.includes(newStreak) ? newStreak : null;
   const thisWeekAfter = weekApprovedBefore + (verdict.approved ? 1 : 0);
   const weekly = isWeekly ? { quota, thisWeek: thisWeekAfter, weekDone: thisWeekAfter >= quota } : null;
-  return json({ verdict, goal: updatedGoal, completed: newStatus === "completed", dailyReq: daily, submissionId: sub?.id, attemptsLeft: attemptsLeftAfter, milestone, weekly, geoSuspect });
+  // geo rejects aren't appealable (no photo for the appeal reviewer to re-judge)
+  const submissionId = isGeo && !verdict.approved ? null : sub?.id;
+  return json({ verdict, goal: updatedGoal, completed: newStatus === "completed", dailyReq: daily, submissionId, attemptsLeft: attemptsLeftAfter, milestone, weekly, geoSuspect });
 });

@@ -58,6 +58,12 @@
           "locationWhenInUsePermission": "Cert can attach your location to a proof so it is verified where it happened."
         }
       ],
+      [
+        "expo-media-library",
+        {
+          "savePhotosPermission": "Cert saves your certificate sticker to your photo library so you can layer it over your own photos."
+        }
+      ],
       "expo-asset",
       "expo-localization",
       "expo-web-browser",

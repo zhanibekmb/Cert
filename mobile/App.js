@@ -22,6 +22,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
 import * as Linking from "expo-linking";
 import * as Sharing from "expo-sharing";
+import * as MediaLibrary from "expo-media-library";
 import { captureRef } from "react-native-view-shot";
 import { supabase } from "./lib/supabase";
 import { getReminderPref, enableReminder, disableReminder, refreshReminderLanguage } from "./lib/reminders";
@@ -124,7 +125,8 @@ async function getGeo() {
       const a = g && g[0];
       if (a) place = [a.name, a.city || a.subregion, a.country].filter(Boolean).slice(0, 2).join(", ");
     } catch (_) { /* reverse-geocode optional */ }
-    return { lat: pos.coords.latitude, lng: pos.coords.longitude, place };
+    // Android flags mock-location providers — the judge rejects faked GPS check-ins.
+    return { lat: pos.coords.latitude, lng: pos.coords.longitude, place, mocked: pos.mocked === true };
   } catch (_) { return null; }
 }
 async function getGeoTimed() { return Promise.race([getGeo(), new Promise((r) => setTimeout(() => r(null), 6000))]); }
@@ -1227,12 +1229,13 @@ function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel }) {
       <Text style={s.kicker}>{isWeekly ? t("week streak · verified by the judge") : t("day streak · verified by the judge")}</Text>
       <Text style={s.goalText}>{goal.text}</Text>
       <Text style={[s.spec, { color: C.mute }]}>{goalCadence(goal)}</Text>
+      {goal.proof_type === "geo" ? <Text style={s.spec}>📍 {goal.geo_place || t("geo check-in")}{goal.daily_start ? ` · ${t("from")} ${goal.daily_start}` : ""}</Text> : null}
       {proofSpec(goal) ? <Text style={s.spec}>{proofSpec(goal)}</Text> : null}
       {isRecurring ? <StreakCalendar subs={subs} /> : null}
       {isRecurring && !completed ? <MilestoneBar streak={goal.streak || 0} /> : null}
       {completed
         ? <TouchableOpacity onPress={onOpenCert}><Text style={[s.kicker, { color: C.bronze, marginTop: 12 }]}>{t("Completed — view & share Cert")} ›</Text></TouchableOpacity>
-        : <Btn label={t("Submit today's proof")} onPress={onSubmit} />}
+        : <Btn label={goal.proof_type === "geo" ? t("📍 Check in now") : t("Submit today's proof")} onPress={onSubmit} />}
       {verifiedCount >= 2 ? <BtnGhost label={t("Progress reel") + ` · ${verifiedCount} ` + t("days")} onPress={onReel} /> : null}
     </View>
   );
@@ -1354,9 +1357,21 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const [duration, setDuration] = useState(null);   // null=ongoing, or 7/30/100 (daily only)
   const [deadline, setDeadline] = useState(null);  // "HH:MM" or null
   const [oneTimeDeadline, setOneTimeDeadline] = useState(null); // Date|null, for one_time goals
-  const [proofType, setProofType] = useState("photo"); // 'photo' | 'timelapse'
+  const [proofType, setProofType] = useState("photo"); // 'photo' | 'timelapse' | 'geo'
+  const [geoAnchor, setGeoAnchor] = useState(null); // {lat,lng,place} pinned at creation, or null → first check-in pins it
+  const [geoPinning, setGeoPinning] = useState(false);
+  const [windowStart, setWindowStart] = useState(null); // "HH:MM" — geo: be there FROM this time
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
+  const isGeo = proofType === "geo";
+
+  async function pinHere() {
+    setGeoPinning(true);
+    const g = await getGeoTimed();
+    setGeoPinning(false);
+    if (!g) return Alert.alert("Cert", t("Couldn't get your location. Enable location access and try again."));
+    setGeoAnchor(g);
+  }
 
   async function create() {
     if (text.trim().length < 3) return Alert.alert("Cert", t("Describe your goal first."));
@@ -1365,10 +1380,12 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     setBusy(true);
     try {
       let spec = { en: null, ru: null };
-      try {
-        const { data } = await supabase.functions.invoke("proof-spec", { body: { goal: text.trim() } });
-        if (data && (data.en || data.ru)) spec = data;
-      } catch (_) { /* ignore — spec is optional */ }
+      if (!isGeo) {
+        try {
+          const { data } = await supabase.functions.invoke("proof-spec", { body: { goal: text.trim() } });
+          if (data && (data.en || data.ru)) spec = data;
+        } catch (_) { /* ignore — spec is optional */ }
+      }
 
       const recurring = type === "recurring";
       const ot = !recurring && oneTimeDeadline ? isoDateParts(oneTimeDeadline) : null;
@@ -1382,7 +1399,11 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
         duration_days: recurring && format === "daily" ? duration : null,
         deadline: ot ? ot.date : null,            // one_time: deadline date
         daily_deadline: recurring ? deadline : (ot ? ot.time : null), // recurring: time-of-day · one_time: deadline time
-        proof_type: proofType,                    // 'photo' | 'timelapse'
+        daily_start: recurring && isGeo ? windowStart : null, // geo: be there FROM this time
+        proof_type: proofType,                    // 'photo' | 'timelapse' | 'geo'
+        geo_lat: isGeo && geoAnchor ? geoAnchor.lat : null,
+        geo_lng: isGeo && geoAnchor ? geoAnchor.lng : null,
+        geo_place: isGeo && geoAnchor ? geoAnchor.place : null,
         proof_spec_en: spec.en,
         proof_spec_ru: spec.ru,
       });
@@ -1404,12 +1425,34 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
 
       <Text style={[s.label, { marginTop: 14 }]}>{t("How do you prove it?")}</Text>
-      <View style={s.rowGap}>
-        <Pill label={t("📷 Quick photo")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-        <Pill label={isPro ? t("🎥 Timelapse") : t("🎥 Timelapse 🔒")} active={proofType === "timelapse"}
-          onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
-      </View>
-      <Text style={s.note}>{proofType === "timelapse" ? t("Record your session — the app captures frames over time and the AI judges the whole thing. Much harder to fake.") : (isPro ? t("Snap one photo. Fast, good for things a single shot can prove.") : t("Snap one photo. Timelapse proof is a Pro feature."))}</Text>
+      <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Snap one photo. Fast, good for things a single shot can prove.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
+      <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Record your session — the app captures frames over time and the AI judges the whole thing. Much harder to fake.")} active={proofType === "timelapse"}
+        onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
+      <OptionCard icon="location-outline" title={t("📍 Geo check-in")} desc={t("Pin a place — the proof is being there. Great for gym, pool, library.")} active={isGeo} onPress={() => setProofType("geo")} />
+
+      {isGeo ? (
+        <View style={[s.card, { marginTop: 12 }]}>
+          <Text style={s.label}>{t("The place")}</Text>
+          {geoAnchor ? (
+            <>
+              <Text style={s.goalText}>📍 {geoAnchor.place || `${geoAnchor.lat.toFixed(4)}, ${geoAnchor.lng.toFixed(4)}`}</Text>
+              <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left" }]}>{t("Unpin")}</Text></TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <BtnGhost label={geoPinning ? "…" : t("📍 Pin my current location")} onPress={pinHere} disabled={geoPinning} />
+              <Text style={[s.note, { textAlign: "left" }]}>{t("Not there right now? Skip this — your FIRST check-in will pin the place.")}</Text>
+            </>
+          )}
+          {type === "recurring" ? (
+            <>
+              <Text style={[s.label, { marginTop: 14 }]}>{t("Be there from (optional)")}</Text>
+              <TimeField value={windowStart} onChange={setWindowStart} allowClear placeholder={t("Any time")} />
+              <Text style={[s.note, { textAlign: "left" }]}>{t("Check-ins before this time won't count. Combine with the deadline below for a window like 19:00–21:00.")}</Text>
+            </>
+          ) : null}
+        </View>
+      ) : null}
 
       <Text style={[s.label, { marginTop: 14 }]}>{t("Type")}</Text>
       <View style={s.rowGap}>
@@ -1559,6 +1602,7 @@ function TimelapseCapture({ onCancel, onDone }) {
 /* ---------- SUBMIT (camera -> judge) ---------- */
 function Submit({ goal, onDone, onBack, onViewBadge }) {
   const isTimelapse = goal.proof_type === "timelapse";
+  const isGeo = goal.proof_type === "geo";
   const [capturing, setCapturing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState("idle"); // idle | judging
@@ -1570,6 +1614,10 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
   const [deadline, setDeadline] = useState(null); // "HH:MM" or null
   const [late, setLate] = useState(false);        // past today's deadline
   const [scheduled, setScheduled] = useState(true); // custom-days: due today?
+  const [windowStart, setWindowStart] = useState(null); // geo: be there FROM this time
+  const [early, setEarly] = useState(false);            // before the window opens
+  const [geoPlace, setGeoPlace] = useState(null);       // the goal's pinned place label
+  const [anchorSet, setAnchorSet] = useState(true);     // false → first check-in pins it
 
   // Ask the judge what today's anti-cheat check is, so the screen shows EXACTLY
   // what the server will enforce (no client/server day drift).
@@ -1582,6 +1630,10 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       setDeadline(data.deadline || null);
       setLate(!!data.pastDeadline);
       setScheduled(data.scheduledToday !== false);
+      setWindowStart(data.windowStart || null);
+      setEarly(!!data.beforeStart);
+      setGeoPlace(data.geoPlace || null);
+      setAnchorSet(data.geoAnchorSet !== false);
       setCheckState("ok");
       // Restore an in-progress rejection from earlier today (survives leaving the
       // screen): retry if attempts remain, or open the appeal if they're used up.
@@ -1620,7 +1672,8 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     setBusy(true); setStage("judging"); setReject(null);
     try {
       const geo = await getGeoTimed();
-      const geoPlace = geo && geo.place ? geo.place : null;
+      if (isGeo && !geo) { Alert.alert("Cert", t("Couldn't get your location. Enable location access and try again.")); return; }
+      const geoPlaceNow = geo && geo.place ? geo.place : null;
       const { data, error } = await supabase.functions.invoke("judge", { body: { goalId: goal.id, geo, lang: activeLang(), ...payload } });
       if (error) throw error;
       if (data?.busy) { Alert.alert("Cert", t("The judge is busy — try again in a moment.")); return; }
@@ -1630,6 +1683,8 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           already_done_today: t("You've already completed this goal today."),
           week_done: t("You've hit this week's target. Come back next week."),
           past_deadline: data.deadline ? t("Past today's deadline ({d}). Try again tomorrow before then.", { d: data.deadline }) : t("Past today's deadline. Try again tomorrow before then."),
+          before_start: data.windowStart ? t("Too early — check in after {t}.", { t: data.windowStart }) : t("Too early — the window hasn't opened yet."),
+          no_location: t("Couldn't get your location. Enable location access and try again."),
           not_scheduled_today: t("This goal isn't scheduled for today. Come back on your chosen days."),
           goal_not_active: t("This goal isn't active anymore."),
         }[data.error] || String(data.error);
@@ -1649,7 +1704,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
             ]
           );
         } else {
-          Alert.alert(t("APPROVED"), (v.reason || "") + (geoPlace ? "\n" + geoPlace : "") + (data.completed ? "\n\n" + t("Goal complete — Cert earned!") : ""), [{ text: "OK", onPress: onDone }]);
+          Alert.alert(t("APPROVED"), (v.reason || "") + (!isGeo && geoPlaceNow ? "\n" + geoPlaceNow : "") + (data.completed ? "\n\n" + t("Goal complete — Cert earned!") : ""), [{ text: "OK", onPress: onDone }]);
         }
       } else {
         // Let them retry while attempts remain; the appeal flow opens only once
@@ -1687,12 +1742,24 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive">
       <BackBar onBack={onBack} />
-      <Text style={s.h2}>{t("Submit proof")}</Text>
+      <Text style={s.h2}>{isGeo ? t("Check in") : t("Submit proof")}</Text>
       <View style={s.card}>
-        <Text style={[s.kicker, { color: C.bronze }]}>{isTimelapse ? t("Record a timelapse of this") : t("Send a photo like this")}</Text>
-        <Text style={s.goalText}>{proofSpec(goal) || goal.text}</Text>
+        <Text style={[s.kicker, { color: C.bronze }]}>{isGeo ? t("Be at the place") : isTimelapse ? t("Record a timelapse of this") : t("Send a photo like this")}</Text>
+        <Text style={s.goalText}>{isGeo ? goal.text : (proofSpec(goal) || goal.text)}</Text>
+        {isGeo ? (
+          <Text style={[s.spec, { color: C.mute }]}>
+            {anchorSet
+              ? "📍 " + (geoPlace || t("pinned place"))
+              : "📍 " + t("No place pinned yet — your first check-in pins it. Do it AT the right place.")}
+          </Text>
+        ) : null}
       </View>
-      {isTimelapse ? (
+      {isGeo ? (
+        <View style={[s.card, { borderColor: C.red }]}>
+          <Text style={[s.kicker, { color: C.red }]}>{t("How geo check-in works")}</Text>
+          <Text style={s.note}>{t("Your GPS position is checked against the goal's place. Fake-GPS apps are detected and rejected.")}</Text>
+        </View>
+      ) : isTimelapse ? (
         <View style={[s.card, { borderColor: C.red }]}>
           <Text style={[s.kicker, { color: C.red }]}>{t("Why a timelapse")}</Text>
           <Text style={s.note}>{t("The app captures frames over your session, so the AI sees the activity actually happen. A single propped photo won't pass.")}</Text>
@@ -1708,16 +1775,22 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           <Text style={s.note}>{t("Changes every day so an old photo can't be reused. Include it in the same shot.")}</Text>
         </View>
       )}
-      {deadline ? (
-        <View style={[s.card, { borderColor: late ? C.red : C.green, paddingVertical: 12 }]}>
-          <Text style={[s.kicker, { color: late ? C.red : C.green }]}>{late ? t("Past today's deadline ({d})", { d: deadline }) : t("Submit before {d} today", { d: deadline })}</Text>
+      {windowStart || deadline ? (
+        <View style={[s.card, { borderColor: late || early ? C.red : C.green, paddingVertical: 12 }]}>
+          <Text style={[s.kicker, { color: late || early ? C.red : C.green }]}>
+            {early ? t("Window opens at {t} — too early", { t: windowStart })
+              : late ? t("Past today's deadline ({d})", { d: deadline })
+              : windowStart && deadline ? t("Window: {a}–{b} today", { a: windowStart, b: deadline })
+              : windowStart ? t("Check in after {t} today", { t: windowStart })
+              : t("Submit before {d} today", { d: deadline })}
+          </Text>
         </View>
       ) : null}
-      <Text style={s.note}>{t("The AI judges in a few seconds. A reject resets your streak — you can appeal once.")}</Text>
+      {isGeo ? null : <Text style={s.note}>{t("The AI judges in a few seconds. A reject resets your streak — you can appeal once.")}</Text>}
       {stage === "judging" ? (
         <View style={{ alignItems: "center", marginTop: 24 }}>
           <ActivityIndicator color={C.red} />
-          <Text style={[s.note, { marginTop: 10 }]}>{isTimelapse ? t("The judge is analyzing your timelapse…") : t("The judge is analyzing your photo…")}</Text>
+          <Text style={[s.note, { marginTop: 10 }]}>{isGeo ? t("Checking your location…") : isTimelapse ? t("The judge is analyzing your timelapse…") : t("The judge is analyzing your photo…")}</Text>
         </View>
       ) : reject && reject.attemptsLeft === 0 ? (
         // Attempts used up today — now the appeal is the way out.
@@ -1748,6 +1821,12 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           <Text style={s.note}>{t("You missed today's {d} cutoff. Come back tomorrow before then.", { d: deadline })}</Text>
           <BtnGhost label={t("Back")} onPress={onBack} />
         </View>
+      ) : early ? (
+        <View style={[s.card, { borderColor: C.line, alignItems: "center" }]}>
+          <Text style={[s.kicker, { color: C.mute }]}>{t("Too early")}</Text>
+          <Text style={s.note}>{t("The check-in window opens at {t}. Come back then.", { t: windowStart })}</Text>
+          <BtnGhost label={t("Back")} onPress={onBack} />
+        </View>
       ) : (
         // First attempt, or a reject with attempts still left → let them retry.
         <>
@@ -1756,11 +1835,13 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
               <Text style={[s.kicker, { color: C.red }]}>{t("Rejected — try again")}</Text>
               <Text style={s.goalText}>{reject.reason}</Text>
               {typeof reject.attemptsLeft === "number"
-                ? <Text style={s.note}>{t("{n} attempts left today, then you can appeal.", { n: reject.attemptsLeft })}</Text>
+                ? <Text style={s.note}>{isGeo ? t("{n} attempts left today.", { n: reject.attemptsLeft }) : t("{n} attempts left today, then you can appeal.", { n: reject.attemptsLeft })}</Text>
                 : null}
             </View>
           ) : null}
-          {isTimelapse ? (
+          {isGeo ? (
+            <Btn label={reject ? t("Check in again") : t("📍 Check in now")} onPress={() => runJudge({ checkin: true })} disabled={busy || checkState !== "ok"} />
+          ) : isTimelapse ? (
             <Btn label={reject ? t("Record again") : t("Record timelapse")} onPress={() => setCapturing(true)} disabled={busy || checkState !== "ok"} />
           ) : (
             <>
@@ -1783,7 +1864,7 @@ const PLACE_PALETTE = {
   2: { bg: "#b8bcc4", fg: "#16181c", sub: "#474b52", label: "2ND PLACE", medal: "🥈" },
   3: { bg: "#b5793f", fg: "#1a0f05", sub: "#3f2710", label: "3RD PLACE", medal: "🥉" },
 };
-function ShareableCard({ cardRef, kind, days, title, rank, bg }) {
+function ShareableCard({ cardRef, kind, days, title, rank, bg, sticker }) {
   // ----- placement cert (gold / silver / bronze by rank) -----
   if (kind === "placement") {
     const p = PLACE_PALETTE[rank] || { bg: C.card, fg: C.ink, sub: C.mute, label: `#${rank}`, medal: `#${rank}` };
@@ -1809,6 +1890,32 @@ function ShareableCard({ cardRef, kind, days, title, rank, bg }) {
     );
   }
   const head = kind === "milestone" ? "STREAK UNLOCKED" : "CERTIFIED";
+  // ----- sticker: transparent PNG overlay to layer over YOUR OWN photo -----
+  // (saved to the gallery; text shadows keep it readable on any background)
+  if (sticker) {
+    const sh = { textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 7 };
+    return (
+      <View ref={cardRef} collapsable={false} style={{ width: "100%", aspectRatio: 9 / 16, backgroundColor: "transparent", padding: 28, justifyContent: "space-between" }}>
+        <View style={s.shareTop}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Image source={LOGO} style={s.shareLogo} resizeMode="contain" />
+            <Text style={[s.shareBrand, { color: "#f4efe8" }, sh]}>CERT</Text>
+          </View>
+          <Text style={[s.shareVerified, sh]}>✓ VERIFIED</Text>
+        </View>
+        <View style={{ alignItems: "center" }}>
+          <Text style={[s.shareKicker, { color: "#e9e4dc" }, sh]}>{head}</Text>
+          <Text style={[s.shareDays, sh]}>{days}</Text>
+          <Text style={[s.shareDaysLabel, { color: "#f4efe8" }, sh]}>VERIFIED DAYS</Text>
+          <Text style={[s.shareNotFaked, sh]}>NOT FAKED</Text>
+        </View>
+        <View>
+          <Text style={[s.shareGoal, { color: "#f4efe8" }, sh]} numberOfLines={3}>{title}</Text>
+          <Text style={[s.shareTagline, { color: "#e9e4dc" }, sh]}>The streak you can't fake.</Text>
+        </View>
+      </View>
+    );
+  }
   // Strava-style: your photo underneath, the cert on top. A dark scrim keeps
   // the type readable, and text is forced to light ink over a photo (the
   // theme's ink may be dark in light mode).
@@ -1855,6 +1962,7 @@ function ShareScreen({ kind, days, title, subtitle, rank, onBack }) {
   const cardRef = useRef();
   const [busy, setBusy] = useState(false);
   const [bg, setBg] = useState(null); // photo behind the card (Strava-style)
+  const [sticker, setSticker] = useState(false); // transparent overlay mode
   const shareLabel = kind === "placement" ? "↗ Share my result" : kind === "milestone" ? "↗ Share my badge" : "↗ Share my Cert";
 
   async function share() {
@@ -1874,21 +1982,45 @@ function ShareScreen({ kind, days, title, subtitle, rank, onBack }) {
     setBg(res.assets[0].uri);
   }
 
+  // Save the transparent sticker PNG to the gallery, so it can be layered
+  // over any photo in stories / photo editors (like Strava's stickers).
+  async function saveSticker() {
+    try {
+      setBusy(true);
+      const perm = await MediaLibrary.requestPermissionsAsync(true); // write-only where the OS supports it
+      if (!perm.granted) { Alert.alert("Cert", t("Allow photo library access to save the sticker.")); return; }
+      const uri = await captureRef(cardRef, { format: "png", quality: 1 });
+      await MediaLibrary.saveToLibraryAsync(uri);
+      Alert.alert("Cert", t("Saved to your gallery. Layer it over any photo in stories or your editor."));
+    } catch (e) {
+      Alert.alert("Cert", e.message || "Couldn't save.");
+    } finally { setBusy(false); }
+  }
+
   return (
     <ScrollView contentContainerStyle={s.wrap}>
       <BackBar onBack={onBack} />
-      <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
-        <ShareableCard cardRef={cardRef} kind={kind} days={days} title={title} rank={rank} bg={kind === "placement" ? null : bg} />
+      <View style={{ paddingHorizontal: 16, marginTop: 8, borderRadius: 22, backgroundColor: sticker ? (C.isDark ? "#17131c" : "#eee3d6") : "transparent", paddingVertical: sticker ? 12 : 0 }}>
+        <ShareableCard cardRef={cardRef} kind={kind} days={days} title={title} rank={rank} bg={kind === "placement" ? null : bg} sticker={kind === "placement" ? false : sticker} />
       </View>
       {kind !== "placement" ? (
-        <>
-          <BtnGhost label={bg ? t("Change photo background") : t("📷 Add photo background")} onPress={pickBg} />
-          {bg
-            ? <TouchableOpacity onPress={() => setBg(null)}><Text style={[s.note, { textAlign: "center" }]}>{t("Remove background")}</Text></TouchableOpacity>
-            : <Text style={[s.note, { textAlign: "center" }]}>{t("Your photo underneath, your Cert on top — like Strava.")}</Text>}
-        </>
+        sticker ? (
+          <>
+            <Btn label={busy ? "…" : t("Save sticker to gallery")} onPress={saveSticker} disabled={busy} />
+            <BtnGhost label={t("Back to card")} onPress={() => setSticker(false)} />
+            <Text style={[s.note, { textAlign: "center" }]}>{t("Transparent PNG — the checkered-looking backdrop here won't be saved.")}</Text>
+          </>
+        ) : (
+          <>
+            <BtnGhost label={bg ? t("Change photo background") : t("📷 Add photo background")} onPress={pickBg} />
+            {bg
+              ? <TouchableOpacity onPress={() => setBg(null)}><Text style={[s.note, { textAlign: "center" }]}>{t("Remove background")}</Text></TouchableOpacity>
+              : <Text style={[s.note, { textAlign: "center" }]}>{t("Your photo underneath, your Cert on top — like Strava.")}</Text>}
+            <BtnGhost label={t("✨ Sticker for your own photos")} onPress={() => setSticker(true)} />
+          </>
+        )
       ) : null}
-      <Btn label={busy ? "Preparing…" : shareLabel} onPress={share} disabled={busy} />
+      {sticker && kind !== "placement" ? null : <Btn label={busy ? "Preparing…" : shareLabel} onPress={share} disabled={busy} />}
       {subtitle ? <Text style={[s.note, { textAlign: "center" }]}>{subtitle}</Text> : null}
       <Text style={s.note}>{kind === "placement"
         ? "Your finish was earned against real friends — verified, not faked."
