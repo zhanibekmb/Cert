@@ -204,6 +204,7 @@ const RU = {
   "That video is too large — use a shorter or more compressed timelapse.": "Видео слишком большое — возьми короче или сильнее сжатый таймлапс.",
   "Couldn't read that video. Try another clip.": "Не удалось прочитать это видео. Попробуй другой ролик.",
   "Couldn't upload the video. Try again.": "Не удалось загрузить видео. Попробуй ещё раз.",
+  "Couldn't load that video — it may still be in iCloud or in an unsupported format. Download it to your device or try another clip.": "Не удалось загрузить это видео — возможно, оно ещё в iCloud или в неподдерживаемом формате. Скачай его на устройство или выбери другой ролик.",
   // --- personal goal wizard ---
   "Timing": "Время",
   "pinned": "закреплено",

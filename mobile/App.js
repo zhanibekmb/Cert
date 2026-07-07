@@ -1488,7 +1488,9 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     setBusy(true);
     try {
       let spec = { en: null, ru: null };
-      if (!isGeo) {
+      // Only photo goals get an AI proof-spec (it's photo-worded, e.g. "Send a
+      // clear photo…"). Timelapse (video) and geo goals don't need it.
+      if (proofType === "photo") {
         try {
           const { data } = await supabase.functions.invoke("proof-spec", { body: { goal: text.trim() } });
           if (data && (data.en || data.ru)) spec = data;
@@ -1713,7 +1715,10 @@ async function videoToDataUri(uri, mimeHint) {
     fr.readAsDataURL(blob);
   });
   const b64 = raw.slice(raw.indexOf("base64,") + 7);
-  const mime = (mimeHint && mimeHint.startsWith("video/")) ? mimeHint : (/\.mov(\?|$)/i.test(uri) ? "video/quicktime" : "video/mp4");
+  let mime = (mimeHint && mimeHint.startsWith("video/")) ? mimeHint : (/\.mov(\?|$)/i.test(uri) ? "video/quicktime" : "video/mp4");
+  // iOS reports .mov as video/quicktime, which isn't on Gemini's accepted list.
+  // The QuickTime container is MP4-compatible, so label it video/mp4.
+  if (mime === "video/quicktime") mime = "video/mp4";
   return `data:${mime};base64,${b64}`;
 }
 
@@ -1786,7 +1791,14 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     try {
       const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (!perm.granted) return Alert.alert("Cert", t("Allow photo library access to upload your video."));
-      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["videos"], videoMaxDuration: TL_MAX_SECONDS });
+      // `Current` returns the original asset WITHOUT transcoding — the transcode
+      // step is what throws PHPhotos error 3164 on iCloud / slow-mo / HEVC .mov
+      // clips (iOS time-lapses are exactly that).
+      const res = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ["videos"],
+        allowsEditing: false,
+        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
+      });
       if (res.canceled || !res.assets?.[0]?.uri) return;
       const a = res.assets[0];
       if (a.duration && a.duration > (TL_MAX_SECONDS + 1) * 1000) {
@@ -1810,7 +1822,11 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       await runJudge({ video: dataUri });
     } catch (e) {
       setBusy(false); setStage("idle");
-      Alert.alert("Cert", (e && e.message) || t("Couldn't upload the video. Try again."));
+      const raw = String((e && e.message) || "");
+      const msg = /PHPhotos|3164|export|iCloud/i.test(raw)
+        ? t("Couldn't load that video — it may still be in iCloud or in an unsupported format. Download it to your device or try another clip.")
+        : (raw || t("Couldn't upload the video. Try again."));
+      Alert.alert("Cert", msg);
     }
   }
 
@@ -1889,7 +1905,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       <Text style={s.h2}>{isGeo ? t("Check in") : t("Submit proof")}</Text>
       <View style={s.card}>
         <Text style={[s.kicker, { color: C.bronze }]}>{isGeo ? t("Be at the place") : isTimelapse ? t("Upload a timelapse of this") : t("Send a photo like this")}</Text>
-        <Text style={s.goalText}>{isGeo ? goal.text : (proofSpec(goal) || goal.text)}</Text>
+        <Text style={s.goalText}>{(isGeo || isTimelapse) ? goal.text : (proofSpec(goal) || goal.text)}</Text>
         {isGeo ? (
           <Text style={[s.spec, { color: C.mute }]}>
             {anchorSet
