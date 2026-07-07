@@ -5,7 +5,7 @@
 //   - photo proof -> "judge" Edge Function (Gemini) -> verdict
 // Single-file app for v1; we'll split into screens as it grows.
 // =====================================================================
-import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
   StyleSheet, Alert, RefreshControl, StatusBar, Image, Switch, Share, Modal, Platform,
@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import { WebView } from "react-native-webview";
+import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -1385,36 +1385,19 @@ function Reel({ goal, onBack }) {
 /* ---------- NEW GOAL ---------- */
 const WEEKDAYS = [["Mon", 0], ["Tue", 1], ["Wed", 2], ["Thu", 3], ["Fri", 4], ["Sat", 5], ["Sun", 6]];
 /* ---------- MAP PICKER (drop a point for a geo goal) ----------
-   A Leaflet map inside a WebView (OpenStreetMap tiles, no API key, identical on
-   iOS + Android). Tap the map or drag the pin; the chosen coordinate is posted
-   back to RN, then reverse-geocoded for a human place label. */
-function mapHtml(lat, lng) {
-  const la = Number.isFinite(lat) ? lat : 40;
-  const ln = Number.isFinite(lng) ? lng : 0;
-  const z = (Number.isFinite(lat) && Number.isFinite(lng)) ? 16 : 2;
-  return `<!DOCTYPE html><html><head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>html,body,#map{height:100%;margin:0;padding:0;background:#0b0a0d;}</style>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-</head><body><div id="map"></div><script>
-  var map = L.map('map',{zoomControl:false}).setView([${la}, ${ln}], ${z});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
-  var marker = L.marker([${la}, ${ln}],{draggable:true}).addTo(map);
-  function post(ll){ if(window.ReactNativeWebView){ window.ReactNativeWebView.postMessage(JSON.stringify({lat:ll.lat,lng:ll.lng})); } }
-  map.on('click', function(e){ marker.setLatLng(e.latlng); post(e.latlng); });
-  marker.on('dragend', function(){ post(marker.getLatLng()); });
-  post(marker.getLatLng());
-</script></body></html>`;
-}
+   Native Apple Maps (react-native-maps, PROVIDER_DEFAULT on iOS — no API key).
+   Tap the map or drag the pin; the chosen coordinate is reverse-geocoded for a
+   human place label. */
 function MapPicker({ visible, initial, onPick, onClose }) {
   const [pt, setPt] = useState(initial || null);
   const [busy, setBusy] = useState(false);
   useEffect(() => { setPt(initial || null); }, [initial]);
-  // Memoize the HTML so posting a new point (setPt) never remounts the WebView
-  // and resets the map. Keyed on the opening coordinate only.
-  const html = useMemo(() => mapHtml(initial?.lat, initial?.lng), [initial?.lat, initial?.lng]);
+  const region = {
+    latitude: initial?.lat ?? 40,
+    longitude: initial?.lng ?? 0,
+    latitudeDelta: initial ? 0.01 : 80,
+    longitudeDelta: initial ? 0.01 : 80,
+  };
   async function confirm() {
     if (!pt) return onClose();
     setBusy(true);
@@ -1435,8 +1418,17 @@ function MapPicker({ visible, initial, onPick, onClose }) {
           <Text style={[s.h2, { fontSize: 18, marginTop: 0 }]}>{t("Pick the place")}</Text>
           <View style={{ width: 24 }} />
         </View>
-        <WebView originWhitelist={["*"]} source={{ html }} style={{ flex: 1, backgroundColor: C.bg }}
-          onMessage={(e) => { try { const c = JSON.parse(e.nativeEvent.data); if (typeof c.lat === "number") setPt({ lat: c.lat, lng: c.lng }); } catch (_) { /* */ } }} />
+        {visible ? (
+          <MapView
+            key={`${initial?.lat ?? "x"}_${initial?.lng ?? "y"}`} // remount (recenter) each open
+            style={{ flex: 1 }} initialRegion={region} showsUserLocation showsMyLocationButton
+            onPress={(e) => { const c = e.nativeEvent.coordinate; setPt({ lat: c.latitude, lng: c.longitude }); }}>
+            {pt ? (
+              <Marker draggable coordinate={{ latitude: pt.lat, longitude: pt.lng }}
+                onDragEnd={(e) => { const c = e.nativeEvent.coordinate; setPt({ lat: c.latitude, lng: c.longitude }); }} />
+            ) : null}
+          </MapView>
+        ) : <View style={{ flex: 1 }} />}
         <View style={{ padding: 16 }}>
           <Text style={[s.note, { textAlign: "center", marginTop: 0 }]}>{pt ? `📍 ${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}` : t("Tap the map or drag the pin to your spot.")}</Text>
           <Btn label={busy ? "…" : t("Use this place")} onPress={confirm} disabled={busy || !pt} />
