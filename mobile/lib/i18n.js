@@ -186,6 +186,26 @@ const RU = {
   "{n} attempts left today.": "Осталось попыток сегодня: {n}.",
   "geo check-in": "гео-чекин",
   "from": "с",
+  // --- real video timelapse ---
+  "Record at least {n} seconds.": "Запиши минимум {n} секунды.",
+  "Couldn't record. Try again.": "Не удалось записать. Попробуй ещё раз.",
+  "Preparing your clip…": "Готовим твоё видео…",
+  "{n}s left — stops automatically.": "Осталось {n} с — остановится сам.",
+  "Stop & send": "Стоп и отправить",
+  "Record up to {n}s of yourself actually doing it. The AI watches the whole clip — a propped photo won't pass.": "Запиши до {n} с того, как реально это делаешь. ИИ смотрит всё видео — подставленное фото не пройдёт.",
+  "Record a short video — the AI watches the whole clip, not a single frame. Much harder to fake.": "Запиши короткое видео — ИИ смотрит весь ролик, а не один кадр. Подделать намного сложнее.",
+  // --- personal goal wizard ---
+  "Timing": "Время",
+  "pinned": "закреплено",
+  "Submit your proof before this. One proof, judged once.": "Отправь пруф до этого момента. Один пруф, одна проверка.",
+  // --- delete personal goal ---
+  "Delete this goal?": "Удалить эту цель?",
+  "Removes the goal and its history. Your earned Certs stay. This can't be undone.": "Удалит цель и её историю. Полученные сертификаты останутся. Отменить нельзя.",
+  // --- create chooser ---
+  "Create": "Создать",
+  "A personal streak only you do.": "Личная серия, которую делаешь только ты.",
+  "New challenge": "Новый челлендж",
+  "Compete with friends on a shared goal.": "Соревнуйся с друзьями на общей цели.",
   "Set a goal": "Поставь цель",
   "Pick something you'll prove every single day.": "Выбери то, что будешь доказывать каждый день.",
   "Send a daily photo": "Присылай фото каждый день",

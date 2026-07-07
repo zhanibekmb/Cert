@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import { CameraView, useCameraPermissions } from "expo-camera";
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import * as Location from "expo-location";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -593,6 +593,7 @@ function Main({ session }) {
   // The paywall is a Modal ON TOP of whatever is open (not a screen swap), so
   // a half-filled form underneath keeps its state when the user backs out.
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [createChooser, setCreateChooser] = useState(false); // center "+" → goal or challenge
   const [goals, setGoals] = useState(null);
   const [certs, setCerts] = useState([]);
   const [subs, setSubs] = useState([]);
@@ -697,6 +698,33 @@ function Main({ session }) {
   else if (screen === "reel" && activeReelGoal) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><Reel goal={activeReelGoal} onBack={back} /></SwipeBack>; }
   if (overlay) return <View style={{ flex: 1, backgroundColor: C.bg }}>{overlay}{paywallModal}</View>;
 
+  // Delete a personal goal (cascades its submissions/appeals; Certs are kept,
+  // their goal link just goes null). Verified-days total lives on the goal row,
+  // so deleting drops it — that's expected for a removed goal.
+  function deleteGoal(goal) {
+    Alert.alert(t("Delete this goal?"), t("Removes the goal and its history. Your earned Certs stay. This can't be undone."), [
+      { text: t("Cancel"), style: "cancel" },
+      { text: t("Delete"), style: "destructive", onPress: async () => {
+        const { error } = await supabase.from("goals").delete().eq("id", goal.id);
+        if (error) Alert.alert("Cert", error.message);
+        else await load();
+      } },
+    ]);
+  }
+
+  // Center "+" chooser: personal goal or friend challenge.
+  const createChooserModal = (
+    <Modal visible={createChooser} transparent animationType="fade" onRequestClose={() => setCreateChooser(false)}>
+      <TouchableOpacity activeOpacity={1} onPress={() => setCreateChooser(false)} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ backgroundColor: C.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34, borderTopWidth: 1, borderColor: C.line }}>
+          <Text style={[s.h2, { marginBottom: 2 }]}>{t("Create")}</Text>
+          <OptionCard icon="flag-outline" title={t("New goal")} desc={t("A personal streak only you do.")} onPress={() => { setCreateChooser(false); setTab("home"); setScreen("new"); }} />
+          <OptionCard icon="flame-outline" title={t("New challenge")} desc={t("Compete with friends on a shared goal.")} onPress={() => { setCreateChooser(false); setTab("challenges"); setScreen("challengeNew"); }} />
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+
   // ----- tab shell (horizontal swipe switches tabs) -----
   const TAB_ORDER = ["home", "challenges", "stats", "profile"];
   const tabSwipe = PanResponder.create({
@@ -713,7 +741,7 @@ function Main({ session }) {
         {tab === "home" && (
           <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
             freezes={freezes} onBuyFreezes={openPaywall}
-            onNew={() => setScreen("new")} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} />
+            onNew={() => setScreen("new")} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} onDelete={deleteGoal} />
         )}
         {tab === "challenges" && (
           <ChallengesScreen onOpen={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }}
@@ -722,8 +750,9 @@ function Main({ session }) {
         {tab === "stats" && <Stats goals={goals || []} subs={subs} onOpenBadge={openBadge} isPro={isPro} onUpgrade={openPaywall} refreshing={refreshing} onRefresh={onRefresh} />}
         {tab === "profile" && <ProfileTab session={session} goals={goals || []} certs={certs} subs={subs} freezes={freezes} onOpenCert={openCert} onOpenSettings={() => setScreen("settings")} onUpgrade={openPaywall} onReload={load} refreshing={refreshing} onRefresh={onRefresh} />}
       </View>
-      <TabBar tab={tab} setTab={setTab} onCreate={() => { setTab("challenges"); setScreen("challengeNew"); }} />
+      <TabBar tab={tab} setTab={setTab} onCreate={() => setCreateChooser(true)} />
       {paywallModal}
+      {createChooserModal}
     </View>
   );
 }
@@ -759,7 +788,7 @@ function TabBar({ tab, setTab, onCreate }) {
   );
 }
 
-function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuyFreezes, onNew, onSubmit, onOpenCert, onReel }) {
+function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuyFreezes, onNew, onSubmit, onOpenCert, onReel, onDelete }) {
   const [showDone, setShowDone] = useState(false);
   const myGoals = (goals || []).filter((g) => !g.challenge_id); // challenge goals live under Versus
   const activeGoals = myGoals.filter((g) => g.status !== "completed");
@@ -809,7 +838,7 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
         <>
           {activeGoals.map((g) => (
             <GoalCard key={g.id} goal={g} subs={subsByGoal[g.id] || []} onSubmit={() => onSubmit(g)} onReel={() => onReel(g)}
-              onOpenCert={() => { const c = certs.find((x) => x.goal_id === g.id); if (c) onOpenCert(c); }} />
+              onOpenCert={() => { const c = certs.find((x) => x.goal_id === g.id); if (c) onOpenCert(c); }} onDelete={() => onDelete && onDelete(g)} />
           ))}
           <BtnGhost label={"+ " + t("Add a goal")} onPress={onNew} />
           {doneGoals.length > 0 ? (
@@ -822,7 +851,7 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
               </TouchableOpacity>
               {showDone ? doneGoals.map((g) => (
                 <GoalCard key={g.id} goal={g} subs={subsByGoal[g.id] || []} onSubmit={() => onSubmit(g)} onReel={() => onReel(g)}
-                  onOpenCert={() => { const c = certs.find((x) => x.goal_id === g.id); if (c) onOpenCert(c); }} />
+                  onOpenCert={() => { const c = certs.find((x) => x.goal_id === g.id); if (c) onOpenCert(c); }} onDelete={() => onDelete && onDelete(g)} />
               )) : null}
             </>
           ) : null}
@@ -1218,13 +1247,18 @@ function AnimatedStreakNum({ value }) {
   return <Animated.Text style={[s.streakNum, { transform: [{ scale }] }]}>{value}</Animated.Text>;
 }
 
-function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel }) {
+function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel, onDelete }) {
   const completed = goal.status === "completed";
   const isWeekly = goal.type === "recurring" && (goal.format === "3x" || goal.format === "5x" || goal.format === "custom");
   const isRecurring = goal.type === "recurring";
   const verifiedCount = (subs || []).filter((x) => x.status === "approved" || x.status === "frozen").length;
   return (
     <View style={s.card}>
+      {onDelete ? (
+        <TouchableOpacity onPress={onDelete} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ position: "absolute", top: 12, right: 12, zIndex: 2, padding: 2 }}>
+          <Ionicons name="trash-outline" size={18} color={C.faint} />
+        </TouchableOpacity>
+      ) : null}
       <AnimatedStreakNum value={goal.streak} />
       <Text style={s.kicker}>{isWeekly ? t("week streak · verified by the judge") : t("day streak · verified by the judge")}</Text>
       <Text style={s.goalText}>{goal.text}</Text>
@@ -1294,7 +1328,8 @@ function Reel({ goal, onBack }) {
     (async () => {
       const { data } = await supabase.from("submissions").select("day,photo_path,status")
         .eq("goal_id", goal.id).in("status", ["approved", "frozen"]).order("day", { ascending: true });
-      const rows = (data || []).filter((r) => r.photo_path);
+      // Only still images render in the flip-reel — skip video-clip proofs.
+      const rows = (data || []).filter((r) => r.photo_path && /\.(jpg|jpeg|png|webp)$/i.test(r.photo_path));
       const out = [];
       for (const r of rows) {
         const { data: signed } = await supabase.storage.from("proofs").createSignedUrl(r.photo_path, 3600);
@@ -1414,144 +1449,232 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     } finally { setBusy(false); }
   }
 
+  // 4-step wizard: goal → proof → schedule → review. All answers live at this
+  // parent level, so moving between steps never loses what's already filled in.
+  const [step, setStep] = useState(0);
+  const stepAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    stepAnim.setValue(0);
+    Animated.timing(stepAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [step]);
+  const STEPS = 4;
+  function next() {
+    if (step === 0 && text.trim().length < 3) return Alert.alert("Cert", t("Describe your goal first."));
+    if (step === 2) {
+      if (type === "recurring" && format === "custom" && customDays.length === 0) return Alert.alert("Cert", t("Pick at least one day."));
+      if (type === "one_time" && !oneTimeDeadline) return Alert.alert("Cert", t("Pick a deadline date & time."));
+    }
+    setStep((v) => Math.min(v + 1, STEPS - 1));
+  }
+
+  const proofLabel = isGeo ? t("📍 Geo check-in") : proofType === "timelapse" ? t("🎥 Timelapse") : t("📷 Quick photo");
+  const cadence = type === "one_time"
+    ? t("One-time")
+    : format === "custom" ? (customDays.map((d) => t(WEEKDAYS[d]?.[0] || "")).join(", ") || t("Custom days"))
+      : format === "3x" ? t("3× / week") : format === "5x" ? t("5× / week") : (t("Daily") + (duration ? " · " + t("{n}d goal", { n: duration }) : ""));
+  const timing = type === "one_time"
+    ? (oneTimeDeadline ? oneTimeDeadline.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—")
+    : [windowStart && isGeo ? t("from") + " " + windowStart : null, deadline ? t("by") + " " + deadline : null].filter(Boolean).join(" · ") || t("Any time");
+  const SummaryRow = ({ label, value, goStep }) => (
+    <TouchableOpacity style={s.rowBetween} onPress={() => setStep(goStep)} activeOpacity={0.7}>
+      <View style={{ flex: 1, marginRight: 10 }}>
+        <Text style={s.kicker}>{label}</Text>
+        <Text style={[s.goalText, { marginTop: 3 }]} numberOfLines={2}>{value}</Text>
+      </View>
+      <Text style={[s.kicker, { color: C.bronze }]}>{t("Edit")}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <BackBar onBack={onBack} />
-      <Text style={s.h2}>{t("What will you prove?")}</Text>
-      <Text style={s.lede}>{t("Write it in your own words. The AI judge reads exactly this.")}</Text>
-      <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done"
-        placeholder={t("e.g. Wake up and send a photo, or gym 45 min")} placeholderTextColor={C.faint}
-        value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
-      <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
-
-      <Text style={[s.label, { marginTop: 14 }]}>{t("How do you prove it?")}</Text>
-      <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Snap one photo. Fast, good for things a single shot can prove.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-      <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Record your session — the app captures frames over time and the AI judges the whole thing. Much harder to fake.")} active={proofType === "timelapse"}
-        onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
-      <OptionCard icon="location-outline" title={t("📍 Geo check-in")} desc={t("Pin a place — the proof is being there. Great for gym, pool, library.")} active={isGeo} onPress={() => setProofType("geo")} />
-
-      {isGeo ? (
-        <View style={[s.card, { marginTop: 12 }]}>
-          <Text style={s.label}>{t("The place")}</Text>
-          {geoAnchor ? (
-            <>
-              <Text style={s.goalText}>📍 {geoAnchor.place || `${geoAnchor.lat.toFixed(4)}, ${geoAnchor.lng.toFixed(4)}`}</Text>
-              <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left" }]}>{t("Unpin")}</Text></TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <BtnGhost label={geoPinning ? "…" : t("📍 Pin my current location")} onPress={pinHere} disabled={geoPinning} />
-              <Text style={[s.note, { textAlign: "left" }]}>{t("Not there right now? Skip this — your FIRST check-in will pin the place.")}</Text>
-            </>
-          )}
-          {type === "recurring" ? (
-            <>
-              <Text style={[s.label, { marginTop: 14 }]}>{t("Be there from (optional)")}</Text>
-              <TimeField value={windowStart} onChange={setWindowStart} allowClear placeholder={t("Any time")} />
-              <Text style={[s.note, { textAlign: "left" }]}>{t("Check-ins before this time won't count. Combine with the deadline below for a window like 19:00–21:00.")}</Text>
-            </>
-          ) : null}
-        </View>
-      ) : null}
-
-      <Text style={[s.label, { marginTop: 14 }]}>{t("Type")}</Text>
-      <View style={s.rowGap}>
-        <Pill label={t("Repeating")} active={type === "recurring"} onPress={() => setType("recurring")} />
-        <Pill label={t("One-time")} active={type === "one_time"} onPress={() => setType("one_time")} />
+      <BackBar onBack={step === 0 ? onBack : () => setStep((v) => v - 1)} />
+      <View style={s.rowBetween}>
+        <Text style={s.h2}>{t("New goal")}</Text>
+        <Text style={s.kicker}>{t("Step {a} of {b}", { a: step + 1, b: STEPS })}</Text>
+      </View>
+      <View style={{ flexDirection: "row", gap: 6, marginTop: 10 }}>
+        {Array.from({ length: STEPS }).map((_, i) => (
+          <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? C.bronze : C.line }} />
+        ))}
       </View>
 
-      {type === "recurring" ? (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
-          <View style={s.chipRow}>
-            {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom days")]].map(([v, label]) => (
-              <TouchableOpacity key={v} style={[s.chip, format === v && s.chipOn]} onPress={() => setFormat(v)}>
-                <Text style={[s.chipText, format === v && { color: C.ink }]}>{label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {format === "custom" ? (
-            <>
-              <Text style={[s.label, { marginTop: 14 }]}>{t("Which days?")}</Text>
-              <View style={s.chipRow}>
-                {WEEKDAYS.map(([label, d]) => (
-                  <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
-                    <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
-                  </TouchableOpacity>
-                ))}
+      <Animated.View style={{ opacity: stepAnim, transform: [{ translateX: stepAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] }}>
+        {step === 0 ? (
+          <>
+            <Text style={[s.h2, { marginTop: 18, fontSize: 20 }]}>{t("What will you prove?")}</Text>
+            <Text style={s.lede}>{t("Write it in your own words. The AI judge reads exactly this.")}</Text>
+            <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done"
+              placeholder={t("e.g. Wake up and send a photo, or gym 45 min")} placeholderTextColor={C.faint}
+              value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+            <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
+          </>
+        ) : step === 1 ? (
+          <>
+            <Text style={[s.label, { marginTop: 18 }]}>{t("How do you prove it?")}</Text>
+            <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Snap one photo. Fast, good for things a single shot can prove.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
+            <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Record a short video — the AI watches the whole clip, not a single frame. Much harder to fake.")} active={proofType === "timelapse"}
+              onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
+            <OptionCard icon="location-outline" title={t("📍 Geo check-in")} desc={t("Pin a place — the proof is being there. Great for gym, pool, library.")} active={isGeo} onPress={() => setProofType("geo")} />
+            {isGeo ? (
+              <View style={[s.card, { marginTop: 12 }]}>
+                <Text style={s.label}>{t("The place")}</Text>
+                {geoAnchor ? (
+                  <>
+                    <Text style={s.goalText}>📍 {geoAnchor.place || `${geoAnchor.lat.toFixed(4)}, ${geoAnchor.lng.toFixed(4)}`}</Text>
+                    <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left" }]}>{t("Unpin")}</Text></TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <BtnGhost label={geoPinning ? "…" : t("📍 Pin my current location")} onPress={pinHere} disabled={geoPinning} />
+                    <Text style={[s.note, { textAlign: "left" }]}>{t("Not there right now? Skip this — your FIRST check-in will pin the place.")}</Text>
+                  </>
+                )}
               </View>
-            </>
-          ) : null}
+            ) : null}
+          </>
+        ) : step === 2 ? (
+          <>
+            <Text style={[s.label, { marginTop: 18 }]}>{t("Type")}</Text>
+            <OptionCard icon="repeat-outline" title={t("Repeating")} desc={t("Daily or weekly cadence — the streak machine.")} active={type === "recurring"} onPress={() => setType("recurring")} />
+            <OptionCard icon="flag-outline" title={t("One-time")} desc={t("A single dated dare with one proof.")} active={type === "one_time"} onPress={() => setType("one_time")} />
 
-          {format === "daily" ? (
-            <>
-              <Text style={[s.label, { marginTop: 14 }]}>{t("Duration")}</Text>
-              <View style={s.rowGap}>
-                {[[null, t("Ongoing")], [7, t("7 days")], [30, t("30 days")], [100, t("100 days")]].map(([v, label]) => (
-                  <Pill key={label} label={label} active={duration === v} onPress={() => setDuration(v)} />
-                ))}
-              </View>
-              <Text style={s.note}>{t("Reach the target to complete the goal and earn a Cert.")}</Text>
-            </>
-          ) : null}
+            {type === "recurring" ? (
+              <>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
+                <View style={s.chipRow}>
+                  {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom days")]].map(([v, label]) => (
+                    <TouchableOpacity key={v} style={[s.chip, format === v && s.chipOn]} onPress={() => setFormat(v)}>
+                      <Text style={[s.chipText, format === v && { color: C.ink }]}>{label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
 
-          <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (must submit before)")}</Text>
-          <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("No deadline")} />
-          <Text style={s.note}>{t("Pick any time. Proof after it won't count for the day. Judged in your local time.")}</Text>
-        </>
-      ) : (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (date & time)")}</Text>
-          <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick deadline")} />
-          <Text style={s.note}>{t("Submit your proof before this. One photo, judged once.")}</Text>
-        </>
-      )}
+                {format === "custom" ? (
+                  <>
+                    <Text style={[s.label, { marginTop: 14 }]}>{t("Which days?")}</Text>
+                    <View style={s.chipRow}>
+                      {WEEKDAYS.map(([label, d]) => (
+                        <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
+                          <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </>
+                ) : null}
 
-      <Btn label={busy ? t("Creating…") : t("Start the streak")} onPress={create} disabled={busy} />
+                {format === "daily" ? (
+                  <>
+                    <Text style={[s.label, { marginTop: 14 }]}>{t("Duration")}</Text>
+                    <View style={s.rowGap}>
+                      {[[null, t("Ongoing")], [7, t("7 days")], [30, t("30 days")], [100, t("100 days")]].map(([v, label]) => (
+                        <Pill key={label} label={label} active={duration === v} onPress={() => setDuration(v)} />
+                      ))}
+                    </View>
+                    <Text style={s.note}>{t("Reach the target to complete the goal and earn a Cert.")}</Text>
+                  </>
+                ) : null}
+
+                {isGeo ? (
+                  <>
+                    <Text style={[s.label, { marginTop: 14 }]}>{t("Be there from (optional)")}</Text>
+                    <TimeField value={windowStart} onChange={setWindowStart} allowClear placeholder={t("Any time")} />
+                    <Text style={[s.note, { textAlign: "left" }]}>{t("Check-ins before this time won't count. Combine with the deadline below for a window like 19:00–21:00.")}</Text>
+                  </>
+                ) : null}
+
+                <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (must submit before)")}</Text>
+                <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("No deadline")} />
+                <Text style={s.note}>{t("Pick any time. Proof after it won't count for the day. Judged in your local time.")}</Text>
+              </>
+            ) : (
+              <>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (date & time)")}</Text>
+                <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick deadline")} />
+                <Text style={s.note}>{t("Submit your proof before this. One proof, judged once.")}</Text>
+              </>
+            )}
+          </>
+        ) : (
+          <>
+            <Text style={[s.h2, { marginTop: 18 }]}>{t("Review & create")}</Text>
+            <View style={[s.card, { gap: 14 }]}>
+              <SummaryRow label={t("Goal")} value={text.trim() || "—"} goStep={0} />
+              <SummaryRow label={t("Proof")} value={isGeo && geoAnchor ? `${proofLabel} · ${geoAnchor.place || t("pinned")}` : proofLabel} goStep={1} />
+              <SummaryRow label={t("Schedule")} value={cadence} goStep={2} />
+              <SummaryRow label={t("Timing")} value={timing} goStep={2} />
+            </View>
+          </>
+        )}
+      </Animated.View>
+
+      {step < STEPS - 1
+        ? <Btn label={t("Next") + " →"} onPress={next} />
+        : <Btn label={busy ? t("Creating…") : t("Start the streak")} onPress={create} disabled={busy} />}
     </ScrollView>
   );
 }
 
-/* ---------- TIMELAPSE CAPTURE (snaps frames over the session for the AI) ---------- */
-const TL_INTERVAL_MS = 3500;  // a frame every ~3.5s
-const TL_MAX_FRAMES = 12;     // hard cap — recording auto-stops here (bounds AI cost + payload)
-const TL_MIN_FRAMES = 3;      // enough to show it is a real session
+/* ---------- TIMELAPSE CAPTURE (records a short, time-limited video for the AI) ----------
+   The AI judge watches the actual clip (real motion), not stitched stills — so a
+   single propped photo can't pass. Hard-capped in length to bound payload + AI cost. */
+const TL_MAX_SECONDS = 15;  // hard cap — recording auto-stops here
+const TL_MIN_SECONDS = 3;   // enough to show a real attempt
 function TimelapseCapture({ onCancel, onDone }) {
   const [perm, requestPerm] = useCameraPermissions();
+  const [micPerm, requestMic] = useMicrophonePermissions();
   const camRef = useRef(null);
   const [recording, setRecording] = useState(false);
-  const [frames, setFrames] = useState([]);
+  const [preparing, setPreparing] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
   const timer = useRef(null);
-  const countRef = useRef(0);
-  const stopRef = useRef(() => {});
+  const startedAt = useRef(0);
 
   useEffect(() => { if (perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [perm]);
+  useEffect(() => { if (micPerm && !micPerm.granted && micPerm.canAskAgain) requestMic(); }, [micPerm]);
   useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
 
-  async function snap() {
-    try {
-      const p = await camRef.current?.takePictureAsync({ base64: true, quality: 0.3, skipProcessing: true, imageType: "jpg" });
-      if (p?.base64) setFrames((f) => (f.length >= TL_MAX_FRAMES ? f : [...f, `data:image/jpeg;base64,${p.base64}`]));
-    } catch (_) { /* skip a dropped frame */ }
-  }
-  function stop() {
-    if (timer.current) { clearInterval(timer.current); timer.current = null; }
-    setRecording(false);
-  }
-  stopRef.current = stop;
-  function start() {
-    setFrames([]); countRef.current = 0; setRecording(true);
-    const tick = async () => {
-      if (countRef.current >= TL_MAX_FRAMES) { stopRef.current(); return; }
-      countRef.current += 1;
-      await snap();
-    };
-    tick();
-    timer.current = setInterval(tick, TL_INTERVAL_MS);
+  // Read the recorded clip into a data URI (no extra native dep). The blob's
+  // mime can be empty on a file:// fetch, so we set it from the file extension.
+  async function fileToDataUri(uri) {
+    const res = await fetch(uri);
+    const blob = await res.blob();
+    const raw = await new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      fr.onerror = () => reject(new Error("read failed"));
+      fr.onload = () => resolve(String(fr.result));
+      fr.readAsDataURL(blob);
+    });
+    const b64 = raw.slice(raw.indexOf("base64,") + 7);
+    const mime = /\.mov(\?|$)/i.test(uri) ? "video/quicktime" : "video/mp4";
+    return `data:${mime};base64,${b64}`;
   }
 
-  if (!perm) return <Center><ActivityIndicator color={C.bronze} /></Center>;
+  async function start() {
+    if (recording || !camRef.current) return;
+    setRecording(true); setElapsed(0); startedAt.current = Date.now();
+    timer.current = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)), 250);
+    try {
+      // resolves when recording stops — manually, at maxDuration, or at maxFileSize.
+      // The 8MB cap keeps the base64 payload well under Gemini's ~20MB inline limit.
+      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS, maxFileSize: 8 * 1024 * 1024 });
+      if (timer.current) { clearInterval(timer.current); timer.current = null; }
+      setRecording(false);
+      const secs = Math.round((Date.now() - startedAt.current) / 1000);
+      if (!clip?.uri) { onCancel(); return; }
+      if (secs < TL_MIN_SECONDS) { Alert.alert("Cert", t("Record at least {n} seconds.", { n: TL_MIN_SECONDS })); return; }
+      setPreparing(true);
+      const dataUri = await fileToDataUri(clip.uri);
+      setPreparing(false);
+      onDone({ video: dataUri });
+    } catch (e) {
+      if (timer.current) { clearInterval(timer.current); timer.current = null; }
+      setRecording(false); setPreparing(false);
+      Alert.alert("Cert", (e && e.message) || t("Couldn't record. Try again."));
+    }
+  }
+  function stop() { try { camRef.current?.stopRecording(); } catch (_) { /* */ } }
+
+  if (!perm || !micPerm) return <Center><ActivityIndicator color={C.bronze} /></Center>;
   if (!perm.granted) {
     return (
       <View style={[s.wrap, { flex: 1, justifyContent: "center" }]}>
@@ -1562,36 +1685,38 @@ function TimelapseCapture({ onCancel, onDone }) {
       </View>
     );
   }
+  const remain = Math.max(0, TL_MAX_SECONDS - elapsed);
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <CameraView ref={camRef} style={{ flex: 1 }} facing="back" />
+      {/* 4:3 (640×480 where supported) keeps clips small — plenty for the AI to watch. */}
+      <CameraView ref={camRef} style={{ flex: 1 }} facing="back" mode="video" videoQuality="4:3" />
       {/* overlay */}
       <View style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 18, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+        <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} disabled={preparing}>
           <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>✕</Text>
         </TouchableOpacity>
         {recording ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(0,0,0,.5)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
             <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.red }} />
-            <Text style={{ color: "#fff", fontFamily: "System", fontSize: 13, fontWeight: "700" }}>REC · {frames.length}/{TL_MAX_FRAMES}</Text>
+            <Text style={{ color: "#fff", fontFamily: "System", fontSize: 13, fontWeight: "700" }}>REC · 0:{String(elapsed).padStart(2, "0")} / 0:{String(TL_MAX_SECONDS).padStart(2, "0")}</Text>
           </View>
-        ) : <Text style={{ color: "#fff", fontSize: 12 }}>{frames.length > 0 ? `${frames.length} frames` : ""}</Text>}
+        ) : null}
       </View>
       <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 38, backgroundColor: "rgba(0,0,0,.45)" }}>
-        {!recording && frames.length === 0 ? (
-          <>
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("Prop your phone or hold it steady. Tap record while you do the activity — a frame every few seconds, up to {n} (then it stops automatically).", { n: TL_MAX_FRAMES })}</Text>
-            <Btn label={t("Start recording")} onPress={start} />
-          </>
+        {preparing ? (
+          <View style={{ alignItems: "center" }}>
+            <ActivityIndicator color={C.bronze} />
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginTop: 10, fontSize: 13 }}>{t("Preparing your clip…")}</Text>
+          </View>
         ) : recording ? (
-          <Btn label={t("Stop ({n} frames)", { n: frames.length })} onPress={stop} />
+          <>
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("{n}s left — stops automatically.", { n: remain })}</Text>
+            <Btn label={t("Stop & send")} onPress={stop} />
+          </>
         ) : (
           <>
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("{n} frames captured.", { n: frames.length })}{frames.length < TL_MIN_FRAMES ? " " + t("Record at least {n}.", { n: TL_MIN_FRAMES }) : ""}</Text>
-            {frames.length >= TL_MIN_FRAMES
-              ? <Btn label={t("Send to the judge")} onPress={() => onDone(frames)} />
-              : <Btn label={t("Record again")} onPress={start} />}
-            <BtnGhost label={t("Retake")} onPress={start} />
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("Record up to {n}s of yourself actually doing it. The AI watches the whole clip — a propped photo won't pass.", { n: TL_MAX_SECONDS })}</Text>
+            <Btn label={t("Start recording")} onPress={start} />
           </>
         )}
       </View>
@@ -1663,9 +1788,9 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     await runJudge({ photo });
   }
 
-  function onTimelapseFrames(frames) {
+  function onTimelapseDone(result) {
     setCapturing(false);
-    if (frames && frames.length) runJudge({ frames });
+    if (result && result.video) runJudge({ video: result.video });
   }
 
   async function runJudge(payload) {
@@ -1737,7 +1862,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     } finally { setAppealBusy(false); }
   }
 
-  if (capturing) return <TimelapseCapture onCancel={() => setCapturing(false)} onDone={onTimelapseFrames} />;
+  if (capturing) return <TimelapseCapture onCancel={() => setCapturing(false)} onDone={onTimelapseDone} />;
 
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive">

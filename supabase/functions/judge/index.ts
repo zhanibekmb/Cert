@@ -113,6 +113,27 @@ async function judgeTimelapse(opts: { frames: string[]; goalText: string; proofS
   if (!p) throw new Error("no parseable verdict");
   return { approved: !!p.approved, reason: String(p.reason || (p.approved ? "Session confirmed." : "Not proven.")).slice(0, 200), confidence: typeof p.confidence === "number" ? p.confidence : (p.approved ? 0.8 : 0.3) };
 }
+function buildVideoPrompt(goalText: string, proofSpec?: string, reasonLang = "English"): string {
+  return [
+    "You are a FRIENDLY, GENEROUS AI judge for a habit app called Cert. You are shown a SHORT VIDEO CLIP the user just recorded as proof of their goal. Watch the whole clip and judge whether it genuinely shows them DOING the goal. Default to APPROVE — when in doubt, approve.",
+    `User goal: "${goalText}"`,
+    proofSpec ? `Loose hint of what doing it looks like (not a strict checklist): "${proofSpec}"` : "",
+    "APPROVE if the clip plausibly shows the activity actually happening: real motion, a real scene, the person present and doing something related to the goal. The user shoots solo, handheld, with no special equipment or ideal location — never require any of those. Be forgiving about angle, lighting, framing, shakiness and quality.",
+    "ONLY reject if it is OBVIOUS the video is faked or invalid: it plays another video/screen (a recording of a phone or monitor), is a completely unrelated activity, is blank/black, is a still photo panned across with no real motion, or is clearly staged to fake the goal. A messy but genuine real attempt MUST be approved.",
+    `Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, written in ${reasonLang}>", "confidence": <0..1>}.`,
+  ].filter(Boolean).join("\n");
+}
+async function judgeVideo(opts: { video: string; goalText: string; proofSpec?: string; reasonLang?: string }) {
+  const v = parseImage(opts.video); // same data:<mime>;base64,<data> shape as a photo
+  const data = await geminiCall({
+    system_instruction: { parts: [{ text: buildVideoPrompt(opts.goalText, opts.proofSpec, opts.reasonLang) }] },
+    contents: [{ role: "user", parts: [{ text: "Judge this video clip. Reply with ONLY the JSON object." }, { inline_data: { mime_type: v.mimeType, data: v.data } }] }],
+    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
+  });
+  const p = parseJsonLoose(extractText(data));
+  if (!p) throw new Error("no parseable verdict");
+  return { approved: !!p.approved, reason: String(p.reason || (p.approved ? "Session confirmed." : "Not proven.")).slice(0, 200), confidence: typeof p.confidence === "number" ? p.confidence : (p.approved ? 0.8 : 0.3) };
+}
 async function judgePhoto(opts: { photo: string; goalText: string; proofSpec?: string; dailyReq?: string; reasonLang?: string }) {
   const img = parseImage(opts.photo);
   const data = await geminiCall({
@@ -162,9 +183,10 @@ Deno.serve(async (req) => {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "bad_body" }, 400); }
-  const { goalId, photo, frames, geo, forceReject, peek, lang } = body || {};
+  const { goalId, photo, frames, video, geo, forceReject, peek, lang } = body || {};
   const reasonLang = lang === "ru" ? "Russian" : "English"; // verdict reason language
-  const isTimelapse = Array.isArray(frames) && frames.length > 0;
+  const isVideo = typeof video === "string" && video.length > 0;   // real recorded clip
+  const isTimelapse = Array.isArray(frames) && frames.length > 0;   // legacy frame-based
   const geoLat = geo && typeof geo.lat === "number" ? geo.lat : null;
   const geoLng = geo && typeof geo.lng === "number" ? geo.lng : null;
   const geoPlace = geo && geo.place ? String(geo.place).slice(0, 120) : null;
@@ -237,7 +259,7 @@ Deno.serve(async (req) => {
   }
 
   if (goal.status !== "active") return json({ error: "goal_not_active" }, 409);
-  if (!isGeo && !photo && !isTimelapse) return json({ error: "missing_photo" }, 400);
+  if (!isGeo && !photo && !isTimelapse && !isVideo) return json({ error: "missing_photo" }, 400);
   if (!scheduledToday) return json({ error: "not_scheduled_today" }, 409);
   if (done) return json({ error: "already_done_today" }, 409);
   if (weekDoneBefore) return json({ error: "week_done", quota }, 409);
@@ -266,6 +288,9 @@ Deno.serve(async (req) => {
         ? { approved: true, reason: ru ? `Ты на месте${goal.geo_place ? " — " + goal.geo_place : ""}. Засчитано.` : `You're at the spot${goal.geo_place ? " — " + goal.geo_place : ""}. Counted.`, confidence: 0.95 }
         : { approved: false, reason: ru ? `Ты в ${fmtDist(km)} от места цели. Приди туда и отметься снова.` : `You're ${fmtDist(km)} away from the goal's place. Get there and check in again.`, confidence: 0.9 };
     }
+  } else if (isVideo) {
+    try { verdict = await judgeVideo({ video, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
+    catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   } else if (isTimelapse) {
     try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
     catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
@@ -274,11 +299,11 @@ Deno.serve(async (req) => {
     catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   }
 
-  // Store the proof. For a timelapse we keep every frame under one folder and
-  // point photo_path at the first frame (the cover); a single photo is just one.
+  // Store the proof. A video is one clip; a legacy timelapse is many frames
+  // under one folder; a photo is one image. photo_path points at the first file.
   let photoPath: string | null = null;
   try {
-    const imgs: string[] = isTimelapse ? frames : (photo ? [photo] : []);
+    const imgs: string[] = isVideo ? [video] : isTimelapse ? frames : (photo ? [photo] : []);
     const folder = crypto.randomUUID();
     for (let i = 0; i < imgs.length; i++) {
       const m = /^data:([^;]+);base64,(.*)$/s.exec(String(imgs[i]));
