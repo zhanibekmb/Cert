@@ -508,21 +508,18 @@ function SetNewPassword({ onDone }) {
 
 /* ---------- MAIN (tab shell + overlay screens) ---------- */
 /* ---------- ONBOARDING (first-run: problem → judge → features) ---------- */
-const ONBOARD_PAGES = [
-  ["trending-down-outline", "Goals die quietly", "You promise yourself, skip one day, then quietly quit. Nobody checks — so nothing happens."],
-  ["shield-checkmark-outline", "An AI judge checks you", "One goal. A daily photo as proof. The AI decides if it counts — you can't fake a tap."],
-  ["flame-outline", "A streak worth bragging about", "Verified streaks, challenges with friends, freezes for busy days, timelapse proof."],
+// Onboarding as a plain numbered instruction — the whole app at a glance.
+const ONBOARD_STEPS = [
+  ["create-outline", "Set a goal", "Write one thing to do, in your own words."],
+  ["camera-outline", "Prove it daily", "Send a photo, video, or check in at the place."],
+  ["shield-checkmark-outline", "The AI judge decides", "Approved or rejected in seconds — no faking a tap."],
+  ["flame-outline", "Keep your streak", "Miss a day and it resets. That's what makes it real."],
 ];
 function Onboarding({ onDone }) {
-  const [page, setPage] = useState(0);
-  const scrollRef = useRef(null);
   const [, setLangChoice] = useLang(); // re-render on RU/EN switch
   useEffect(() => { track("onboarding_view"); }, []);
-  const W = Dimensions.get("window").width;
-  const goTo = (i) => { scrollRef.current?.scrollTo({ x: i * W, animated: true }); setPage(i); };
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* language switcher — usable before anything else */}
       <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, padding: 20, paddingBottom: 0 }}>
         {[["ru", "RU"], ["en", "EN"]].map(([v, lbl]) => (
           <TouchableOpacity key={v} onPress={() => setLangChoice(v)} style={[s.langChip, activeLang() === v && s.langChipOn]}>
@@ -530,33 +527,30 @@ function Onboarding({ onDone }) {
           </TouchableOpacity>
         ))}
       </View>
-      <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / W))}>
-        {ONBOARD_PAGES.map(([icon, title, desc]) => (
-          <View key={title} style={{ width: W, paddingHorizontal: 28, alignItems: "center", justifyContent: "center" }}>
-            <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
-            <View style={{ width: 76, height: 76, borderRadius: 22, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: C.card, marginBottom: 22 }}>
-              <Ionicons name={icon} size={34} color={C.bronze} />
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 8, paddingBottom: 24, flexGrow: 1, justifyContent: "center" }}>
+        <View style={{ alignItems: "center", marginBottom: 26 }}>
+          <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
+          <Text style={[s.h1, { fontSize: 30 }]}>{t("How Cert works")}</Text>
+          <Text style={[s.lede, { textAlign: "center", marginBottom: 0 }]}>{t("The whole app in four steps.")}</Text>
+        </View>
+        {ONBOARD_STEPS.map(([icon, title, desc], i) => (
+          <View key={title} style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", marginBottom: 18 }}>
+            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.bronze, alignItems: "center", justifyContent: "center" }}>
+              <Text style={{ color: "#1a1200", fontWeight: "800", fontSize: 15 }}>{i + 1}</Text>
             </View>
-            <Text style={[s.h1, { fontSize: 30, lineHeight: 34, textAlign: "center" }]}>{t(title)}</Text>
-            <Text style={[s.lede, { textAlign: "center" }]}>{t(desc)}</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                <Ionicons name={icon} size={18} color={C.bronze} />
+                <Text style={s.buyTitle}>{t(title)}</Text>
+              </View>
+              <Text style={[s.note, { textAlign: "left", marginTop: 3 }]}>{t(desc)}</Text>
+            </View>
           </View>
         ))}
+        <Text style={[s.note, { textAlign: "left", marginTop: 4 }]}>{t("Or challenge friends on a shared goal — last place spins the wheel.")}</Text>
       </ScrollView>
-      <View style={{ padding: 24, paddingBottom: 30 }}>
-        <View style={{ flexDirection: "row", justifyContent: "center", gap: 7 }}>
-          {ONBOARD_PAGES.map((_, i) => (
-            <View key={i} style={{ width: i === page ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i === page ? C.bronze : C.line }} />
-          ))}
-        </View>
-        {page < ONBOARD_PAGES.length - 1 ? (
-          <>
-            <Btn label={t("Next") + " →"} onPress={() => goTo(page + 1)} />
-            <TouchableOpacity onPress={onDone}><Text style={s.switchAuth}>{t("Skip")}</Text></TouchableOpacity>
-          </>
-        ) : (
-          <Btn label={t("Get started")} onPress={onDone} />
-        )}
+      <View style={{ padding: 24, paddingTop: 6, paddingBottom: 30 }}>
+        <Btn label={t("Get started")} onPress={onDone} />
       </View>
     </View>
   );

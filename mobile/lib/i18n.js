@@ -109,6 +109,13 @@ const RU = {
   "⚡ Upgrade to Pro": "⚡ Перейти на Pro",
   "Upgrade to Pro": "Перейти на Pro",
   "How Cert works": "Как работает Cert",
+  "The whole app in four steps.": "Всё приложение за четыре шага.",
+  "Write one thing to do, in your own words.": "Опиши одно дело своими словами.",
+  "Prove it daily": "Доказывай каждый день",
+  "Send a photo, video, or check in at the place.": "Пришли фото, видео или отметься на месте.",
+  "Approved or rejected in seconds — no faking a tap.": "Засчитано или нет за секунды — галочку не подделать.",
+  "Miss a day and it resets. That's what makes it real.": "Пропустил день — серия обнулилась. Потому она и настоящая.",
+  "Or challenge friends on a shared goal — last place spins the wheel.": "Или брось вызов друзьям на общей цели — последний крутит колесо.",
   // --- onboarding carousel (first run, pre-auth) ---
   "Goals die quietly": "Цели умирают тихо",
   "You promise yourself, skip one day, then quietly quit. Nobody checks — so nothing happens.": "Ты обещаешь себе, пропускаешь один день — и тихо бросаешь. Никто не проверяет, поэтому ничего не происходит.",
