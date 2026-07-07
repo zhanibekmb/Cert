@@ -349,7 +349,11 @@ Deno.serve(async (req) => {
       newStreak = streakBefore;
     }
     if (newStreak > newBest) newBest = newStreak;
-    // weekly challenge goals end by date, not by a streak target — no auto-complete
+    // Personal weekly goals complete when the week-streak reaches the target
+    // (duration_days holds weeks for weekly goals). Challenge goals end by date.
+    if (!goal.challenge_id && goal.duration_days && newStreak >= goal.duration_days) {
+      newStatus = "completed"; completedAt = new Date().toISOString();
+    }
   } else if (verdict.approved) {
     newStreak = streakBefore + 1;
     if (newStreak > newBest) newBest = newStreak;

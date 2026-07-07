@@ -1507,7 +1507,9 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
         type,
         format: recurring ? format : null,
         custom_days: recurring && format === "custom" ? customDays : [],
-        duration_days: recurring && format === "daily" ? duration : null,
+        // daily: target in days; weekly (3x/5x/custom): target in weeks. The judge
+        // completes the goal when the streak (days or weeks) reaches this.
+        duration_days: recurring ? duration : null,
         deadline: ot ? ot.date : null,            // one_time: deadline date
         daily_deadline: recurring ? deadline : (ot ? ot.time : null), // recurring: time-of-day · one_time: deadline time
         daily_start: recurring && isGeo ? windowStart : null, // geo: be there FROM this time
@@ -1525,138 +1527,97 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     } finally { setBusy(false); }
   }
 
-  // 2-step wizard: (1) goal + proof, (2) schedule. All answers live at this
-  // parent level, so moving between steps never loses what's already filled in.
-  const [step, setStep] = useState(0);
-  const stepAnim = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    stepAnim.setValue(0);
-    Animated.timing(stepAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [step]);
-  const STEPS = 2;
-  function next() {
-    if (step === 0 && text.trim().length < 3) return Alert.alert("Cert", t("Describe your goal first."));
-    setStep((v) => Math.min(v + 1, STEPS - 1));
+  const isWeekly = type === "recurring" && (format === "3x" || format === "5x" || format === "custom");
+  const durationOpts = isWeekly
+    ? [[null, t("Ongoing")], [4, t("4 wks")], [12, t("12 wks")]]
+    : [[null, t("Ongoing")], [30, t("30 d")], [100, t("100 d")]];
+  const cadenceVal = type === "one_time" ? "one_time" : format;
+  function setCadence(v) {
+    setDuration(null); // target unit differs (days vs weeks)
+    if (v === "one_time") setType("one_time");
+    else { setType("recurring"); setFormat(v); }
   }
 
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <BackBar onBack={step === 0 ? onBack : () => setStep((v) => v - 1)} />
-      <View style={s.rowBetween}>
-        <Text style={s.h2}>{t("New goal")}</Text>
-        <Text style={s.kicker}>{t("Step {a} of {b}", { a: step + 1, b: STEPS })}</Text>
-      </View>
-      <View style={{ flexDirection: "row", gap: 6, marginTop: 10 }}>
-        {Array.from({ length: STEPS }).map((_, i) => (
-          <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? C.bronze : C.line }} />
-        ))}
-      </View>
+      <BackBar onBack={onBack} />
+      <Text style={s.h2}>{t("New goal")}</Text>
 
-      <Animated.View style={{ opacity: stepAnim, transform: [{ translateX: stepAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] }}>
-        {step === 0 ? (
-          <>
-            <Text style={[s.h2, { marginTop: 18, fontSize: 20 }]}>{t("What will you prove?")}</Text>
-            <Text style={s.lede}>{t("Write it in your own words. The AI judge reads exactly this.")}</Text>
-            <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done"
-              placeholder={t("e.g. Wake up and send a photo, or gym 45 min")} placeholderTextColor={C.faint}
-              value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
-            <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
+      <TextInput style={[s.input, { height: 78, textAlignVertical: "top", marginTop: 14 }]} multiline blurOnSubmit returnKeyType="done"
+        placeholder={t("e.g. gym 45 min, or read 20 pages")} placeholderTextColor={C.faint}
+        value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+      <Text style={[s.note, { textAlign: "left" }]}>{t("Add a time if you want — e.g. \"gym at 19:00\".")}</Text>
 
-            <Text style={[s.label, { marginTop: 18 }]}>{t("How do you prove it?")}</Text>
-            <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Snap one photo. Fast, good for things a single shot can prove.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-            <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Upload a short video — the AI watches the whole clip, not a single frame. Much harder to fake.")} active={proofType === "timelapse"}
-              onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
-            <OptionCard icon="location-outline" title={t("📍 Geo check-in")} locked={!isPro} desc={t("Pin a place — the proof is being there. Great for gym, pool, library.")} active={isGeo}
-              onPress={() => { if (isPro) setProofType("geo"); else onUpgrade && onUpgrade(); }} />
-            {isGeo ? (
-              <View style={[s.card, { marginTop: 12 }]}>
-                <Text style={s.label}>{t("The place")}</Text>
-                {geoAnchor ? (
-                  <>
-                    <Text style={s.goalText}>📍 {geoAnchor.place || `${geoAnchor.lat.toFixed(4)}, ${geoAnchor.lng.toFixed(4)}`}</Text>
-                    <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
-                      <TouchableOpacity onPress={openMap} disabled={geoPinning}><Text style={[s.note, { textAlign: "left", color: C.bronze, marginTop: 0 }]}>{t("Change on map")}</Text></TouchableOpacity>
-                      <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Unpin")}</Text></TouchableOpacity>
-                    </View>
-                  </>
-                ) : (
-                  <>
-                    <BtnGhost label={geoPinning ? "…" : t("🗺 Choose on map")} onPress={openMap} disabled={geoPinning} />
-                    <BtnGhost label={geoPinning ? "…" : t("📍 Use my current location")} onPress={pinHere} disabled={geoPinning} />
-                    <Text style={[s.note, { textAlign: "left" }]}>{t("Not there right now? Skip this — your FIRST check-in will pin the place.")}</Text>
-                  </>
-                )}
+      <Text style={[s.label, { marginTop: 16 }]}>{t("Proof")}</Text>
+      <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One quick photo.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
+      <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={proofType === "timelapse"}
+        onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
+      <OptionCard icon="location-outline" title={t("📍 Location")} locked={!isPro} desc={t("Be at a place.")} active={isGeo}
+        onPress={() => { if (isPro) setProofType("geo"); else onUpgrade && onUpgrade(); }} />
+      {isGeo ? (
+        <View style={[s.card, { marginTop: 10 }]}>
+          {geoAnchor ? (
+            <>
+              <Text style={s.goalText}>📍 {geoAnchor.place || `${geoAnchor.lat.toFixed(4)}, ${geoAnchor.lng.toFixed(4)}`}</Text>
+              <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
+                <TouchableOpacity onPress={openMap} disabled={geoPinning}><Text style={[s.note, { textAlign: "left", color: C.bronze, marginTop: 0 }]}>{t("Change on map")}</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Unpin")}</Text></TouchableOpacity>
               </View>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <Text style={[s.label, { marginTop: 18 }]}>{t("Type")}</Text>
-            <OptionCard icon="repeat-outline" title={t("Repeating")} desc={t("Daily or weekly cadence — the streak machine.")} active={type === "recurring"} onPress={() => setType("recurring")} />
-            <OptionCard icon="flag-outline" title={t("One-time")} desc={t("A single dated dare with one proof.")} active={type === "one_time"} onPress={() => setType("one_time")} />
+            </>
+          ) : (
+            <>
+              <BtnGhost label={geoPinning ? "…" : t("🗺 Choose on map")} onPress={openMap} disabled={geoPinning} />
+              <Text style={[s.note, { textAlign: "left" }]}>{t("Or skip — your first check-in pins it.")}</Text>
+            </>
+          )}
+        </View>
+      ) : null}
 
-            {type === "recurring" ? (
-              <>
-                <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
-                <View style={s.chipRow}>
-                  {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom days")]].map(([v, label]) => (
-                    <TouchableOpacity key={v} style={[s.chip, format === v && s.chipOn]} onPress={() => setFormat(v)}>
-                      <Text style={[s.chipText, format === v && { color: C.ink }]}>{label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+      <Text style={[s.label, { marginTop: 16 }]}>{t("Cadence")}</Text>
+      <View style={s.chipRow}>
+        {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom")], ["one_time", t("One-time")]].map(([v, label]) => {
+          const on = cadenceVal === v;
+          return (
+            <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => setCadence(v)}>
+              <Text style={[s.chipText, on && { color: C.ink }]}>{label}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
-                {format === "custom" ? (
-                  <>
-                    <Text style={[s.label, { marginTop: 14 }]}>{t("Which days?")}</Text>
-                    <View style={s.chipRow}>
-                      {WEEKDAYS.map(([label, d]) => (
-                        <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
-                          <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </>
-                ) : null}
+      {type === "recurring" && format === "custom" ? (
+        <View style={[s.chipRow, { marginTop: 8 }]}>
+          {WEEKDAYS.map(([label, d]) => (
+            <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
+              <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
 
-                {format === "daily" ? (
-                  <>
-                    <Text style={[s.label, { marginTop: 14 }]}>{t("Duration")}</Text>
-                    <View style={s.rowGap}>
-                      {[[null, t("Ongoing")], [7, t("7 days")], [30, t("30 days")], [100, t("100 days")]].map(([v, label]) => (
-                        <Pill key={label} label={label} active={duration === v} onPress={() => setDuration(v)} />
-                      ))}
-                    </View>
-                    <Text style={s.note}>{t("Reach the target to complete the goal and earn a Cert.")}</Text>
-                  </>
-                ) : null}
+      {type === "recurring" ? (
+        <>
+          <Text style={[s.label, { marginTop: 14 }]}>{t("Length")}</Text>
+          <View style={s.rowGap}>
+            {durationOpts.map(([v, label]) => <Pill key={label} label={label} active={duration === v} onPress={() => setDuration(v)} />)}
+          </View>
+          {isGeo ? (
+            <>
+              <Text style={[s.label, { marginTop: 14 }]}>{t("From (optional)")}</Text>
+              <TimeField value={windowStart} onChange={setWindowStart} allowClear placeholder={t("Any time")} />
+            </>
+          ) : null}
+          <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (optional)")}</Text>
+          <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("Any time")} />
+        </>
+      ) : (
+        <>
+          <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline")}</Text>
+          <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick date & time")} />
+        </>
+      )}
 
-                {isGeo ? (
-                  <>
-                    <Text style={[s.label, { marginTop: 14 }]}>{t("Be there from (optional)")}</Text>
-                    <TimeField value={windowStart} onChange={setWindowStart} allowClear placeholder={t("Any time")} />
-                    <Text style={[s.note, { textAlign: "left" }]}>{t("Check-ins before this time won't count. Combine with the deadline below for a window like 19:00–21:00.")}</Text>
-                  </>
-                ) : null}
-
-                <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (must submit before)")}</Text>
-                <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("No deadline")} />
-                <Text style={s.note}>{t("Pick any time. Proof after it won't count for the day. Judged in your local time.")}</Text>
-              </>
-            ) : (
-              <>
-                <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (date & time)")}</Text>
-                <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick deadline")} />
-                <Text style={s.note}>{t("Submit your proof before this. One proof, judged once.")}</Text>
-              </>
-            )}
-          </>
-        )}
-      </Animated.View>
-
-      {step < STEPS - 1
-        ? <Btn label={t("Next") + " →"} onPress={next} />
-        : <Btn label={busy ? t("Creating…") : t("Start the streak")} onPress={create} disabled={busy} />}
+      <Btn label={busy ? t("Creating…") : t("Create")} onPress={create} disabled={busy} />
 
       <MapPicker visible={mapOpen} initial={mapInitial} onClose={() => setMapOpen(false)}
         onPick={(p) => { setGeoAnchor(p); setMapOpen(false); }} />
@@ -2519,29 +2480,31 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
       <Animated.View style={{ opacity: stepAnim, transform: [{ translateX: stepAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] }}>
         {step === 0 ? (
           <>
-            <Text style={[s.label, { marginTop: 18 }]}>{t("The shared goal everyone does")}</Text>
-            <TextInput style={[s.input, { height: 80, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done" placeholder={t("e.g. Gym 45 min, photo with equipment")} placeholderTextColor={C.faint} value={goalText} onChangeText={(val) => setGoalText(val.replace(/\n/g, " "))} />
-            <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
+            <Text style={[s.label, { marginTop: 18 }]}>{t("Shared goal")}</Text>
+            <TextInput style={[s.input, { height: 78, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done" placeholder={t("e.g. gym 45 min with equipment")} placeholderTextColor={C.faint} value={goalText} onChangeText={(val) => setGoalText(val.replace(/\n/g, " "))} />
+            <Text style={[s.note, { textAlign: "left" }]}>{t("Add a time if you want — e.g. \"gym at 19:00\".")}</Text>
             {hasProfileName
               ? <Text style={[s.note, { marginTop: 12 }]}>{t("Playing as")} <Text style={{ color: C.bronze, fontWeight: "800" }}>{name}</Text> · {t("change it in Profile")}</Text>
               : (<>
-                  <Text style={[s.label, { marginTop: 14 }]}>{t("Your name (shown on leaderboard)")}</Text>
+                  <Text style={[s.label, { marginTop: 14 }]}>{t("Your name (leaderboard)")}</Text>
                   <TextInput style={s.input} placeholder={t("e.g. Zhanibek")} placeholderTextColor={C.faint} value={name} onChangeText={(val) => setName(val.replace(/\n/g, " "))} />
                 </>)}
           </>
         ) : step === 1 ? (
           <>
-            <Text style={[s.label, { marginTop: 18 }]}>{t("Type")}</Text>
-            <OptionCard icon="repeat-outline" title={t("Repeating")} desc={t("Daily or weekly cadence — the streak machine.")} active={type === "recurring"} onPress={() => setType("recurring")} />
-            <OptionCard icon="flag-outline" title={t("One-time")} desc={t("A single dated dare with one proof.")} active={type === "one_time"} onPress={() => setType("one_time")} />
+            <Text style={[s.label, { marginTop: 18 }]}>{t("Cadence")}</Text>
+            <View style={s.chipRow}>
+              {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["one_time", t("One-time")]].map(([v, label]) => {
+                const on = v === "one_time" ? type === "one_time" : (type === "recurring" && format === v);
+                return (
+                  <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => { if (v === "one_time") setType("one_time"); else { setType("recurring"); setFormat(v); } }}>
+                    <Text style={[s.chipText, on && { color: C.ink }]}>{label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
             {type === "recurring" ? (
               <>
-                <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
-                <View style={s.rowGap}>
-                  <Pill label={t("Daily")} active={format === "daily"} onPress={() => setFormat("daily")} />
-                  <Pill label={t("3× / week")} active={format === "3x"} onPress={() => setFormat("3x")} />
-                  <Pill label={t("5× / week")} active={format === "5x"} onPress={() => setFormat("5x")} />
-                </View>
                 <Text style={[s.label, { marginTop: 14 }]}>{t("How long?")}</Text>
                 <View style={s.rowGap}>
                   {[7, 14, 30].map((d) => <Pill key={d} label={t("{n} days", { n: d })} active={dur === d} onPress={() => setDur(d)} />)}
@@ -2549,28 +2512,27 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
               </>
             ) : (
               <>
-                <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (date & time)")}</Text>
-                <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick deadline")} />
-                <Text style={s.note}>{t("The challenge ends at this moment. Last place spins the wheel.")}</Text>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline")}</Text>
+                <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick date & time")} />
               </>
             )}
           </>
         ) : (
           <>
             <Text style={[s.label, { marginTop: 18 }]}>{t("Who judges proofs?")}</Text>
-            <OptionCard icon="shield-checkmark-outline" title={t("AI judge")} desc={t("The AI judge checks each photo automatically.")} active={judgeMode === "ai"} onPress={() => setJudgeMode("ai")} />
-            <OptionCard icon="people-outline" title={t("Friends vote")} desc={t("Members swipe to approve/decline each other's photos.")} active={judgeMode === "peer"} onPress={() => setJudgeMode("peer")} />
+            <OptionCard icon="shield-checkmark-outline" title={t("AI judge")} desc={t("AI checks each photo.")} active={judgeMode === "ai"} onPress={() => setJudgeMode("ai")} />
+            <OptionCard icon="people-outline" title={t("Friends vote")} desc={t("Friends vote by swiping.")} active={judgeMode === "peer"} onPress={() => setJudgeMode("peer")} />
             {judgeMode === "ai" ? (
               <>
-                <Text style={[s.label, { marginTop: 14 }]}>{t("How do you prove it?")}</Text>
-                <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Everyone sends one photo per check.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-                <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Everyone uploads a short timelapse video. Much harder to fake.")} active={proofType === "timelapse"}
+                <Text style={[s.label, { marginTop: 14 }]}>{t("Proof")}</Text>
+                <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One photo each.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
+                <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip each.")} active={proofType === "timelapse"}
                   onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
               </>
             ) : null}
-            <Text style={[s.label, { marginTop: 16 }]}>{t("Your dare for the loser (optional)")}</Text>
-            <TextInput style={s.input} placeholder={t("e.g. Sing a song chorus in a voice message 🎤")} placeholderTextColor={C.faint} value={dare} onChangeText={(val) => setDare(val.replace(/\n/g, " "))} maxLength={120} />
-            <Text style={[s.note, { textAlign: "left" }]}>{t("Everyone writes one. Last place spins the wheel over the dares your group wrote.")}</Text>
+            <Text style={[s.label, { marginTop: 16 }]}>{t("Dare for the loser (optional)")}</Text>
+            <TextInput style={s.input} placeholder={t("e.g. Sing a song chorus 🎤")} placeholderTextColor={C.faint} value={dare} onChangeText={(val) => setDare(val.replace(/\n/g, " "))} maxLength={120} />
+            <Text style={[s.note, { textAlign: "left" }]}>{t("Last place spins the wheel of everyone's dares.")}</Text>
             {/* inline confirm — the goal + schedule from the earlier steps */}
             <View style={[s.card, { gap: 12, marginTop: 16 }]}>
               <SummaryRow label={t("Goal")} value={goalText.trim() || "—"} goStep={0} />
