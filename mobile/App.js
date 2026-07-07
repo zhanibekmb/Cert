@@ -52,10 +52,12 @@ const DARK = {
   inputBg: "#0d0c11", inputLine: "#2a2731", isDark: true,
 };
 const LIGHT = {
-  bg: "#faf7f2", card: "#ffffff", line: "#e7e1d8",
-  ink: "#1a1714", mute: "#6b655d", faint: "#a39c92",
-  red: "#cf3327", bronze: "#9a7a1c", green: "#2e9e4f",
-  inputBg: "#f3efe8", inputLine: "#ddd6cc", isDark: false,
+  // Warm cream + soft rose-bronze: lighter lines and inputs so the light
+  // theme reads airy instead of "dark theme with white swapped in".
+  bg: "#fbf7f1", card: "#ffffff", line: "#eee3d6",
+  ink: "#241d18", mute: "#75695e", faint: "#a89a8c",
+  red: "#d64533", bronze: "#a67c1a", green: "#2e9e4f",
+  inputBg: "#f6f0e7", inputLine: "#e3d8c9", isDark: false,
 };
 let C = DARK;
 const F = { display: "System", mono: "System" };
@@ -127,6 +129,24 @@ async function getGeo() {
 }
 async function getGeoTimed() { return Promise.race([getGeo(), new Promise((r) => setTimeout(() => r(null), 6000))]); }
 
+/* Fire-and-forget funnel analytics (first-run flow). Pre-auth events carry a
+   random per-install device id so the funnel can be stitched before sign-up.
+   Analytics must never block or break the app — every failure is swallowed. */
+let _deviceId = null;
+async function track(event) {
+  try {
+    if (!_deviceId) {
+      _deviceId = await AsyncStorage.getItem("cert_device");
+      if (!_deviceId) {
+        _deviceId = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        await AsyncStorage.setItem("cert_device", _deviceId);
+      }
+    }
+    const { data } = await supabase.auth.getSession();
+    await supabase.from("funnel_events").insert({ device_id: _deviceId, user_id: data?.session?.user?.id || null, event });
+  } catch (_) { /* ignore */ }
+}
+
 /* Split a Date into a "YYYY-MM-DD" date and an "HH:MM" time (local). */
 function isoDateParts(d) {
   const pad = (n) => String(n).padStart(2, "0");
@@ -142,18 +162,29 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [booting, setBooting] = useState(true);
   const [recovery, setRecovery] = useState(false); // came in via a password-reset link → set a new password
+  // First-run (pre-auth): onboarding carousel → Pro info (skippable) → auth.
+  // Reuses the cert_intro flag so existing installs never see it again.
+  const [firstRun, setFirstRun] = useState(null); // null=loading | "onboarding" | "prointro" | "done"
 
   // restore saved theme + language preferences once at startup
   useEffect(() => {
     AsyncStorage.getItem("cert_theme").then((p) => { if (p) applyThemePref(p); }).catch(() => {});
     initLang();
+    AsyncStorage.getItem("cert_intro").then((v) => setFirstRun(v ? "done" : "onboarding")).catch(() => setFirstRun("done"));
   }, []);
+  const finishFirstRun = () => { AsyncStorage.setItem("cert_intro", "1").catch(() => {}); setFirstRun("done"); };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => { setSession(data.session); setBooting(false); });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
+      // funnel: first successful sign-in on this device completes the first-run flow
+      if (event === "SIGNED_IN") {
+        AsyncStorage.getItem("cert_funnel_done").then((v) => {
+          if (!v) { AsyncStorage.setItem("cert_funnel_done", "1").catch(() => {}); track("signup_complete"); }
+        }).catch(() => {});
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, []);
@@ -187,9 +218,12 @@ export default function App() {
     <SafeAreaProvider>
       <SafeAreaView style={s.safe} edges={["top"]}>
         <StatusBar barStyle={C.isDark ? "light-content" : "dark-content"} />
-        {booting ? <Center><ActivityIndicator color={C.bronze} /></Center>
+        {booting || (!session && firstRun === null) ? <Center><ActivityIndicator color={C.bronze} /></Center>
           : (session && recovery) ? <SetNewPassword onDone={() => setRecovery(false)} />
-          : session ? <Main session={session} /> : <Auth />}
+          : session ? <Main session={session} />
+          : firstRun === "onboarding" ? <Onboarding onDone={() => setFirstRun("prointro")} />
+          : firstRun === "prointro" ? <ProIntro onDone={finishFirstRun} />
+          : <Auth />}
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -207,6 +241,7 @@ function Auth() {
   const [info, setInfo] = useState(null); // success/info banner (e.g. "confirm your email")
   const [langPref, setLang] = useLang();
   const [appleReady, setAppleReady] = useState(false);
+  useEffect(() => { track("auth_view"); }, []); // funnel
   // Only render the native Apple button once the module confirms availability —
   // guards against a launch crash if the native module / capability isn't present.
   useEffect(() => {
@@ -470,34 +505,82 @@ function SetNewPassword({ onDone }) {
 }
 
 /* ---------- MAIN (tab shell + overlay screens) ---------- */
-/* ---------- ONBOARDING (first-run how-it-works) ---------- */
-const ONBOARD_STEPS = [
-  ["flag-outline", "Set a goal", "Pick something you'll prove every single day."],
-  ["camera-outline", "Send a daily photo", "Snap proof of what you actually did today."],
-  ["shield-checkmark-outline", "The AI judge decides", "Approved or not — you can't fake a tap."],
-  ["flame-outline", "Keep your streak", "A streak that's genuinely verified, so it means something."],
+/* ---------- ONBOARDING (first-run: problem → judge → features) ---------- */
+const ONBOARD_PAGES = [
+  ["trending-down-outline", "Goals die quietly", "You promise yourself, skip one day, then quietly quit. Nobody checks — so nothing happens."],
+  ["shield-checkmark-outline", "An AI judge checks you", "One goal. A daily photo as proof. The AI decides if it counts — you can't fake a tap."],
+  ["flame-outline", "A streak worth bragging about", "Verified streaks, challenges with friends, freezes for busy days, timelapse proof."],
 ];
 function Onboarding({ onDone }) {
+  const [page, setPage] = useState(0);
+  const scrollRef = useRef(null);
+  const [, setLangChoice] = useLang(); // re-render on RU/EN switch
+  useEffect(() => { track("onboarding_view"); }, []);
+  const W = Dimensions.get("window").width;
+  const goTo = (i) => { scrollRef.current?.scrollTo({ x: i * W, animated: true }); setPage(i); };
   return (
-    <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 40 }]}>
-      <View style={{ alignItems: "center", marginTop: 16 }}>
-        <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
-        <Text style={s.h2}>{t("How Cert works")}</Text>
+    <View style={{ flex: 1, backgroundColor: C.bg }}>
+      {/* language switcher — usable before anything else */}
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, padding: 20, paddingBottom: 0 }}>
+        {[["ru", "RU"], ["en", "EN"]].map(([v, lbl]) => (
+          <TouchableOpacity key={v} onPress={() => setLangChoice(v)} style={[s.langChip, activeLang() === v && s.langChipOn]}>
+            <Text style={[s.langChipT, activeLang() === v && { color: C.bg }]}>{lbl}</Text>
+          </TouchableOpacity>
+        ))}
       </View>
-      <View style={{ gap: 16, marginTop: 22 }}>
-        {ONBOARD_STEPS.map(([icon, title, desc]) => (
-          <View key={title} style={{ flexDirection: "row", gap: 14, alignItems: "flex-start" }}>
-            <View style={{ width: 42, height: 42, borderRadius: 12, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: C.card }}>
-              <Ionicons name={icon} size={20} color={C.bronze} />
+      <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / W))}>
+        {ONBOARD_PAGES.map(([icon, title, desc]) => (
+          <View key={title} style={{ width: W, paddingHorizontal: 28, alignItems: "center", justifyContent: "center" }}>
+            <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
+            <View style={{ width: 76, height: 76, borderRadius: 22, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: C.card, marginBottom: 22 }}>
+              <Ionicons name={icon} size={34} color={C.bronze} />
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.buyTitle}>{t(title)}</Text>
-              <Text style={[s.note, { textAlign: "left", marginTop: 3 }]}>{t(desc)}</Text>
-            </View>
+            <Text style={[s.h1, { fontSize: 30, lineHeight: 34, textAlign: "center" }]}>{t(title)}</Text>
+            <Text style={[s.lede, { textAlign: "center" }]}>{t(desc)}</Text>
+          </View>
+        ))}
+      </ScrollView>
+      <View style={{ padding: 24, paddingBottom: 30 }}>
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: 7 }}>
+          {ONBOARD_PAGES.map((_, i) => (
+            <View key={i} style={{ width: i === page ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i === page ? C.bronze : C.line }} />
+          ))}
+        </View>
+        {page < ONBOARD_PAGES.length - 1 ? (
+          <>
+            <Btn label={t("Next") + " →"} onPress={() => goTo(page + 1)} />
+            <TouchableOpacity onPress={onDone}><Text style={s.switchAuth}>{t("Skip")}</Text></TouchableOpacity>
+          </>
+        ) : (
+          <Btn label={t("Get started")} onPress={onDone} />
+        )}
+      </View>
+    </View>
+  );
+}
+
+/* ---------- PRO INTRO (first-run, info-only: no purchase, always skippable) ---------- */
+function ProIntro({ onDone }) {
+  useEffect(() => { track("paywall_info_view"); }, []);
+  return (
+    <ScrollView contentContainerStyle={[s.wrap, { paddingTop: 40, paddingBottom: 40 }]}>
+      <View style={s.pwHero}>
+        <View style={s.pwMark}><Ionicons name="shield-checkmark" size={34} color={C.bronze} /></View>
+        <Text style={s.pwTitle}>{t("Go further with Pro")}</Text>
+        <Text style={s.pwSub}>{t("Everything you need for a streak nobody can fake.")}</Text>
+      </View>
+      <View style={[s.card, { gap: 12, marginTop: 16 }]}>
+        {PRO_FEATURES.map(([icon, f]) => (
+          <View key={f} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <Ionicons name={icon} size={20} color={C.bronze} />
+            <Text style={[s.goalText, { marginTop: 0, flex: 1 }]}>{t(f)}</Text>
           </View>
         ))}
       </View>
-      <Btn label={t("Get started")} onPress={onDone} />
+      <Text style={[s.note, { marginTop: 14 }]}>{t("Start free. Upgrade anytime in the app.")}</Text>
+      <Btn label={t("Continue")} onPress={onDone} />
+      <TouchableOpacity onPress={onDone}><Text style={s.switchAuth}>{t("Skip")}</Text></TouchableOpacity>
     </ScrollView>
   );
 }
@@ -505,6 +588,9 @@ function Onboarding({ onDone }) {
 function Main({ session }) {
   const [tab, setTab] = useState("home"); // home | challenges | stats | profile
   const [screen, setScreen] = useState(null); // overlay: new|submit|cert|badge|challengeNew|challengeJoin|challengeDetail
+  // The paywall is a Modal ON TOP of whatever is open (not a screen swap), so
+  // a half-filled form underneath keeps its state when the user backs out.
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const [goals, setGoals] = useState(null);
   const [certs, setCerts] = useState([]);
   const [subs, setSubs] = useState([]);
@@ -518,7 +604,7 @@ function Main({ session }) {
   const [submitReturn, setSubmitReturn] = useState(null); // overlay to return to after Submit
   const [joinCode, setJoinCode] = useState(""); // prefilled from an invite link
   const [refreshing, setRefreshing] = useState(false);
-  const [intro, setIntro] = useState(null); // null=loading | "onboarding" | "paywall" | "done"
+  const [intro, setIntro] = useState(null); // null=loading | "onboarding" | "done" (fallback for pre-flag installs)
 
   // Invite links: cert://join?code=ABC123 (or the exp:// form in Expo Go).
   useEffect(() => {
@@ -583,19 +669,31 @@ function Main({ session }) {
   // ----- first-run: how-it-works onboarding, once per install (no auto-paywall) -----
   if (intro === "onboarding") return <Onboarding onDone={finishIntro} />;
 
+  const openPaywall = () => setPaywallOpen(true);
+  // Rendered inside every branch below so it overlays forms too (sheet on iOS,
+  // fullscreen Modal on Android). The screen underneath stays mounted.
+  const paywallModal = (
+    <Modal visible={paywallOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPaywallOpen(false)}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
+        <Paywall isPro={isPro} freezes={freezes} onDone={load} onBack={() => setPaywallOpen(false)} />
+      </SafeAreaView>
+    </Modal>
+  );
+
   // ----- overlay screens (full screen, own back + swipe-from-left to go back) -----
-  if (screen === "new") { const back = () => setScreen(null); return <SwipeBack onBack={back}><NewGoal session={session} isPro={isPro} onUpgrade={() => setScreen("paywall")} onDone={async () => { await load(); setScreen(null); }} onBack={back} /></SwipeBack>; }
-  if (screen === "paywall") { const back = () => setScreen(null); return <SwipeBack onBack={back}><Paywall isPro={isPro} freezes={freezes} onDone={async () => { await load(); }} onBack={back} /></SwipeBack>; }
-  if (screen === "submit" && active) { const back = () => { setScreen(submitReturn); setSubmitReturn(null); }; return <SwipeBack onBack={back}><Submit goal={active} onDone={async () => { await load(); setScreen(submitReturn); setSubmitReturn(null); }} onViewBadge={openBadge} onBack={back} /></SwipeBack>; }
-  if (screen === "challengeNew") { const back = () => setScreen(null); return <SwipeBack onBack={back}><CreateChallenge isPro={isPro} onUpgrade={() => setScreen("paywall")} onCreated={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
-  if (screen === "challengeJoin") { const back = () => { setJoinCode(""); setScreen(null); }; return <SwipeBack onBack={back}><JoinChallenge initialCode={joinCode} onJoined={(id) => { setJoinCode(""); setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
-  if (screen === "challengeDetail" && activeChallenge) { const back = () => setScreen(null); return <SwipeBack onBack={back}><ChallengeDetail challengeId={activeChallenge} onSubmitProof={(g) => { setActive(g); setSubmitReturn("challengeDetail"); setScreen("submit"); }} onReview={() => setScreen("review")} onSharePlacement={(rank, title) => { setActivePlacement({ rank, title }); setScreen("placement"); }} onBack={back} /></SwipeBack>; }
-  if (screen === "review") return <SwipeReview onBack={() => setScreen("challengeDetail")} />;
-  if (screen === "placement" && activePlacement) { const back = () => setScreen("challengeDetail"); return <SwipeBack onBack={back}><ShareScreen kind="placement" rank={activePlacement.rank} title={activePlacement.title} onBack={back} /></SwipeBack>; }
-  if (screen === "settings") { const back = () => setScreen(null); return <SwipeBack onBack={back}><SettingsScreen session={session} onBack={back} /></SwipeBack>; }
-  if (screen === "cert" && activeCert) { const back = () => setScreen(null); return <SwipeBack onBack={back}><ShareScreen kind="cert" days={activeCert.days} title={activeCert.title} subtitle={activeCert.issued_at ? "Earned " + new Date(activeCert.issued_at).toLocaleDateString() : null} onBack={back} /></SwipeBack>; }
-  if (screen === "badge" && activeBadge) { const back = () => setScreen(null); return <SwipeBack onBack={back}><ShareScreen kind="milestone" days={activeBadge.days} title={activeBadge.title} onBack={back} /></SwipeBack>; }
-  if (screen === "reel" && activeReelGoal) { const back = () => setScreen(null); return <SwipeBack onBack={back}><Reel goal={activeReelGoal} onBack={back} /></SwipeBack>; }
+  let overlay = null;
+  if (screen === "new") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><NewGoal session={session} isPro={isPro} onUpgrade={openPaywall} onDone={async () => { await load(); setScreen(null); }} onBack={back} /></SwipeBack>; }
+  else if (screen === "submit" && active) { const back = () => { setScreen(submitReturn); setSubmitReturn(null); }; overlay = <SwipeBack onBack={back}><Submit goal={active} onDone={async () => { await load(); setScreen(submitReturn); setSubmitReturn(null); }} onViewBadge={openBadge} onBack={back} /></SwipeBack>; }
+  else if (screen === "challengeNew") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><CreateChallenge isPro={isPro} onUpgrade={openPaywall} onCreated={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
+  else if (screen === "challengeJoin") { const back = () => { setJoinCode(""); setScreen(null); }; overlay = <SwipeBack onBack={back}><JoinChallenge initialCode={joinCode} onJoined={(id) => { setJoinCode(""); setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
+  else if (screen === "challengeDetail" && activeChallenge) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ChallengeDetail challengeId={activeChallenge} onSubmitProof={(g) => { setActive(g); setSubmitReturn("challengeDetail"); setScreen("submit"); }} onReview={() => setScreen("review")} onSharePlacement={(rank, title) => { setActivePlacement({ rank, title }); setScreen("placement"); }} onBack={back} /></SwipeBack>; }
+  else if (screen === "review") { overlay = <SwipeReview onBack={() => setScreen("challengeDetail")} />; }
+  else if (screen === "placement" && activePlacement) { const back = () => setScreen("challengeDetail"); overlay = <SwipeBack onBack={back}><ShareScreen kind="placement" rank={activePlacement.rank} title={activePlacement.title} onBack={back} /></SwipeBack>; }
+  else if (screen === "settings") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><SettingsScreen session={session} onBack={back} /></SwipeBack>; }
+  else if (screen === "cert" && activeCert) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="cert" days={activeCert.days} title={activeCert.title} subtitle={activeCert.issued_at ? "Earned " + new Date(activeCert.issued_at).toLocaleDateString() : null} onBack={back} /></SwipeBack>; }
+  else if (screen === "badge" && activeBadge) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="milestone" days={activeBadge.days} title={activeBadge.title} onBack={back} /></SwipeBack>; }
+  else if (screen === "reel" && activeReelGoal) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><Reel goal={activeReelGoal} onBack={back} /></SwipeBack>; }
+  if (overlay) return <View style={{ flex: 1, backgroundColor: C.bg }}>{overlay}{paywallModal}</View>;
 
   // ----- tab shell (horizontal swipe switches tabs) -----
   const TAB_ORDER = ["home", "challenges", "stats", "profile"];
@@ -612,22 +710,23 @@ function Main({ session }) {
       <View style={{ flex: 1 }} {...tabSwipe.panHandlers}>
         {tab === "home" && (
           <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
-            freezes={freezes} onBuyFreezes={() => setScreen("paywall")}
+            freezes={freezes} onBuyFreezes={openPaywall}
             onNew={() => setScreen("new")} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} />
         )}
         {tab === "challenges" && (
           <ChallengesScreen onOpen={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }}
             onCreate={() => setScreen("challengeNew")} onJoin={() => setScreen("challengeJoin")} />
         )}
-        {tab === "stats" && <Stats goals={goals || []} subs={subs} onOpenBadge={openBadge} isPro={isPro} onUpgrade={() => setScreen("paywall")} refreshing={refreshing} onRefresh={onRefresh} />}
-        {tab === "profile" && <ProfileTab session={session} goals={goals || []} certs={certs} subs={subs} freezes={freezes} onOpenCert={openCert} onOpenSettings={() => setScreen("settings")} onUpgrade={() => setScreen("paywall")} onReload={load} refreshing={refreshing} onRefresh={onRefresh} />}
+        {tab === "stats" && <Stats goals={goals || []} subs={subs} onOpenBadge={openBadge} isPro={isPro} onUpgrade={openPaywall} refreshing={refreshing} onRefresh={onRefresh} />}
+        {tab === "profile" && <ProfileTab session={session} goals={goals || []} certs={certs} subs={subs} freezes={freezes} onOpenCert={openCert} onOpenSettings={() => setScreen("settings")} onUpgrade={openPaywall} onReload={load} refreshing={refreshing} onRefresh={onRefresh} />}
       </View>
-      <TabBar tab={tab} setTab={setTab} />
+      <TabBar tab={tab} setTab={setTab} onCreate={() => { setTab("challenges"); setScreen("challengeNew"); }} />
+      {paywallModal}
     </View>
   );
 }
 
-function TabBar({ tab, setTab }) {
+function TabBar({ tab, setTab, onCreate }) {
   const insets = useSafeAreaInsets();
   const items = [
     ["home", "home", "home-outline", "Home"],
@@ -635,17 +734,25 @@ function TabBar({ tab, setTab }) {
     ["stats", "stats-chart", "stats-chart-outline", "Stats"],
     ["profile", "person", "person-outline", "Profile"],
   ];
+  // Raised center "+" — the quickest path to creating a challenge from anywhere.
+  const renderItem = ([key, iconOn, iconOff, label]) => {
+    const on = tab === key;
+    return (
+      <TouchableOpacity key={key} style={s.tabItem} onPress={() => setTab(key)} activeOpacity={0.7}>
+        <Ionicons name={on ? iconOn : iconOff} size={22} color={on ? C.bronze : C.faint} />
+        <Text style={[s.tabLabel, on && { color: C.bronze }]}>{t(label)}</Text>
+      </TouchableOpacity>
+    );
+  };
   return (
     <View style={[s.tabBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      {items.map(([key, iconOn, iconOff, label]) => {
-        const on = tab === key;
-        return (
-          <TouchableOpacity key={key} style={s.tabItem} onPress={() => setTab(key)} activeOpacity={0.7}>
-            <Ionicons name={on ? iconOn : iconOff} size={22} color={on ? C.bronze : C.faint} />
-            <Text style={[s.tabLabel, on && { color: C.bronze }]}>{t(label)}</Text>
-          </TouchableOpacity>
-        );
-      })}
+      {items.slice(0, 2).map(renderItem)}
+      <View style={s.tabItem}>
+        <TouchableOpacity style={s.tabCreate} onPress={onCreate} activeOpacity={0.85}>
+          <Ionicons name="add" size={30} color={C.isDark ? "#120606" : "#fff"} />
+        </TouchableOpacity>
+      </View>
+      {items.slice(2).map(renderItem)}
     </View>
   );
 }
@@ -1092,6 +1199,23 @@ function goalCadence(goal) {
   const dur = goal.format === "daily" && goal.duration_days ? ` · ${t("{n}d goal", { n: goal.duration_days })}` : "";
   return goal.daily_deadline ? `${freq}${dur} · ${t("by")} ${goal.daily_deadline}` : `${freq}${dur}`;
 }
+/* Streak number that pulses when the value grows (the moment of approval). */
+function AnimatedStreakNum({ value }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  const prev = useRef(value);
+  useEffect(() => {
+    if (value > prev.current) {
+      scale.setValue(1);
+      Animated.sequence([
+        Animated.timing(scale, { toValue: 1.35, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.spring(scale, { toValue: 1, friction: 4, useNativeDriver: true }),
+      ]).start();
+    }
+    prev.current = value;
+  }, [value]);
+  return <Animated.Text style={[s.streakNum, { transform: [{ scale }] }]}>{value}</Animated.Text>;
+}
+
 function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel }) {
   const completed = goal.status === "completed";
   const isWeekly = goal.type === "recurring" && (goal.format === "3x" || goal.format === "5x" || goal.format === "custom");
@@ -1099,7 +1223,7 @@ function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel }) {
   const verifiedCount = (subs || []).filter((x) => x.status === "approved" || x.status === "frozen").length;
   return (
     <View style={s.card}>
-      <Text style={s.streakNum}>{goal.streak}</Text>
+      <AnimatedStreakNum value={goal.streak} />
       <Text style={s.kicker}>{isWeekly ? t("week streak · verified by the judge") : t("day streak · verified by the judge")}</Text>
       <Text style={s.goalText}>{goal.text}</Text>
       <Text style={[s.spec, { color: C.mute }]}>{goalCadence(goal)}</Text>
@@ -1114,16 +1238,24 @@ function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel }) {
   );
 }
 
-/* Last 5 weeks of verified days as a grid (recent streak at a glance). */
+/* Last 5 weeks of verified days as a grid (recent streak at a glance).
+   Rows of 7 flex cells, so the grid stretches to the card's full width. */
 function StreakCalendar({ subs }) {
   const done = new Set((subs || []).filter((x) => x.status === "approved" || x.status === "frozen").map((x) => x.day));
   const today = new Date();
   const cells = [];
   for (let i = 34; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); cells.push({ key: isoDateParts(d).date, on: done.has(isoDateParts(d).date), isToday: i === 0 }); }
+  const rows = [];
+  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+  const off = C.isDark ? "#1c1822" : "#e7e1d8";
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, width: 7 * 18, marginTop: 14 }}>
-      {cells.map((c) => (
-        <View key={c.key} style={{ width: 14, height: 14, borderRadius: 3, backgroundColor: c.on ? C.green : "#1c1822", borderWidth: c.isToday ? 1.5 : 0, borderColor: C.bronze }} />
+    <View style={{ gap: 4, marginTop: 14 }}>
+      {rows.map((row, ri) => (
+        <View key={ri} style={{ flexDirection: "row", gap: 4 }}>
+          {row.map((c) => (
+            <View key={c.key} style={{ flex: 1, aspectRatio: 1, borderRadius: 4, backgroundColor: c.on ? C.green : off, borderWidth: c.isToday ? 1.5 : 0, borderColor: C.bronze }} />
+          ))}
+        </View>
       ))}
     </View>
   );
@@ -1135,13 +1267,14 @@ function MilestoneBar({ streak }) {
   if (!next) return <Text style={[s.note, { marginTop: 12 }]}>{t("Legend — past {n} days", { n: MILESTONES[MILESTONES.length - 1] })}</Text>;
   const left = next - streak;
   const pct = Math.max(0.02, Math.min(1, streak / next));
+  const track = C.isDark ? "#1c1822" : "#efe6d8";
   return (
     <View style={{ marginTop: 14 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
         <Text style={s.note}>{t("{n} days to your {b}-day badge", { n: left, b: next })}</Text>
         <Text style={s.note}>{streak}/{next}</Text>
       </View>
-      <View style={{ height: 6, borderRadius: 3, backgroundColor: "#1c1822", overflow: "hidden" }}>
+      <View style={{ height: 6, borderRadius: 3, backgroundColor: track, overflow: "hidden" }}>
         <View style={{ height: 6, width: (pct * 100) + "%", backgroundColor: C.bronze }} />
       </View>
     </View>
@@ -1193,7 +1326,7 @@ function Reel({ goal, onBack }) {
           <TouchableOpacity activeOpacity={0.95} onPress={() => setPlaying((p) => !p)}>
             <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} resizeMode="cover" />
           </TouchableOpacity>
-          <View style={{ height: 4, borderRadius: 2, backgroundColor: "#1c1822", overflow: "hidden", marginTop: 12 }}>
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1c1822" : "#efe6d8", overflow: "hidden", marginTop: 12 }}>
             <View style={{ height: 4, width: ((idx + 1) / photos.length * 100) + "%", backgroundColor: C.red }} />
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
@@ -1268,6 +1401,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done"
         placeholder={t("e.g. Wake up and send a photo, or gym 45 min")} placeholderTextColor={C.faint}
         value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+      <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
 
       <Text style={[s.label, { marginTop: 14 }]}>{t("How do you prove it?")}</Text>
       <View style={s.rowGap}>
@@ -1649,7 +1783,7 @@ const PLACE_PALETTE = {
   2: { bg: "#b8bcc4", fg: "#16181c", sub: "#474b52", label: "2ND PLACE", medal: "🥈" },
   3: { bg: "#b5793f", fg: "#1a0f05", sub: "#3f2710", label: "3RD PLACE", medal: "🥉" },
 };
-function ShareableCard({ cardRef, kind, days, title, rank }) {
+function ShareableCard({ cardRef, kind, days, title, rank, bg }) {
   // ----- placement cert (gold / silver / bronze by rank) -----
   if (kind === "placement") {
     const p = PLACE_PALETTE[rank] || { bg: C.card, fg: C.ink, sub: C.mute, label: `#${rank}`, medal: `#${rank}` };
@@ -1675,25 +1809,32 @@ function ShareableCard({ cardRef, kind, days, title, rank }) {
     );
   }
   const head = kind === "milestone" ? "STREAK UNLOCKED" : "CERTIFIED";
+  // Strava-style: your photo underneath, the cert on top. A dark scrim keeps
+  // the type readable, and text is forced to light ink over a photo (the
+  // theme's ink may be dark in light mode).
+  const inkOnBg = bg ? { color: "#f4efe8" } : null;
+  const subOnBg = bg ? { color: "#cfc8bf" } : null;
   return (
-    <View ref={cardRef} collapsable={false} style={s.shareCard}>
+    <View ref={cardRef} collapsable={false} style={[s.shareCard, bg && { overflow: "hidden", borderColor: "rgba(244,239,232,0.4)" }]}>
+      {bg ? <Image source={{ uri: bg }} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" /> : null}
+      {bg ? <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(7,6,8,0.52)" }} /> : null}
       <View style={s.shareTop}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <Image source={LOGO} style={s.shareLogo} resizeMode="contain" />
-          <Text style={s.shareBrand}>CERT</Text>
+          <Text style={[s.shareBrand, inkOnBg]}>CERT</Text>
         </View>
         <Text style={s.shareVerified}>✓ VERIFIED</Text>
       </View>
       <View style={{ alignItems: "center" }}>
-        <Image source={LOGO} style={s.shareLogoBig} resizeMode="contain" />
-        <Text style={s.shareKicker}>{head}</Text>
+        {bg ? null : <Image source={LOGO} style={s.shareLogoBig} resizeMode="contain" />}
+        <Text style={[s.shareKicker, subOnBg]}>{head}</Text>
         <Text style={s.shareDays}>{days}</Text>
-        <Text style={s.shareDaysLabel}>VERIFIED DAYS</Text>
+        <Text style={[s.shareDaysLabel, inkOnBg]}>VERIFIED DAYS</Text>
         <Text style={s.shareNotFaked}>NOT FAKED</Text>
       </View>
       <View>
-        <Text style={s.shareGoal} numberOfLines={3}>{title}</Text>
-        <Text style={s.shareTagline}>Every single day judged by AI. The streak you can't fake.</Text>
+        <Text style={[s.shareGoal, inkOnBg]} numberOfLines={3}>{title}</Text>
+        <Text style={[s.shareTagline, subOnBg]}>Every single day judged by AI. The streak you can't fake.</Text>
       </View>
     </View>
   );
@@ -1713,6 +1854,7 @@ async function shareCardImage(cardRef, dialogTitle) {
 function ShareScreen({ kind, days, title, subtitle, rank, onBack }) {
   const cardRef = useRef();
   const [busy, setBusy] = useState(false);
+  const [bg, setBg] = useState(null); // photo behind the card (Strava-style)
   const shareLabel = kind === "placement" ? "↗ Share my result" : kind === "milestone" ? "↗ Share my badge" : "↗ Share my Cert";
 
   async function share() {
@@ -1724,12 +1866,28 @@ function ShareScreen({ kind, days, title, subtitle, rank, onBack }) {
     } finally { setBusy(false); }
   }
 
+  async function pickBg() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Cert", "Photo permission needed.");
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 0.8 });
+    if (res.canceled || !res.assets?.[0]?.uri) return;
+    setBg(res.assets[0].uri);
+  }
+
   return (
     <ScrollView contentContainerStyle={s.wrap}>
       <BackBar onBack={onBack} />
       <View style={{ paddingHorizontal: 16, marginTop: 8 }}>
-        <ShareableCard cardRef={cardRef} kind={kind} days={days} title={title} rank={rank} />
+        <ShareableCard cardRef={cardRef} kind={kind} days={days} title={title} rank={rank} bg={kind === "placement" ? null : bg} />
       </View>
+      {kind !== "placement" ? (
+        <>
+          <BtnGhost label={bg ? t("Change photo background") : t("📷 Add photo background")} onPress={pickBg} />
+          {bg
+            ? <TouchableOpacity onPress={() => setBg(null)}><Text style={[s.note, { textAlign: "center" }]}>{t("Remove background")}</Text></TouchableOpacity>
+            : <Text style={[s.note, { textAlign: "center" }]}>{t("Your photo underneath, your Cert on top — like Strava.")}</Text>}
+        </>
+      ) : null}
       <Btn label={busy ? "Preparing…" : shareLabel} onPress={share} disabled={busy} />
       {subtitle ? <Text style={[s.note, { textAlign: "center" }]}>{subtitle}</Text> : null}
       <Text style={s.note}>{kind === "placement"
@@ -1777,7 +1935,10 @@ function Heatmap({ byDay }) {
   const days = lastNDays(84); // 12 weeks
   const weeks = [];
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-  const cellColor = (st) => (st === "approved" ? C.bronze : st === "rejected" ? "rgba(226,59,46,0.5)" : st === "missed" ? "#3a2326" : "#1c1922");
+  const cellColor = (st) => (st === "approved" ? C.bronze
+    : st === "rejected" ? "rgba(226,59,46,0.5)"
+    : st === "missed" ? (C.isDark ? "#3a2326" : "#eccfc9")
+    : (C.isDark ? "#1c1922" : "#f0e9dd"));
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
       {weeks.map((wk, wi) => (
@@ -1888,15 +2049,21 @@ const WHEEL_DARES = [
   "Send the group your goofiest camera-roll photo. 📸",
 ];
 const WHEEL_COLORS = ["#e23b2e", "#1c1822", "#c9a227", "#241f29"];
-const dareEmoji = (d) => String(d || "").trim().split(/\s+/).pop() || "🎯";
-const dareIndex = (d) => { const i = WHEEL_DARES.indexOf(d); return i >= 0 ? i : 0; };
+// Custom (friend-written) dares often don't end with an emoji — fall back to 🎯
+// instead of printing a word fragment on the slice.
+const dareEmoji = (d) => {
+  const last = String(d || "").trim().split(/\s+/).pop() || "";
+  return last && !/[a-zA-Zа-яА-Я0-9]/.test(last) ? last : "🎯";
+};
+const dareIndex = (d, list = WHEEL_DARES) => { const i = list.indexOf(d); return i >= 0 ? i : 0; };
 
 // Animated wheel of fortune. Pass landIndex to spin + settle on that slice
 // (under the top pointer). N pie slices drawn with CSS-triangle wedges (no SVG dep).
-function WheelOfFortune({ landIndex, size = 268 }) {
+// dares: the challenge's pool (friends' custom dares padded with defaults).
+function WheelOfFortune({ landIndex, size = 268, dares = WHEEL_DARES }) {
   const rot = useRef(new Animated.Value(0)).current;
   const R = size / 2;
-  const N = WHEEL_DARES.length;
+  const N = Math.max(dares.length, 2);
   const seg = 360 / N;
   const base = 2 * R * Math.tan((seg / 2) * Math.PI / 180); // slice base width at the rim
   useEffect(() => {
@@ -1908,7 +2075,7 @@ function WheelOfFortune({ landIndex, size = 268 }) {
   const spin = rot.interpolate({ inputRange: [0, 360], outputRange: ["0deg", "360deg"] });
   return (
     <Animated.View style={{ width: size, height: size, borderRadius: R, overflow: "hidden", borderWidth: 5, borderColor: C.bronze, backgroundColor: C.bg, transform: [{ rotate: spin }] }}>
-      {WHEEL_DARES.map((d, i) => (
+      {dares.map((d, i) => (
         <View key={i} style={{ position: "absolute", width: size, height: size, transform: [{ rotate: `${i * seg}deg` }] }}>
           <View style={{ position: "absolute", top: 0, left: (size - base) / 2, width: 0, height: 0, borderLeftWidth: base / 2, borderRightWidth: base / 2, borderTopWidth: R, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: WHEEL_COLORS[i % WHEEL_COLORS.length] }} />
           <Text style={{ position: "absolute", top: 12, left: 0, width: size, textAlign: "center", fontSize: 20 }}>{dareEmoji(d)}</Text>
@@ -1929,6 +2096,24 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
   }, []);
   useEffect(() => { load(); }, [load]);
   async function onRefresh() { setRefreshing(true); await load(); setRefreshing(false); }
+  // Remove a challenge from my list (server "leave"). For an active challenge
+  // this exits it — the group keeps going without me.
+  function removeChallenge(ch, ended) {
+    Alert.alert(
+      ended ? t("Remove from your list?") : t("Leave this challenge?"),
+      ended ? t("Removes it from your history. The others keep theirs.") : t("You'll drop off the leaderboard; the challenge continues for the others."),
+      [
+        { text: t("Cancel"), style: "cancel" },
+        { text: ended ? t("Remove") : t("Leave"), style: "destructive", onPress: async () => {
+          try {
+            const { data } = await supabase.functions.invoke("challenge", { body: { action: "leave", challengeId: ch.id } });
+            if (data?.error) throw new Error(data.error);
+            await load();
+          } catch (e) { Alert.alert("Cert", e.message || t("Couldn't load.")); }
+        } },
+      ]
+    );
+  }
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
@@ -1948,8 +2133,15 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
               const ch = m.challenges;
               return (
                 <TouchableOpacity key={ch.id} style={s.card} onPress={() => onOpen(ch.id)}>
-                  <Text style={s.goalText}>{ch.title}</Text>
-                  <Text style={s.note}>{timeLeft(ch.ends_at)} · {t("code")} {ch.code}</Text>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={s.goalText}>{ch.title}</Text>
+                      <Text style={s.note}>{timeLeft(ch.ends_at)} · {t("code")} {ch.code}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => removeChallenge(ch, false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <Ionicons name="trash-outline" size={19} color={C.faint} />
+                    </TouchableOpacity>
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -1970,6 +2162,9 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
                           <Text style={s.goalText}>{ch.title}</Text>
                           <Text style={s.note}>{t("Ended")}{ch.dare ? " · " + t("wheel spun") : ""}</Text>
                         </View>
+                        <TouchableOpacity onPress={() => removeChallenge(ch, true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                          <Ionicons name="trash-outline" size={19} color={C.faint} />
+                        </TouchableOpacity>
                         <Text style={s.certRowChevron}>›</Text>
                       </View>
                     </TouchableOpacity>
@@ -1985,6 +2180,10 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
 }
 
 function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
+  // 4-step wizard: goal → schedule → judging → confirm. Every answer lives
+  // here at the parent level, so moving between steps (or opening the paywall
+  // modal on top) never loses what's already filled in.
+  const [step, setStep] = useState(0);
   const [goalText, setGoalText] = useState("");
   const [name, setName] = useState("");
   const [hasProfileName, setHasProfileName] = useState(false);
@@ -1994,11 +2193,25 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
   const [oneTimeDeadline, setOneTimeDeadline] = useState(null); // Date|null, for one_time
   const [judgeMode, setJudgeMode] = useState("ai"); // ai | peer
   const [proofType, setProofType] = useState("photo"); // photo | timelapse (AI judge only, Pro)
+  const [dare, setDare] = useState(""); // my wheel-of-fortune dare for the loser (optional)
   const [busy, setBusy] = useState(false);
+  const stepAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => { loadMyName().then((n) => { if (n) { setName(n); setHasProfileName(true); } }); }, []);
+  useEffect(() => {
+    stepAnim.setValue(0);
+    Animated.timing(stepAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [step]);
+
+  const STEPS = 4;
+  function next() {
+    if (step === 0) {
+      if (goalText.trim().length < 3) return Alert.alert("Cert", t("Describe the shared goal."));
+      if (!name.trim()) return Alert.alert("Cert", t("Enter your name for the leaderboard."));
+    }
+    if (step === 1 && type === "one_time" && !oneTimeDeadline) return Alert.alert("Cert", t("Pick a deadline date & time."));
+    setStep((v) => Math.min(v + 1, STEPS - 1));
+  }
   async function create() {
-    if (goalText.trim().length < 3) return Alert.alert("Cert", t("Describe the shared goal."));
-    if (!name.trim()) return Alert.alert("Cert", t("Enter your name for the leaderboard."));
     if (type === "one_time" && !oneTimeDeadline) return Alert.alert("Cert", t("Pick a deadline date & time."));
     setBusy(true);
     try {
@@ -2008,6 +2221,7 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
         name: name.trim(), goalType: type, goalFormat: format, judgeMode,
         proofType: judgeMode === "ai" ? proofType : "photo",
         endsAt: type === "one_time" && oneTimeDeadline ? oneTimeDeadline.toISOString() : null,
+        dare: dare.trim() || null,
       } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -2015,71 +2229,106 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
     } catch (e) { Alert.alert("Cert", e.message || t("Couldn't create challenge.")); }
     finally { setBusy(false); }
   }
+  const fmtDeadline = (d) => d ? d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—";
+  const scheduleSummary = type === "one_time"
+    ? `${t("One-time")} · ${fmtDeadline(oneTimeDeadline)}`
+    : `${format === "daily" ? t("Daily") : format === "3x" ? t("3× / week") : t("5× / week")} · ${t("{n} days", { n: dur })}`;
+  const SummaryRow = ({ label, value, goStep }) => (
+    <TouchableOpacity style={s.rowBetween} onPress={() => setStep(goStep)} activeOpacity={0.7}>
+      <View style={{ flex: 1, marginRight: 10 }}>
+        <Text style={s.kicker}>{label}</Text>
+        <Text style={[s.goalText, { marginTop: 3 }]} numberOfLines={2}>{value}</Text>
+      </View>
+      <Text style={[s.kicker, { color: C.bronze }]}>{t("Edit")}</Text>
+    </TouchableOpacity>
+  );
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
-      <BackBar onBack={onBack} />
-      <Text style={s.h2}>{t("Create a challenge")}</Text>
-      {hasProfileName
-        ? <Text style={[s.note, { marginTop: 4 }]}>{t("Playing as")} <Text style={{ color: C.bronze, fontWeight: "800" }}>{name}</Text> · {t("change it in Profile")}</Text>
-        : (<>
-            <Text style={s.label}>{t("Your name (shown on leaderboard)")}</Text>
-            <TextInput style={s.input} placeholder={t("e.g. Zhanibek")} placeholderTextColor={C.faint} value={name} onChangeText={(val) => setName(val.replace(/\n/g, " "))} />
-          </>)}
-      <Text style={[s.label, { marginTop: 14 }]}>{t("The shared goal everyone does")}</Text>
-      <TextInput style={[s.input, { height: 80, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done" placeholder={t("e.g. Gym 45 min, photo with equipment")} placeholderTextColor={C.faint} value={goalText} onChangeText={(val) => setGoalText(val.replace(/\n/g, " "))} />
-
-      <Text style={[s.label, { marginTop: 14 }]}>{t("Type")}</Text>
-      <View style={s.rowGap}>
-        <Pill label={t("Repeating")} active={type === "recurring"} onPress={() => setType("recurring")} />
-        <Pill label={t("One-time")} active={type === "one_time"} onPress={() => setType("one_time")} />
+      <BackBar onBack={step === 0 ? onBack : () => setStep((v) => v - 1)} />
+      <View style={s.rowBetween}>
+        <Text style={s.h2}>{t("Create a challenge")}</Text>
+        <Text style={s.kicker}>{t("Step {a} of {b}", { a: step + 1, b: STEPS })}</Text>
+      </View>
+      {/* step progress */}
+      <View style={{ flexDirection: "row", gap: 6, marginTop: 10 }}>
+        {Array.from({ length: STEPS }).map((_, i) => (
+          <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= step ? C.bronze : C.line }} />
+        ))}
       </View>
 
-      {type === "recurring" ? (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
-          <View style={s.rowGap}>
-            <Pill label={t("Daily")} active={format === "daily"} onPress={() => setFormat("daily")} />
-            <Pill label={t("3× / week")} active={format === "3x"} onPress={() => setFormat("3x")} />
-            <Pill label={t("5× / week")} active={format === "5x"} onPress={() => setFormat("5x")} />
-          </View>
-        </>
-      ) : null}
+      <Animated.View style={{ opacity: stepAnim, transform: [{ translateX: stepAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }) }] }}>
+        {step === 0 ? (
+          <>
+            <Text style={[s.label, { marginTop: 18 }]}>{t("The shared goal everyone does")}</Text>
+            <TextInput style={[s.input, { height: 80, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done" placeholder={t("e.g. Gym 45 min, photo with equipment")} placeholderTextColor={C.faint} value={goalText} onChangeText={(val) => setGoalText(val.replace(/\n/g, " "))} />
+            <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
+            {hasProfileName
+              ? <Text style={[s.note, { marginTop: 12 }]}>{t("Playing as")} <Text style={{ color: C.bronze, fontWeight: "800" }}>{name}</Text> · {t("change it in Profile")}</Text>
+              : (<>
+                  <Text style={[s.label, { marginTop: 14 }]}>{t("Your name (shown on leaderboard)")}</Text>
+                  <TextInput style={s.input} placeholder={t("e.g. Zhanibek")} placeholderTextColor={C.faint} value={name} onChangeText={(val) => setName(val.replace(/\n/g, " "))} />
+                </>)}
+          </>
+        ) : step === 1 ? (
+          <>
+            <Text style={[s.label, { marginTop: 18 }]}>{t("Type")}</Text>
+            <OptionCard icon="repeat-outline" title={t("Repeating")} desc={t("Daily or weekly cadence — the streak machine.")} active={type === "recurring"} onPress={() => setType("recurring")} />
+            <OptionCard icon="flag-outline" title={t("One-time")} desc={t("A single dated dare with one proof.")} active={type === "one_time"} onPress={() => setType("one_time")} />
+            {type === "recurring" ? (
+              <>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
+                <View style={s.rowGap}>
+                  <Pill label={t("Daily")} active={format === "daily"} onPress={() => setFormat("daily")} />
+                  <Pill label={t("3× / week")} active={format === "3x"} onPress={() => setFormat("3x")} />
+                  <Pill label={t("5× / week")} active={format === "5x"} onPress={() => setFormat("5x")} />
+                </View>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("How long?")}</Text>
+                <View style={s.rowGap}>
+                  {[7, 14, 30].map((d) => <Pill key={d} label={t("{n} days", { n: d })} active={dur === d} onPress={() => setDur(d)} />)}
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (date & time)")}</Text>
+                <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick deadline")} />
+                <Text style={s.note}>{t("The challenge ends at this moment. Last place spins the wheel.")}</Text>
+              </>
+            )}
+          </>
+        ) : step === 2 ? (
+          <>
+            <Text style={[s.label, { marginTop: 18 }]}>{t("Who judges proofs?")}</Text>
+            <OptionCard icon="shield-checkmark-outline" title={t("AI judge")} desc={t("The AI judge checks each photo automatically.")} active={judgeMode === "ai"} onPress={() => setJudgeMode("ai")} />
+            <OptionCard icon="people-outline" title={t("Friends vote")} desc={t("Members swipe to approve/decline each other's photos.")} active={judgeMode === "peer"} onPress={() => setJudgeMode("peer")} />
+            {judgeMode === "ai" ? (
+              <>
+                <Text style={[s.label, { marginTop: 14 }]}>{t("How do you prove it?")}</Text>
+                <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Everyone sends one photo per check.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
+                <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Everyone in the challenge records a timelapse. Much harder to fake.")} active={proofType === "timelapse"}
+                  onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
+              </>
+            ) : null}
+            <Text style={[s.label, { marginTop: 16 }]}>{t("Your dare for the loser (optional)")}</Text>
+            <TextInput style={s.input} placeholder={t("e.g. Sing a song chorus in a voice message 🎤")} placeholderTextColor={C.faint} value={dare} onChangeText={(val) => setDare(val.replace(/\n/g, " "))} maxLength={120} />
+            <Text style={[s.note, { textAlign: "left" }]}>{t("Everyone writes one. Last place spins the wheel over the dares your group wrote.")}</Text>
+          </>
+        ) : (
+          <>
+            <Text style={[s.h2, { marginTop: 18 }]}>{t("Review & create")}</Text>
+            <View style={[s.card, { gap: 14 }]}>
+              <SummaryRow label={t("Goal")} value={goalText.trim() || "—"} goStep={0} />
+              <SummaryRow label={t("Schedule")} value={scheduleSummary} goStep={1} />
+              <SummaryRow label={t("Judge")} value={judgeMode === "ai" ? t("AI judge") : t("Friends vote")} goStep={2} />
+              {judgeMode === "ai" ? <SummaryRow label={t("Proof")} value={proofType === "timelapse" ? t("🎥 Timelapse") : t("📷 Quick photo")} goStep={2} /> : null}
+              {dare.trim() ? <SummaryRow label={t("Your dare")} value={dare.trim()} goStep={2} /> : null}
+            </View>
+          </>
+        )}
+      </Animated.View>
 
-      {type === "one_time" ? (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (date & time)")}</Text>
-          <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick deadline")} />
-          <Text style={s.note}>{t("The challenge ends at this moment. Last place spins the wheel.")}</Text>
-        </>
-      ) : (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("How long?")}</Text>
-          <View style={s.rowGap}>
-            {[7, 14, 30].map((d) => <Pill key={d} label={t("{n} days", { n: d })} active={dur === d} onPress={() => setDur(d)} />)}
-          </View>
-        </>
-      )}
-
-      <Text style={[s.label, { marginTop: 14 }]}>{t("Who judges proofs?")}</Text>
-      <View style={s.rowGap}>
-        <Pill label={t("AI judge")} active={judgeMode === "ai"} onPress={() => setJudgeMode("ai")} />
-        <Pill label={t("Friends vote")} active={judgeMode === "peer"} onPress={() => setJudgeMode("peer")} />
-      </View>
-      <Text style={s.note}>{judgeMode === "peer" ? t("Members swipe to approve/decline each other's photos.") : t("The AI judge checks each photo automatically.")}</Text>
-
-      {judgeMode === "ai" ? (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("How do you prove it?")}</Text>
-          <View style={s.rowGap}>
-            <Pill label={t("📷 Quick photo")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-            <Pill label={isPro ? t("🎥 Timelapse") : t("🎥 Timelapse 🔒")} active={proofType === "timelapse"}
-              onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
-          </View>
-          <Text style={s.note}>{proofType === "timelapse" ? t("Everyone in the challenge records a timelapse. Much harder to fake.") : (isPro ? t("Everyone sends one photo per check.") : t("Everyone sends one photo. Timelapse proof is a Pro feature."))}</Text>
-        </>
-      ) : null}
-
-      <Btn label={busy ? t("Creating…") : t("Create & get code")} onPress={create} disabled={busy} />
+      {step < STEPS - 1
+        ? <Btn label={t("Next") + " →"} onPress={next} />
+        : <Btn label={busy ? t("Creating…") : t("Create & get code")} onPress={create} disabled={busy} />}
     </ScrollView>
   );
 }
@@ -2088,6 +2337,7 @@ function JoinChallenge({ onJoined, onBack, initialCode }) {
   const [code, setCode] = useState(initialCode || "");
   const [name, setName] = useState("");
   const [hasProfileName, setHasProfileName] = useState(false);
+  const [dare, setDare] = useState(""); // my dare for the loser's wheel (optional)
   const [busy, setBusy] = useState(false);
   useEffect(() => { loadMyName().then((n) => { if (n) { setName(n); setHasProfileName(true); } }); }, []);
   async function join() {
@@ -2096,7 +2346,7 @@ function JoinChallenge({ onJoined, onBack, initialCode }) {
     setBusy(true);
     try {
       if (!hasProfileName) await saveMyName(name.trim());
-      const { data, error } = await supabase.functions.invoke("challenge", { body: { action: "join", code: code.trim(), name: name.trim() } });
+      const { data, error } = await supabase.functions.invoke("challenge", { body: { action: "join", code: code.trim(), name: name.trim(), dare: dare.trim() || null } });
       if (error) throw error;
       if (data?.error) throw new Error(data.error === "not_found" ? t("No challenge with that code.") : data.error);
       onJoined(data.challenge.id);
@@ -2115,6 +2365,9 @@ function JoinChallenge({ onJoined, onBack, initialCode }) {
             <Text style={[s.label, { marginTop: 14 }]}>{t("Your name (shown on leaderboard)")}</Text>
             <TextInput style={s.input} placeholder={t("e.g. Zhanibek")} placeholderTextColor={C.faint} value={name} onChangeText={(val) => setName(val.replace(/\n/g, " "))} />
           </>)}
+      <Text style={[s.label, { marginTop: 14 }]}>{t("Your dare for the loser (optional)")}</Text>
+      <TextInput style={s.input} placeholder={t("e.g. Sing a song chorus in a voice message 🎤")} placeholderTextColor={C.faint} value={dare} onChangeText={(val) => setDare(val.replace(/\n/g, " "))} maxLength={120} />
+      <Text style={[s.note, { textAlign: "left" }]}>{t("Everyone writes one. Last place spins the wheel over the dares your group wrote.")}</Text>
       <Btn label={busy ? t("Joining…") : t("Join")} onPress={join} disabled={busy} />
     </ScrollView>
   );
@@ -2137,6 +2390,10 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
   useEffect(() => { load(); }, [load]);
   async function onRefresh() { setRefreshing(true); await load(); setRefreshing(false); }
 
+  // Wheel slices = this challenge's dare pool (friends' custom dares padded
+  // with defaults) — the server builds the same list for board and spin.
+  const boardDares = board?.dares?.length ? board.dares : WHEEL_DARES;
+
   // Auto-show the wheel ONCE when an ended challenge opens (the result, or the
   // spin prompt if you're last). Seen-state persists so it never re-pops.
   useEffect(() => {
@@ -2145,7 +2402,7 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
     let cancelled = false;
     AsyncStorage.getItem(key).then((seen) => {
       if (cancelled || seen) return;
-      if (board.dare) { setLandIndex(dareIndex(board.dare)); setRevealed(board.dare); setWheelPreview(false); setWheelOpen(true); AsyncStorage.setItem(key, "1"); }
+      if (board.dare) { setLandIndex(dareIndex(board.dare, boardDares)); setRevealed(board.dare); setWheelPreview(false); setWheelOpen(true); AsyncStorage.setItem(key, "1"); }
       else if (board.canSpin) { setLandIndex(null); setRevealed(null); setWheelPreview(false); setWheelOpen(true); AsyncStorage.setItem(key, "1"); }
     });
     return () => { cancelled = true; };
@@ -2182,26 +2439,28 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
     supabase.functions.invoke("challenge", { body: { action: "spin", challengeId } })
       .then(({ data }) => {
         if (!data?.dare) { setSpinningWheel(false); Alert.alert("Cert", data?.error || "Spin failed."); return; }
-        setLandIndex(dareIndex(data.dare)); // wheel animates ~3.8s
+        setLandIndex(dareIndex(data.dare, boardDares)); // wheel animates ~3.8s
         setTimeout(async () => { setRevealed(data.dare); setSpinningWheel(false); await load(); }, 3900);
       })
       .catch((e) => { setSpinningWheel(false); Alert.alert("Cert", e.message || "Spin failed."); });
   }
-  function openResultWheel() { setWheelPreview(false); setLandIndex(dareIndex(board.dare)); setRevealed(board.dare); setWheelOpen(true); }
+  function openResultWheel() { setWheelPreview(false); setLandIndex(dareIndex(board.dare, boardDares)); setRevealed(board.dare); setWheelOpen(true); }
   function openSpinWheel() { setWheelPreview(false); setLandIndex(null); setRevealed(null); setWheelOpen(true); }
 
   if (!board) return <Center><ActivityIndicator color={C.bronze} /></Center>;
   const ch = board.challenge;
   const isWk = ch.goal_type === "recurring" && (ch.goal_format === "3x" || ch.goal_format === "5x");
   const shareInvite = () => {
-    const link = Linking.createURL("join", { queryParams: { code: ch.code } });
-    Share.share({ message: `Join my Cert challenge "${ch.goal_text}" — tap to join:\n${link}\n\n(or enter code ${ch.code} in the app)` });
+    // https link (clickable in messengers, unlike a raw cert:// scheme) —
+    // the landing page redirects into the app or shows the code + install steps.
+    const link = `https://www.certapp.pro/join.html?code=${ch.code}`;
+    Share.share({ message: t("Join my Cert challenge \"{goal}\" — tap to join:\n{link}\n\n(or enter code {code} in the app)", { goal: ch.goal_text, link, code: ch.code }) });
   };
   function previewWheel() {
-    const idx = Math.floor(Math.random() * WHEEL_DARES.length);
+    const idx = Math.floor(Math.random() * boardDares.length);
     setWheelPreview(true); setRevealed(null); setLandIndex(null); setWheelOpen(true);
     setTimeout(() => setLandIndex(idx), 60);          // start the spin
-    setTimeout(() => setRevealed(WHEEL_DARES[idx]), 4000); // reveal after it settles
+    setTimeout(() => setRevealed(boardDares[idx]), 4000); // reveal after it settles
   }
   function endNow() {
     Alert.alert(t("End challenge now?"), t("Ends it for everyone and locks the leaderboard. Last place spins the wheel."), [
@@ -2312,7 +2571,7 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
           </Text>
           <View style={s.wheelStage}>
             <View style={s.wheelPointer} />
-            <WheelOfFortune landIndex={landIndex} />
+            <WheelOfFortune landIndex={landIndex} dares={boardDares} />
           </View>
           {revealed ? (
             <View style={s.wheelResult}>
@@ -2467,6 +2726,34 @@ function BackBar({ onBack }) {
 }
 function Btn({ label, onPress, disabled }) {
   return <TouchableOpacity style={[s.btn, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled}><Text style={s.btnText}>{label}</Text></TouchableOpacity>;
+}
+/* Touchable that springs down slightly while pressed (tactile card feedback). */
+function PressScale({ onPress, children, style, disabled }) {
+  const v = useRef(new Animated.Value(1)).current;
+  return (
+    <TouchableOpacity activeOpacity={0.9} disabled={disabled} onPress={onPress}
+      onPressIn={() => Animated.spring(v, { toValue: 0.97, friction: 6, useNativeDriver: true }).start()}
+      onPressOut={() => Animated.spring(v, { toValue: 1, friction: 6, useNativeDriver: true }).start()}>
+      <Animated.View style={[style, { transform: [{ scale: v }] }]}>{children}</Animated.View>
+    </TouchableOpacity>
+  );
+}
+/* Forfeit-style option card: icon + title + description + selected check. */
+function OptionCard({ icon, title, desc, active, locked, onPress }) {
+  return (
+    <PressScale onPress={onPress} style={[s.optCard, active && s.optCardOn]}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+        <View style={[s.optIcon, active && { borderColor: C.bronze }]}>
+          <Ionicons name={icon} size={20} color={active ? C.bronze : C.mute} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={[s.buyTitle, { fontSize: 15 }, active && { color: C.bronze }]}>{title}{locked ? " 🔒" : ""}</Text>
+          {desc ? <Text style={[s.note, { textAlign: "left", marginTop: 2 }]}>{desc}</Text> : null}
+        </View>
+        <Ionicons name={active ? "checkmark-circle" : "ellipse-outline"} size={22} color={active ? C.bronze : C.line} />
+      </View>
+    </PressScale>
+  );
 }
 function BtnGhost({ label, onPress, disabled }) {
   return <TouchableOpacity style={[s.btnGhost, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled}><Text style={s.btnGhostText}>{label}</Text></TouchableOpacity>;
@@ -2625,6 +2912,7 @@ function makeStyles() { return StyleSheet.create({
   lbLast: { color: C.red, fontSize: 11, fontWeight: "800", letterSpacing: 1 },
   tabBar: { flexDirection: "row", borderTopWidth: 1, borderColor: C.line, backgroundColor: C.card, paddingTop: 7 },
   tabItem: { flex: 1, alignItems: "center", gap: 3 },
+  tabCreate: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.bronze, alignItems: "center", justifyContent: "center", marginTop: -22, borderWidth: 3, borderColor: C.card, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
   tabLabel: { fontSize: 10.5, color: C.faint, fontWeight: "700", letterSpacing: 0.3 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
@@ -2635,6 +2923,9 @@ function makeStyles() { return StyleSheet.create({
   langChip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5 },
   langChipOn: { backgroundColor: C.bronze, borderColor: C.bronze },
   langChipT: { color: C.mute, fontSize: 12, fontWeight: "800", letterSpacing: 0.5 },
+  optCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
+  optCardOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(154,122,28,0.08)" },
+  optIcon: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: C.bg },
   buyCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 16, marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12 },
   buyCardOn: { borderColor: C.bronze },
   buyTitle: { color: C.ink, fontSize: 16, fontWeight: "800" },

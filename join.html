@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join a Cert challenge</title>
+<meta name="description" content="You've been invited to a Cert challenge. Open the app to join — or install Cert and enter the code.">
+<meta property="og:title" content="Join my Cert challenge">
+<meta property="og:description" content="One shared goal, daily photo proof, an honest AI judge. Last place spins the wheel.">
+<meta property="og:type" content="website">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#070608;min-height:100%;}
+  body{font-family:'JetBrains Mono',monospace;color:#f4efe8;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+  .card{max-width:420px;width:100%;text-align:center;}
+  .kicker{color:#e23b2e;font-size:11px;letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px;}
+  h1{font-family:'Tektur',sans-serif;font-size:30px;margin:0 0 10px;}
+  p{color:#9a948d;font-size:14px;line-height:1.6;margin:0 0 22px;}
+  .code{display:inline-block;font-size:34px;font-weight:700;letter-spacing:.28em;color:#c9a227;border:1px dashed #3a3342;border-radius:14px;padding:14px 22px 14px 28px;margin-bottom:26px;user-select:all;}
+  .btn{display:block;background:#e23b2e;color:#120606;text-decoration:none;font-weight:700;font-size:15px;letter-spacing:.06em;border-radius:12px;padding:16px;margin-bottom:12px;transition:filter .15s,transform .15s;}
+  .btn:hover{filter:brightness(1.08);transform:translateY(-1px);}
+  .btn.ghost{background:none;border:1px solid #2a2530;color:#e9e4dc;}
+  .btn.ghost:hover{border-color:#e23b2e;}
+  .hint{color:#6f6a63;font-size:12px;line-height:1.6;margin-top:18px;}
+  .logo{width:64px;height:64px;margin-bottom:18px;}
+</style>
+</head>
+<body>
+  <div class="card">
+    <img class="logo" src="assets/gladiator-logo.png" alt="Cert" onerror="this.style.display='none'">
+    <div class="kicker" data-i18n="kicker">[ challenge invite ]</div>
+    <h1 data-i18n="title">You're invited</h1>
+    <p data-i18n="lede">A friend challenged you in Cert — one shared goal, daily photo proof, an honest AI judge. Last place spins the wheel.</p>
+    <div class="code" id="code">——————</div>
+    <a class="btn" id="openApp" href="#" data-i18n="open">Open in the Cert app</a>
+    <a class="btn ghost" href="https://www.certapp.pro/" data-i18n="get">Get the app</a>
+    <p class="hint" data-i18n="hint">No app yet? Install Cert, sign up, then go to Versus → “Join by code” and enter the code above.</p>
+  </div>
+<script>
+  var RU = {
+    kicker: "[ приглашение в челлендж ]",
+    title: "Тебя пригласили",
+    lede: "Друг вызвал тебя на челлендж в Cert — общая цель, фото-пруф каждый день, честный ИИ-судья. Последний крутит колесо фортуны.",
+    open: "Открыть в приложении Cert",
+    get: "Скачать приложение",
+    hint: "Нет приложения? Установи Cert, зарегистрируйся, затем Versus → «Войти по коду» и введи код выше."
+  };
+  var lang = (navigator.language || "en").toLowerCase().indexOf("ru") === 0 ? "ru" : "en";
+  if (lang === "ru") {
+    document.title = "Приглашение в челлендж Cert";
+    document.querySelectorAll("[data-i18n]").forEach(function (el) {
+      var k = el.getAttribute("data-i18n");
+      if (RU[k]) el.textContent = RU[k];
+    });
+  }
+  var code = (new URLSearchParams(location.search).get("code") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8);
+  document.getElementById("code").textContent = code || "??????";
+  var deepLink = "cert://join?code=" + encodeURIComponent(code);
+  var openBtn = document.getElementById("openApp");
+  openBtn.href = deepLink;
+  // If the app is installed, jump straight in. If not, the scheme silently
+  // fails and the visitor stays here with the code + install path.
+  if (code) setTimeout(function () { location.href = deepLink; }, 600);
+</script>
+</body>
+</html>

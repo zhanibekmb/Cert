@@ -7,8 +7,15 @@
 // =====================================================================
 import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Localization from "expo-localization";
 
 function deviceLang() {
+  // expo-localization reads the real OS language; Hermes' Intl locale is
+  // unreliable (often reports "en" regardless of the device setting).
+  try {
+    const code = Localization.getLocales?.()[0]?.languageCode;
+    if (code) return String(code).toLowerCase() === "ru" ? "ru" : "en";
+  } catch (_) { /* fall through to Intl */ }
   try {
     const loc = (Intl.DateTimeFormat().resolvedOptions().locale || "en").toLowerCase();
     return loc.startsWith("ru") ? "ru" : "en";
@@ -102,6 +109,46 @@ const RU = {
   "⚡ Upgrade to Pro": "⚡ Перейти на Pro",
   "Upgrade to Pro": "Перейти на Pro",
   "How Cert works": "Как работает Cert",
+  // --- onboarding carousel (first run, pre-auth) ---
+  "Goals die quietly": "Цели умирают тихо",
+  "You promise yourself, skip one day, then quietly quit. Nobody checks — so nothing happens.": "Ты обещаешь себе, пропускаешь один день — и тихо бросаешь. Никто не проверяет, поэтому ничего не происходит.",
+  "An AI judge checks you": "Тебя проверяет ИИ-судья",
+  "One goal. A daily photo as proof. The AI decides if it counts — you can't fake a tap.": "Одна цель. Фото-пруф каждый день. ИИ решает, засчитано ли — галочку не подделать.",
+  "A streak worth bragging about": "Серия, которой можно хвастаться",
+  "Verified streaks, challenges with friends, freezes for busy days, timelapse proof.": "Подтверждённые серии, челленджи с друзьями, заморозки на занятые дни и таймлапс-пруфы.",
+  "Next": "Далее",
+  "Skip": "Пропустить",
+  // --- pro intro (first run, info-only) ---
+  "Go further with Pro": "Больше с Pro",
+  "Start free. Upgrade anytime in the app.": "Начни бесплатно. Перейти на Pro можно в любой момент в приложении.",
+  // --- challenge wizard ---
+  "Step {a} of {b}": "Шаг {a} из {b}",
+  "Review & create": "Проверь и создай",
+  "Goal": "Цель",
+  "Schedule": "Расписание",
+  "Judge": "Судья",
+  "Proof": "Пруф",
+  "Edit": "Изменить",
+  "Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".": "Подсказка: пиши своими словами — судья-ИИ читает именно это. Можно привязать ко времени: «в 19:00 быть в зале, фото с ресепшена».",
+  "Daily or weekly cadence — the streak machine.": "Каждый день или по неделям — машина серий.",
+  "A single dated dare with one proof.": "Разовое задание с дедлайном и одним пруфом.",
+  "Your dare for the loser (optional)": "Твой фант для проигравшего (необязательно)",
+  "e.g. Sing a song chorus in a voice message 🎤": "напр. спой припев песни голосовым 🎤",
+  "Everyone writes one. Last place spins the wheel over the dares your group wrote.": "Каждый пишет свой. Последнее место крутит колесо по фантам, которые написала ваша группа.",
+  "Your dare": "Твой фант",
+  // --- challenge list / leave ---
+  "Remove from your list?": "Убрать из твоего списка?",
+  "Leave this challenge?": "Выйти из челленджа?",
+  "Removes it from your history. The others keep theirs.": "Уберёт его из твоей истории. У остальных он останется.",
+  "You'll drop off the leaderboard; the challenge continues for the others.": "Ты пропадёшь из таблицы лидеров; для остальных челлендж продолжится.",
+  "Remove": "Убрать",
+  "Leave": "Выйти",
+  "Join my Cert challenge \"{goal}\" — tap to join:\n{link}\n\n(or enter code {code} in the app)": "Присоединяйся к моему челленджу в Cert «{goal}» — жми:\n{link}\n\n(или введи код {code} в приложении)",
+  // --- share card photo background ---
+  "📷 Add photo background": "📷 Добавить фото-фон",
+  "Change photo background": "Сменить фото-фон",
+  "Remove background": "Убрать фон",
+  "Your photo underneath, your Cert on top — like Strava.": "Твоё фото снизу, сертификат сверху — как в Strava.",
   "Set a goal": "Поставь цель",
   "Pick something you'll prove every single day.": "Выбери то, что будешь доказывать каждый день.",
   "Send a daily photo": "Присылай фото каждый день",

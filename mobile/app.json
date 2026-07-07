@@ -59,6 +59,7 @@
         }
       ],
       "expo-asset",
+      "expo-localization",
       "expo-web-browser",
       "expo-notifications",
       "expo-apple-authentication",

@@ -23,6 +23,10 @@ const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FREE_DAILY_ATTEMPTS = 2;
 const PAID_DAILY_ATTEMPTS = 5;   // subscribers get more tries, but not unlimited
 const MILESTONES = [7, 30, 100]; // streak thresholds that mint a shareable badge
+// Geo anti-cheat: a submission far from the goal's anchor (its first approved
+// location) is flagged, never auto-rejected — GPS drifts indoors and people
+// travel. Generous on purpose: within-city moves must never trip it.
+const GEO_MISMATCH_KM = 50;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 function todayFor(tz: string): string {
@@ -132,6 +136,12 @@ function shiftDay(dayStr: string, n: number): string {
   const d = new Date(dayStr + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10);
 }
 function weeklyQuota(format: string | null): number { return format === "5x" ? 5 : 3; }
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1), dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 function localHHMM(tz: string): string {
   try { return new Date().toLocaleTimeString("en-GB", { timeZone: tz || "UTC", hour12: false, hour: "2-digit", minute: "2-digit" }); }
   catch { return new Date().toISOString().slice(11, 16); }
@@ -251,6 +261,24 @@ Deno.serve(async (req) => {
     }
   } catch (_) { /* keep whatever uploaded */ }
 
+  // Geo anti-cheat signal — additive to the AI verdict, never a substitute.
+  // Compare against the anchor (the goal's first approved submission with geo);
+  // a big mismatch lowers stored confidence + flags the row for review/appeal
+  // tooling, but NEVER flips an approval.
+  let geoSuspect = false;
+  if (geoLat !== null && geoLng !== null) {
+    const { data: anchor } = await svc.from("submissions").select("lat,lng")
+      .eq("goal_id", goalId).in("status", ["approved", "frozen"]).not("lat", "is", null)
+      .order("created_at", { ascending: true }).limit(1).maybeSingle();
+    if (anchor && typeof anchor.lat === "number" && typeof anchor.lng === "number") {
+      const km = haversineKm(anchor.lat, anchor.lng, geoLat, geoLng);
+      if (km > GEO_MISMATCH_KM) {
+        geoSuspect = true;
+        verdict.confidence = Math.min(typeof verdict.confidence === "number" ? verdict.confidence : 0.8, 0.5);
+      }
+    }
+  }
+
   const streakBefore = goal.streak || 0;
   let newStreak = streakBefore, newBest = goal.best_streak || 0, newStatus = goal.status, completedAt: string | null = null;
   // Eternal counter — verified days NEVER reset (cushions the streak reset).
@@ -282,7 +310,7 @@ Deno.serve(async (req) => {
   const { data: sub } = await svc.from("submissions").insert({
     goal_id: goalId, user_id: user.id, day, status: verdict.approved ? "approved" : "rejected",
     reason: verdict.reason, confidence: verdict.confidence, photo_path: photoPath, streak_before: streakBefore,
-    lat: geoLat, lng: geoLng, place: geoPlace,
+    lat: geoLat, lng: geoLng, place: geoPlace, geo_suspect: geoSuspect,
   }).select("id").single();
   await svc.from("goals").update({ streak: newStreak, best_streak: newBest, status: newStatus, completed_at: completedAt, verified_days_total: newVerified }).eq("id", goalId);
   if (newStatus === "completed") await svc.from("certs").insert({ user_id: user.id, goal_id: goalId, title: goal.text, days: newBest });
@@ -294,5 +322,5 @@ Deno.serve(async (req) => {
   const milestone = !isWeekly && verdict.approved && MILESTONES.includes(newStreak) ? newStreak : null;
   const thisWeekAfter = weekApprovedBefore + (verdict.approved ? 1 : 0);
   const weekly = isWeekly ? { quota, thisWeek: thisWeekAfter, weekDone: thisWeekAfter >= quota } : null;
-  return json({ verdict, goal: updatedGoal, completed: newStatus === "completed", dailyReq: daily, submissionId: sub?.id, attemptsLeft: attemptsLeftAfter, milestone, weekly });
+  return json({ verdict, goal: updatedGoal, completed: newStatus === "completed", dailyReq: daily, submissionId: sub?.id, attemptsLeft: attemptsLeftAfter, milestone, weekly, geoSuspect });
 });

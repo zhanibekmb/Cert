@@ -36,6 +36,18 @@ const DARES = [
   "Send the group your goofiest camera-roll photo. 📸",
 ];
 
+// Dare pool for the wheel: dares written by members (in join order), padded
+// with defaults up to 6 slices so a lone custom dare doesn't render a one-slice
+// wheel. Deterministic — board and spin build the exact same list, so the
+// client can map the chosen dare back to a slice index.
+function buildDarePool(memberDares: (string | null)[]): string[] {
+  const custom = memberDares.map((d) => String(d || "").trim()).filter(Boolean).slice(0, 12);
+  if (!custom.length) return DARES;
+  const pool = [...custom];
+  for (const d of DARES) { if (pool.length >= 6) break; pool.push(d); }
+  return pool;
+}
+
 function weekKeyUTC(dayStr: string): string {
   const d = new Date(dayStr + "T00:00:00Z");
   const dow = (d.getUTCDay() + 6) % 7;
@@ -115,7 +127,8 @@ Deno.serve(async (req) => {
     if (e1 || !ch) return json({ error: "create_failed", detail: e1?.message }, 500);
 
     const goalId = await makeMemberGoal(ch);
-    await svc.from("challenge_members").insert({ challenge_id: ch.id, user_id: user.id, name, goal_id: goalId });
+    const hostDare = String(body.dare || "").trim().slice(0, 120) || null;
+    await svc.from("challenge_members").insert({ challenge_id: ch.id, user_id: user.id, name, goal_id: goalId, dare_text: hostDare });
     return json({ challenge: ch });
   }
 
@@ -132,8 +145,24 @@ Deno.serve(async (req) => {
     if (ch.status !== "active") return json({ error: "challenge_ended" }, 409);
 
     const goalId = await makeMemberGoal(ch);
-    await svc.from("challenge_members").insert({ challenge_id: ch.id, user_id: user.id, name, goal_id: goalId });
+    const joinDare = String(body.dare || "").trim().slice(0, 120) || null;
+    await svc.from("challenge_members").insert({ challenge_id: ch.id, user_id: user.id, name, goal_id: goalId, dare_text: joinDare });
     return json({ challenge: ch });
+  }
+
+  // ---- LEAVE (remove this challenge from my list; host leaving doesn't end it) ----
+  if (action === "leave") {
+    const challengeId = body.challengeId;
+    if (!challengeId) return json({ error: "missing_challenge" }, 400);
+    const { data: mem } = await svc.from("challenge_members").select("id,goal_id").eq("challenge_id", challengeId).eq("user_id", user.id).maybeSingle();
+    if (!mem) return json({ error: "not_a_member" }, 404);
+    await svc.from("challenge_members").delete().eq("id", mem.id);
+    // archive the linked goal so the nightly sweep / reminders stop nagging
+    if (mem.goal_id) await svc.from("goals").update({ status: "completed", completed_at: new Date().toISOString() }).eq("id", mem.goal_id).eq("user_id", user.id).eq("status", "active");
+    // last member out → delete the challenge row entirely (cleanup)
+    const { data: rest } = await svc.from("challenge_members").select("id").eq("challenge_id", challengeId).limit(1);
+    if (!rest || rest.length === 0) await svc.from("challenges").delete().eq("id", challengeId);
+    return json({ ok: true });
   }
 
   // ---- BOARD ----
@@ -143,9 +172,10 @@ Deno.serve(async (req) => {
     const { data: ch } = await svc.from("challenges").select("*").eq("id", challengeId).maybeSingle();
     if (!ch) return json({ error: "not_found" }, 404);
 
-    const { data: members } = await svc.from("challenge_members").select("user_id,name,goal_id,joined_at").eq("challenge_id", challengeId).order("joined_at", { ascending: true });
+    const { data: members } = await svc.from("challenge_members").select("user_id,name,goal_id,joined_at,dare_text").eq("challenge_id", challengeId).order("joined_at", { ascending: true });
     const mine = (members || []).find((m: any) => m.user_id === user.id);
     if (!mine) return json({ error: "not_a_member" }, 403);
+    const darePool = buildDarePool((members || []).map((m: any) => m.dare_text));
 
     const goalIds = (members || []).map((m: any) => m.goal_id).filter(Boolean);
     const goalsById: Record<string, any> = {};
@@ -225,7 +255,7 @@ Deno.serve(async (req) => {
         }
       }
     }
-    return json({ challenge: ch, ended, members: rows, loser, dare: ch.dare || null, canSpin, myGoal, doneToday, awaitingVotes, rejectedToday, weekly, isHost: ch.host_user_id === user.id, judgeMode: ch.judge_mode, pendingForMe });
+    return json({ challenge: ch, ended, members: rows, loser, dare: ch.dare || null, dares: darePool, canSpin, myGoal, doneToday, awaitingVotes, rejectedToday, weekly, isHost: ch.host_user_id === user.id, judgeMode: ch.judge_mode, pendingForMe });
   }
 
   // ---- SPIN (last place only, no reroll) ----
@@ -240,7 +270,7 @@ Deno.serve(async (req) => {
     if (!ended) return json({ error: "not_ended" }, 409);
 
     // recompute the leaderboard to confirm the caller is genuinely last
-    const { data: members } = await svc.from("challenge_members").select("user_id,name,goal_id,joined_at").eq("challenge_id", challengeId).order("joined_at", { ascending: true });
+    const { data: members } = await svc.from("challenge_members").select("user_id,name,goal_id,joined_at,dare_text").eq("challenge_id", challengeId).order("joined_at", { ascending: true });
     if (!members || members.length < 2) return json({ error: "need_more_players" }, 409);
     const goalIds = members.map((m: any) => m.goal_id).filter(Boolean);
     const goalsById: Record<string, any> = {};
@@ -252,7 +282,9 @@ Deno.serve(async (req) => {
     const last = rows[rows.length - 1];
     if (last.userId !== user.id) return json({ error: "not_last_place" }, 403);
 
-    const dare = DARES[Math.floor(Math.random() * DARES.length)];
+    // spin from the same deterministic pool the board shows (friends' dares first)
+    const pool = buildDarePool(members.map((m: any) => m.dare_text));
+    const dare = pool[Math.floor(Math.random() * pool.length)];
     await svc.from("challenges").update({ dare, loser_user_id: user.id, status: "ended" }).eq("id", challengeId).is("dare", null);
     const { data: after } = await svc.from("challenges").select("dare").eq("id", challengeId).single();
     return json({ dare: after?.dare || dare });
