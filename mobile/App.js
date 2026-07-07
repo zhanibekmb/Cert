@@ -5,7 +5,7 @@
 //   - photo proof -> "judge" Edge Function (Gemini) -> verdict
 // Single-file app for v1; we'll split into screens as it grows.
 // =====================================================================
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator,
   StyleSheet, Alert, RefreshControl, StatusBar, Image, Switch, Share, Modal, Platform,
@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
-import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
+import { WebView } from "react-native-webview";
 import * as Location from "expo-location";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -1384,6 +1384,68 @@ function Reel({ goal, onBack }) {
 
 /* ---------- NEW GOAL ---------- */
 const WEEKDAYS = [["Mon", 0], ["Tue", 1], ["Wed", 2], ["Thu", 3], ["Fri", 4], ["Sat", 5], ["Sun", 6]];
+/* ---------- MAP PICKER (drop a point for a geo goal) ----------
+   A Leaflet map inside a WebView (OpenStreetMap tiles, no API key, identical on
+   iOS + Android). Tap the map or drag the pin; the chosen coordinate is posted
+   back to RN, then reverse-geocoded for a human place label. */
+function mapHtml(lat, lng) {
+  const la = Number.isFinite(lat) ? lat : 40;
+  const ln = Number.isFinite(lng) ? lng : 0;
+  const z = (Number.isFinite(lat) && Number.isFinite(lng)) ? 16 : 2;
+  return `<!DOCTYPE html><html><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>html,body,#map{height:100%;margin:0;padding:0;background:#0b0a0d;}</style>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head><body><div id="map"></div><script>
+  var map = L.map('map',{zoomControl:false}).setView([${la}, ${ln}], ${z});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(map);
+  var marker = L.marker([${la}, ${ln}],{draggable:true}).addTo(map);
+  function post(ll){ if(window.ReactNativeWebView){ window.ReactNativeWebView.postMessage(JSON.stringify({lat:ll.lat,lng:ll.lng})); } }
+  map.on('click', function(e){ marker.setLatLng(e.latlng); post(e.latlng); });
+  marker.on('dragend', function(){ post(marker.getLatLng()); });
+  post(marker.getLatLng());
+</script></body></html>`;
+}
+function MapPicker({ visible, initial, onPick, onClose }) {
+  const [pt, setPt] = useState(initial || null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { setPt(initial || null); }, [initial]);
+  // Memoize the HTML so posting a new point (setPt) never remounts the WebView
+  // and resets the map. Keyed on the opening coordinate only.
+  const html = useMemo(() => mapHtml(initial?.lat, initial?.lng), [initial?.lat, initial?.lng]);
+  async function confirm() {
+    if (!pt) return onClose();
+    setBusy(true);
+    let place = null;
+    try {
+      const g = await Location.reverseGeocodeAsync({ latitude: pt.lat, longitude: pt.lng });
+      const a = g && g[0];
+      if (a) place = [a.name, a.city || a.subregion, a.country].filter(Boolean).slice(0, 2).join(", ");
+    } catch (_) { /* label is optional */ }
+    setBusy(false);
+    onPick({ lat: pt.lat, lng: pt.lng, place });
+  }
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12 }}>
+          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="close" size={24} color={C.ink} /></TouchableOpacity>
+          <Text style={[s.h2, { fontSize: 18, marginTop: 0 }]}>{t("Pick the place")}</Text>
+          <View style={{ width: 24 }} />
+        </View>
+        <WebView originWhitelist={["*"]} source={{ html }} style={{ flex: 1, backgroundColor: C.bg }}
+          onMessage={(e) => { try { const c = JSON.parse(e.nativeEvent.data); if (typeof c.lat === "number") setPt({ lat: c.lat, lng: c.lng }); } catch (_) { /* */ } }} />
+        <View style={{ padding: 16 }}>
+          <Text style={[s.note, { textAlign: "center", marginTop: 0 }]}>{pt ? `📍 ${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}` : t("Tap the map or drag the pin to your spot.")}</Text>
+          <Btn label={busy ? "…" : t("Use this place")} onPress={confirm} disabled={busy || !pt} />
+        </View>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
 function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const [text, setText] = useState("");
   const [type, setType] = useState("recurring"); // recurring | one_time
@@ -1395,6 +1457,8 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const [proofType, setProofType] = useState("photo"); // 'photo' | 'timelapse' | 'geo'
   const [geoAnchor, setGeoAnchor] = useState(null); // {lat,lng,place} pinned at creation, or null → first check-in pins it
   const [geoPinning, setGeoPinning] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+  const [mapInitial, setMapInitial] = useState(null); // where the map opens centered
   const [windowStart, setWindowStart] = useState(null); // "HH:MM" — geo: be there FROM this time
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
@@ -1406,6 +1470,15 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     setGeoPinning(false);
     if (!g) return Alert.alert("Cert", t("Couldn't get your location. Enable location access and try again."));
     setGeoAnchor(g);
+  }
+  // Open the map centered on the current anchor, or the user's live location, or a world view.
+  async function openMap() {
+    setGeoPinning(true);
+    let c = geoAnchor;
+    if (!c) { const g = await getGeoTimed(); if (g) c = g; }
+    setGeoPinning(false);
+    setMapInitial(c ? { lat: c.lat, lng: c.lng } : null);
+    setMapOpen(true);
   }
 
   async function create() {
@@ -1512,7 +1585,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
           <>
             <Text style={[s.label, { marginTop: 18 }]}>{t("How do you prove it?")}</Text>
             <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Snap one photo. Fast, good for things a single shot can prove.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-            <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Record a short video — the AI watches the whole clip, not a single frame. Much harder to fake.")} active={proofType === "timelapse"}
+            <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Upload a short video — the AI watches the whole clip, not a single frame. Much harder to fake.")} active={proofType === "timelapse"}
               onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
             <OptionCard icon="location-outline" title={t("📍 Geo check-in")} desc={t("Pin a place — the proof is being there. Great for gym, pool, library.")} active={isGeo} onPress={() => setProofType("geo")} />
             {isGeo ? (
@@ -1521,11 +1594,15 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
                 {geoAnchor ? (
                   <>
                     <Text style={s.goalText}>📍 {geoAnchor.place || `${geoAnchor.lat.toFixed(4)}, ${geoAnchor.lng.toFixed(4)}`}</Text>
-                    <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left" }]}>{t("Unpin")}</Text></TouchableOpacity>
+                    <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
+                      <TouchableOpacity onPress={openMap} disabled={geoPinning}><Text style={[s.note, { textAlign: "left", color: C.bronze, marginTop: 0 }]}>{t("Change on map")}</Text></TouchableOpacity>
+                      <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Unpin")}</Text></TouchableOpacity>
+                    </View>
                   </>
                 ) : (
                   <>
-                    <BtnGhost label={geoPinning ? "…" : t("📍 Pin my current location")} onPress={pinHere} disabled={geoPinning} />
+                    <BtnGhost label={geoPinning ? "…" : t("🗺 Choose on map")} onPress={openMap} disabled={geoPinning} />
+                    <BtnGhost label={geoPinning ? "…" : t("📍 Use my current location")} onPress={pinHere} disabled={geoPinning} />
                     <Text style={[s.note, { textAlign: "left" }]}>{t("Not there right now? Skip this — your FIRST check-in will pin the place.")}</Text>
                   </>
                 )}
@@ -1610,125 +1687,40 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       {step < STEPS - 1
         ? <Btn label={t("Next") + " →"} onPress={next} />
         : <Btn label={busy ? t("Creating…") : t("Start the streak")} onPress={create} disabled={busy} />}
+
+      <MapPicker visible={mapOpen} initial={mapInitial} onClose={() => setMapOpen(false)}
+        onPick={(p) => { setGeoAnchor(p); setMapOpen(false); }} />
     </ScrollView>
   );
 }
 
-/* ---------- TIMELAPSE CAPTURE (records a short, time-limited video for the AI) ----------
-   The AI judge watches the actual clip (real motion), not stitched stills — so a
-   single propped photo can't pass. Hard-capped in length to bound payload + AI cost. */
-const TL_MAX_SECONDS = 15;  // hard cap — recording auto-stops here
-const TL_MIN_SECONDS = 3;   // enough to show a real attempt
-function TimelapseCapture({ onCancel, onDone }) {
-  const [perm, requestPerm] = useCameraPermissions();
-  const [micPerm, requestMic] = useMicrophonePermissions();
-  const camRef = useRef(null);
-  const [recording, setRecording] = useState(false);
-  const [preparing, setPreparing] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const timer = useRef(null);
-  const startedAt = useRef(0);
+/* ---------- TIMELAPSE (user uploads a short video; the AI judge watches it) ----------
+   The proof is a real clip the user picks from their library — the AI watches the
+   whole video (real motion), so a single propped photo can't pass. Bounded in
+   length + size so the base64 payload stays under Gemini's ~20MB inline limit. */
+const TL_MAX_SECONDS = 60;             // uploads longer than this are rejected
+const TL_MAX_BYTES = 18 * 1024 * 1024; // ~18MB — safely under Gemini's inline cap
 
-  useEffect(() => { if (perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [perm]);
-  useEffect(() => { if (micPerm && !micPerm.granted && micPerm.canAskAgain) requestMic(); }, [micPerm]);
-  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
-
-  // Read the recorded clip into a data URI (no extra native dep). The blob's
-  // mime can be empty on a file:// fetch, so we set it from the file extension.
-  async function fileToDataUri(uri) {
-    const res = await fetch(uri);
-    const blob = await res.blob();
-    const raw = await new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      fr.onerror = () => reject(new Error("read failed"));
-      fr.onload = () => resolve(String(fr.result));
-      fr.readAsDataURL(blob);
-    });
-    const b64 = raw.slice(raw.indexOf("base64,") + 7);
-    const mime = /\.mov(\?|$)/i.test(uri) ? "video/quicktime" : "video/mp4";
-    return `data:${mime};base64,${b64}`;
-  }
-
-  async function start() {
-    if (recording || !camRef.current) return;
-    setRecording(true); setElapsed(0); startedAt.current = Date.now();
-    timer.current = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)), 250);
-    try {
-      // resolves when recording stops — manually, at maxDuration, or at maxFileSize.
-      // The 8MB cap keeps the base64 payload well under Gemini's ~20MB inline limit.
-      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS, maxFileSize: 8 * 1024 * 1024 });
-      if (timer.current) { clearInterval(timer.current); timer.current = null; }
-      setRecording(false);
-      const secs = Math.round((Date.now() - startedAt.current) / 1000);
-      if (!clip?.uri) { onCancel(); return; }
-      if (secs < TL_MIN_SECONDS) { Alert.alert("Cert", t("Record at least {n} seconds.", { n: TL_MIN_SECONDS })); return; }
-      setPreparing(true);
-      const dataUri = await fileToDataUri(clip.uri);
-      setPreparing(false);
-      onDone({ video: dataUri });
-    } catch (e) {
-      if (timer.current) { clearInterval(timer.current); timer.current = null; }
-      setRecording(false); setPreparing(false);
-      Alert.alert("Cert", (e && e.message) || t("Couldn't record. Try again."));
-    }
-  }
-  function stop() { try { camRef.current?.stopRecording(); } catch (_) { /* */ } }
-
-  if (!perm || !micPerm) return <Center><ActivityIndicator color={C.bronze} /></Center>;
-  if (!perm.granted) {
-    return (
-      <View style={[s.wrap, { flex: 1, justifyContent: "center" }]}>
-        <Text style={s.h2}>{t("Camera needed")}</Text>
-        <Text style={s.lede}>{t("Cert needs the camera to record your timelapse proof.")}</Text>
-        <Btn label={t("Grant camera access")} onPress={requestPerm} />
-        <BtnGhost label={t("Back")} onPress={onCancel} />
-      </View>
-    );
-  }
-  const remain = Math.max(0, TL_MAX_SECONDS - elapsed);
-  return (
-    <View style={{ flex: 1, backgroundColor: "#000" }}>
-      {/* 4:3 (640×480 where supported) keeps clips small — plenty for the AI to watch. */}
-      <CameraView ref={camRef} style={{ flex: 1 }} facing="back" mode="video" videoQuality="4:3" />
-      {/* overlay */}
-      <View style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 18, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-        <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} disabled={preparing}>
-          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>✕</Text>
-        </TouchableOpacity>
-        {recording ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(0,0,0,.5)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.red }} />
-            <Text style={{ color: "#fff", fontFamily: "System", fontSize: 13, fontWeight: "700" }}>REC · 0:{String(elapsed).padStart(2, "0")} / 0:{String(TL_MAX_SECONDS).padStart(2, "0")}</Text>
-          </View>
-        ) : null}
-      </View>
-      <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 38, backgroundColor: "rgba(0,0,0,.45)" }}>
-        {preparing ? (
-          <View style={{ alignItems: "center" }}>
-            <ActivityIndicator color={C.bronze} />
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginTop: 10, fontSize: 13 }}>{t("Preparing your clip…")}</Text>
-          </View>
-        ) : recording ? (
-          <>
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("{n}s left — stops automatically.", { n: remain })}</Text>
-            <Btn label={t("Stop & send")} onPress={stop} />
-          </>
-        ) : (
-          <>
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("Record up to {n}s of yourself actually doing it. The AI watches the whole clip — a propped photo won't pass.", { n: TL_MAX_SECONDS })}</Text>
-            <Btn label={t("Start recording")} onPress={start} />
-          </>
-        )}
-      </View>
-    </View>
-  );
+// Read a local video file into a data URI (no extra native dep). A file:// blob's
+// mime can be empty, so we set it from the picked asset's mime / file extension.
+async function videoToDataUri(uri, mimeHint) {
+  const res = await fetch(uri);
+  const blob = await res.blob();
+  const raw = await new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onerror = () => reject(new Error("read failed"));
+    fr.onload = () => resolve(String(fr.result));
+    fr.readAsDataURL(blob);
+  });
+  const b64 = raw.slice(raw.indexOf("base64,") + 7);
+  const mime = (mimeHint && mimeHint.startsWith("video/")) ? mimeHint : (/\.mov(\?|$)/i.test(uri) ? "video/quicktime" : "video/mp4");
+  return `data:${mime};base64,${b64}`;
 }
 
 /* ---------- SUBMIT (camera -> judge) ---------- */
 function Submit({ goal, onDone, onBack, onViewBadge }) {
   const isTimelapse = goal.proof_type === "timelapse";
   const isGeo = goal.proof_type === "geo";
-  const [capturing, setCapturing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState("idle"); // idle | judging
   const [todaysCheck, setTodaysCheck] = useState(null); // server is source of truth
@@ -1788,9 +1780,38 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     await runJudge({ photo });
   }
 
-  function onTimelapseDone(result) {
-    setCapturing(false);
-    if (result && result.video) runJudge({ video: result.video });
+  // Pick a timelapse video from the library and send it to the judge. Guarded
+  // by duration + size so the base64 payload stays within Gemini's inline limit.
+  async function uploadVideo() {
+    try {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) return Alert.alert("Cert", t("Allow photo library access to upload your video."));
+      const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["videos"], videoMaxDuration: TL_MAX_SECONDS });
+      if (res.canceled || !res.assets?.[0]?.uri) return;
+      const a = res.assets[0];
+      if (a.duration && a.duration > (TL_MAX_SECONDS + 1) * 1000) {
+        return Alert.alert("Cert", t("That clip is too long — pick a timelapse up to {n}s.", { n: TL_MAX_SECONDS }));
+      }
+      if (a.fileSize && a.fileSize > TL_MAX_BYTES) {
+        return Alert.alert("Cert", t("That video is too large — use a shorter or more compressed timelapse."));
+      }
+      setBusy(true); setStage("judging"); setReject(null);
+      let dataUri;
+      try {
+        dataUri = await videoToDataUri(a.uri, a.mimeType);
+      } catch (_) {
+        setBusy(false); setStage("idle");
+        return Alert.alert("Cert", t("Couldn't read that video. Try another clip."));
+      }
+      if (dataUri.length * 0.75 > TL_MAX_BYTES) {
+        setBusy(false); setStage("idle");
+        return Alert.alert("Cert", t("That video is too large — use a shorter or more compressed timelapse."));
+      }
+      await runJudge({ video: dataUri });
+    } catch (e) {
+      setBusy(false); setStage("idle");
+      Alert.alert("Cert", (e && e.message) || t("Couldn't upload the video. Try again."));
+    }
   }
 
   async function runJudge(payload) {
@@ -1862,14 +1883,12 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     } finally { setAppealBusy(false); }
   }
 
-  if (capturing) return <TimelapseCapture onCancel={() => setCapturing(false)} onDone={onTimelapseDone} />;
-
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive">
       <BackBar onBack={onBack} />
       <Text style={s.h2}>{isGeo ? t("Check in") : t("Submit proof")}</Text>
       <View style={s.card}>
-        <Text style={[s.kicker, { color: C.bronze }]}>{isGeo ? t("Be at the place") : isTimelapse ? t("Record a timelapse of this") : t("Send a photo like this")}</Text>
+        <Text style={[s.kicker, { color: C.bronze }]}>{isGeo ? t("Be at the place") : isTimelapse ? t("Upload a timelapse of this") : t("Send a photo like this")}</Text>
         <Text style={s.goalText}>{isGeo ? goal.text : (proofSpec(goal) || goal.text)}</Text>
         {isGeo ? (
           <Text style={[s.spec, { color: C.mute }]}>
@@ -1887,7 +1906,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       ) : isTimelapse ? (
         <View style={[s.card, { borderColor: C.red }]}>
           <Text style={[s.kicker, { color: C.red }]}>{t("Why a timelapse")}</Text>
-          <Text style={s.note}>{t("The app captures frames over your session, so the AI sees the activity actually happen. A single propped photo won't pass.")}</Text>
+          <Text style={s.note}>{t("Upload a short clip of your session — the AI watches the whole video, so it sees the activity actually happen. A single propped photo won't pass.")}</Text>
         </View>
       ) : (
         <View style={[s.card, { borderColor: C.red }]}>
@@ -1967,7 +1986,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           {isGeo ? (
             <Btn label={reject ? t("Check in again") : t("📍 Check in now")} onPress={() => runJudge({ checkin: true })} disabled={busy || checkState !== "ok"} />
           ) : isTimelapse ? (
-            <Btn label={reject ? t("Record again") : t("Record timelapse")} onPress={() => setCapturing(true)} disabled={busy || checkState !== "ok"} />
+            <Btn label={reject ? t("Upload another video") : t("Upload timelapse video")} onPress={uploadVideo} disabled={busy || checkState !== "ok"} />
           ) : (
             <>
               <Btn label={reject ? t("Retake photo") : t("Take a photo")} onPress={() => takeAndJudge(false)} disabled={busy || checkState !== "ok"} />
@@ -2561,7 +2580,7 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
               <>
                 <Text style={[s.label, { marginTop: 14 }]}>{t("How do you prove it?")}</Text>
                 <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Everyone sends one photo per check.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
-                <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Everyone in the challenge records a timelapse. Much harder to fake.")} active={proofType === "timelapse"}
+                <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Everyone uploads a short timelapse video. Much harder to fake.")} active={proofType === "timelapse"}
                   onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
               </>
             ) : null}
