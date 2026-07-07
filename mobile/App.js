@@ -570,7 +570,7 @@ function ProIntro({ onDone }) {
       <View style={s.pwHero}>
         <View style={s.pwMark}><Ionicons name="shield-checkmark" size={34} color={C.bronze} /></View>
         <Text style={s.pwTitle}>{t("Go further with Pro")}</Text>
-        <Text style={s.pwSub}>{t("Everything you need for a streak nobody can fake.")}</Text>
+        <Text style={s.pwSub}>{t("Stronger proof methods, more goals, and deeper stats.")}</Text>
       </View>
       <View style={[s.card, { gap: 12, marginTop: 16 }]}>
         {PRO_FEATURES.map(([icon, f]) => (
@@ -712,13 +712,21 @@ function Main({ session }) {
     ]);
   }
 
+  // Free tier = 1 active personal goal; a 2nd goal is a Pro upsell moment.
+  function startNewGoal() {
+    setCreateChooser(false);
+    const activePersonal = (goals || []).filter((g) => !g.challenge_id && g.status !== "completed");
+    if (!isPro && activePersonal.length >= 1) { openPaywall(); return; }
+    setTab("home"); setScreen("new");
+  }
+
   // Center "+" chooser: personal goal or friend challenge.
   const createChooserModal = (
     <Modal visible={createChooser} transparent animationType="fade" onRequestClose={() => setCreateChooser(false)}>
       <TouchableOpacity activeOpacity={1} onPress={() => setCreateChooser(false)} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
         <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ backgroundColor: C.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34, borderTopWidth: 1, borderColor: C.line }}>
           <Text style={[s.h2, { marginBottom: 2 }]}>{t("Create")}</Text>
-          <OptionCard icon="flag-outline" title={t("New goal")} desc={t("A personal streak only you do.")} onPress={() => { setCreateChooser(false); setTab("home"); setScreen("new"); }} />
+          <OptionCard icon="flag-outline" title={t("New goal")} desc={t("A personal streak only you do.")} onPress={startNewGoal} />
           <OptionCard icon="flame-outline" title={t("New challenge")} desc={t("Compete with friends on a shared goal.")} onPress={() => { setCreateChooser(false); setTab("challenges"); setScreen("challengeNew"); }} />
         </TouchableOpacity>
       </TouchableOpacity>
@@ -741,7 +749,7 @@ function Main({ session }) {
         {tab === "home" && (
           <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
             freezes={freezes} onBuyFreezes={openPaywall}
-            onNew={() => setScreen("new")} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} onDelete={deleteGoal} />
+            onNew={startNewGoal} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} onDelete={deleteGoal} />
         )}
         {tab === "challenges" && (
           <ChallengesScreen onOpen={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }}
@@ -890,8 +898,9 @@ function buyFreezeFlow(onReload) {
 }
 
 const PRO_FEATURES = [
-  ["infinite", "Multiple goals at once"],
-  ["videocam", "Timelapse proof — much harder to fake"],
+  ["videocam", "Timelapse video proof — the AI watches the whole clip"],
+  ["location", "Geo check-in — prove you were actually there"],
+  ["infinite", "Unlimited goals at once"],
   ["stats-chart", "Analytics: consistency heatmap & trophies"],
   ["snow", "Monthly streak freezes included"],
 ];
@@ -943,7 +952,7 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
       <View style={s.pwHero}>
         <View style={s.pwMark}><Ionicons name="shield-checkmark" size={34} color={C.bronze} /></View>
         <Text style={s.pwTitle}>{t("Cert Pro")}</Text>
-        <Text style={s.pwSub}>{t("Everything you need for a streak nobody can fake.")}</Text>
+        <Text style={s.pwSub}>{t("Stronger proof methods, more goals, and deeper stats.")}</Text>
       </View>
 
       {/* Current freeze balance */}
@@ -1108,7 +1117,7 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
             <Ionicons name="flash" size={16} color={C.bronze} />
             <Text style={[s.kicker, { color: C.bronze }]}>{t("Upgrade to Pro")}</Text>
           </View>
-          <Text style={[s.note, { textAlign: "center" }]}>{t("Multiple goals, timelapse proof, analytics, and monthly freezes.")}</Text>
+          <Text style={[s.note, { textAlign: "center" }]}>{t("Video & location proof, unlimited goals, analytics, and monthly freezes.")}</Text>
         </TouchableOpacity>
       ) : null}
 
@@ -1516,7 +1525,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     } finally { setBusy(false); }
   }
 
-  // 4-step wizard: goal → proof → schedule → review. All answers live at this
+  // 2-step wizard: (1) goal + proof, (2) schedule. All answers live at this
   // parent level, so moving between steps never loses what's already filled in.
   const [step, setStep] = useState(0);
   const stepAnim = useRef(new Animated.Value(1)).current;
@@ -1524,33 +1533,11 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     stepAnim.setValue(0);
     Animated.timing(stepAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [step]);
-  const STEPS = 4;
+  const STEPS = 2;
   function next() {
     if (step === 0 && text.trim().length < 3) return Alert.alert("Cert", t("Describe your goal first."));
-    if (step === 2) {
-      if (type === "recurring" && format === "custom" && customDays.length === 0) return Alert.alert("Cert", t("Pick at least one day."));
-      if (type === "one_time" && !oneTimeDeadline) return Alert.alert("Cert", t("Pick a deadline date & time."));
-    }
     setStep((v) => Math.min(v + 1, STEPS - 1));
   }
-
-  const proofLabel = isGeo ? t("📍 Geo check-in") : proofType === "timelapse" ? t("🎥 Timelapse") : t("📷 Quick photo");
-  const cadence = type === "one_time"
-    ? t("One-time")
-    : format === "custom" ? (customDays.map((d) => t(WEEKDAYS[d]?.[0] || "")).join(", ") || t("Custom days"))
-      : format === "3x" ? t("3× / week") : format === "5x" ? t("5× / week") : (t("Daily") + (duration ? " · " + t("{n}d goal", { n: duration }) : ""));
-  const timing = type === "one_time"
-    ? (oneTimeDeadline ? oneTimeDeadline.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—")
-    : [windowStart && isGeo ? t("from") + " " + windowStart : null, deadline ? t("by") + " " + deadline : null].filter(Boolean).join(" · ") || t("Any time");
-  const SummaryRow = ({ label, value, goStep }) => (
-    <TouchableOpacity style={s.rowBetween} onPress={() => setStep(goStep)} activeOpacity={0.7}>
-      <View style={{ flex: 1, marginRight: 10 }}>
-        <Text style={s.kicker}>{label}</Text>
-        <Text style={[s.goalText, { marginTop: 3 }]} numberOfLines={2}>{value}</Text>
-      </View>
-      <Text style={[s.kicker, { color: C.bronze }]}>{t("Edit")}</Text>
-    </TouchableOpacity>
-  );
 
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
@@ -1574,14 +1561,13 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
               placeholder={t("e.g. Wake up and send a photo, or gym 45 min")} placeholderTextColor={C.faint}
               value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
             <Text style={[s.note, { textAlign: "left" }]}>{t("Tip: write it in your own words — the AI judge reads exactly this. You can anchor it to a time: \"be at the gym at 19:00, photo from reception\".")}</Text>
-          </>
-        ) : step === 1 ? (
-          <>
+
             <Text style={[s.label, { marginTop: 18 }]}>{t("How do you prove it?")}</Text>
             <OptionCard icon="camera-outline" title={t("📷 Quick photo")} desc={t("Snap one photo. Fast, good for things a single shot can prove.")} active={proofType === "photo"} onPress={() => setProofType("photo")} />
             <OptionCard icon="videocam-outline" title={t("🎥 Timelapse")} locked={!isPro} desc={t("Upload a short video — the AI watches the whole clip, not a single frame. Much harder to fake.")} active={proofType === "timelapse"}
               onPress={() => { if (isPro) setProofType("timelapse"); else onUpgrade && onUpgrade(); }} />
-            <OptionCard icon="location-outline" title={t("📍 Geo check-in")} desc={t("Pin a place — the proof is being there. Great for gym, pool, library.")} active={isGeo} onPress={() => setProofType("geo")} />
+            <OptionCard icon="location-outline" title={t("📍 Geo check-in")} locked={!isPro} desc={t("Pin a place — the proof is being there. Great for gym, pool, library.")} active={isGeo}
+              onPress={() => { if (isPro) setProofType("geo"); else onUpgrade && onUpgrade(); }} />
             {isGeo ? (
               <View style={[s.card, { marginTop: 12 }]}>
                 <Text style={s.label}>{t("The place")}</Text>
@@ -1603,7 +1589,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
               </View>
             ) : null}
           </>
-        ) : step === 2 ? (
+        ) : (
           <>
             <Text style={[s.label, { marginTop: 18 }]}>{t("Type")}</Text>
             <OptionCard icon="repeat-outline" title={t("Repeating")} desc={t("Daily or weekly cadence — the streak machine.")} active={type === "recurring"} onPress={() => setType("recurring")} />
@@ -1664,16 +1650,6 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
                 <Text style={s.note}>{t("Submit your proof before this. One proof, judged once.")}</Text>
               </>
             )}
-          </>
-        ) : (
-          <>
-            <Text style={[s.h2, { marginTop: 18 }]}>{t("Review & create")}</Text>
-            <View style={[s.card, { gap: 14 }]}>
-              <SummaryRow label={t("Goal")} value={text.trim() || "—"} goStep={0} />
-              <SummaryRow label={t("Proof")} value={isGeo && geoAnchor ? `${proofLabel} · ${geoAnchor.place || t("pinned")}` : proofLabel} goStep={1} />
-              <SummaryRow label={t("Schedule")} value={cadence} goStep={2} />
-              <SummaryRow label={t("Timing")} value={timing} goStep={2} />
-            </View>
           </>
         )}
       </Animated.View>
@@ -2464,9 +2440,9 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
 }
 
 function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
-  // 4-step wizard: goal → schedule → judging → confirm. Every answer lives
-  // here at the parent level, so moving between steps (or opening the paywall
-  // modal on top) never loses what's already filled in.
+  // 3-step wizard: goal → schedule → judging (+ inline confirm). Every answer
+  // lives here at the parent level, so moving between steps (or opening the
+  // paywall modal on top) never loses what's already filled in.
   const [step, setStep] = useState(0);
   const [goalText, setGoalText] = useState("");
   const [name, setName] = useState("");
@@ -2486,7 +2462,7 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
     Animated.timing(stepAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [step]);
 
-  const STEPS = 4;
+  const STEPS = 3;
   function next() {
     if (step === 0) {
       if (goalText.trim().length < 3) return Alert.alert("Cert", t("Describe the shared goal."));
@@ -2579,7 +2555,7 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
               </>
             )}
           </>
-        ) : step === 2 ? (
+        ) : (
           <>
             <Text style={[s.label, { marginTop: 18 }]}>{t("Who judges proofs?")}</Text>
             <OptionCard icon="shield-checkmark-outline" title={t("AI judge")} desc={t("The AI judge checks each photo automatically.")} active={judgeMode === "ai"} onPress={() => setJudgeMode("ai")} />
@@ -2595,16 +2571,10 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
             <Text style={[s.label, { marginTop: 16 }]}>{t("Your dare for the loser (optional)")}</Text>
             <TextInput style={s.input} placeholder={t("e.g. Sing a song chorus in a voice message 🎤")} placeholderTextColor={C.faint} value={dare} onChangeText={(val) => setDare(val.replace(/\n/g, " "))} maxLength={120} />
             <Text style={[s.note, { textAlign: "left" }]}>{t("Everyone writes one. Last place spins the wheel over the dares your group wrote.")}</Text>
-          </>
-        ) : (
-          <>
-            <Text style={[s.h2, { marginTop: 18 }]}>{t("Review & create")}</Text>
-            <View style={[s.card, { gap: 14 }]}>
+            {/* inline confirm — the goal + schedule from the earlier steps */}
+            <View style={[s.card, { gap: 12, marginTop: 16 }]}>
               <SummaryRow label={t("Goal")} value={goalText.trim() || "—"} goStep={0} />
               <SummaryRow label={t("Schedule")} value={scheduleSummary} goStep={1} />
-              <SummaryRow label={t("Judge")} value={judgeMode === "ai" ? t("AI judge") : t("Friends vote")} goStep={2} />
-              {judgeMode === "ai" ? <SummaryRow label={t("Proof")} value={proofType === "timelapse" ? t("🎥 Timelapse") : t("📷 Quick photo")} goStep={2} /> : null}
-              {dare.trim() ? <SummaryRow label={t("Your dare")} value={dare.trim()} goStep={2} /> : null}
             </View>
           </>
         )}
