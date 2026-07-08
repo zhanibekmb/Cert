@@ -54,13 +54,13 @@ const DARK = {
   inputBg: "#0d0c11", inputLine: "#2a2731", isDark: true,
 };
 const LIGHT = {
-  // White background, soft rose primary (no harsh red), warm gold accent —
-  // light, airy and friendly rather than "dark theme with white swapped in".
-  // NOTE: `red` is the primary-accent slot; in light mode it's a rose, not red.
-  bg: "#ffffff", card: "#fdf8fa", line: "#f0e5ea",
-  ink: "#2b222a", mute: "#8b7e86", faint: "#bcaeb6",
-  red: "#e06485", bronze: "#b0812a", green: "#3a9d68",
-  inputBg: "#fbf5f8", inputLine: "#eee1e8", isDark: false,
+  // White background + warm gold accent + neutral warm grays — universal and
+  // premium, not gendered. NOTE: `red` is the primary-accent slot; in light
+  // mode it is the same gold as `bronze` (no red, no pink).
+  bg: "#ffffff", card: "#f7f4ef", line: "#e9e3d8",
+  ink: "#211f1a", mute: "#7b7568", faint: "#aaa494",
+  red: "#a6812b", bronze: "#a6812b", green: "#3a9d68",
+  inputBg: "#f5f1ea", inputLine: "#e7e1d5", isDark: false,
 };
 let C = DARK;
 const F = { display: "System", mono: "System" };
@@ -1312,7 +1312,7 @@ function StreakCalendar({ subs }) {
   for (let i = 34; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); cells.push({ key: isoDateParts(d).date, on: done.has(isoDateParts(d).date), isToday: i === 0 }); }
   const rows = [];
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-  const off = C.isDark ? "#1c1822" : "#f0e6ec";
+  const off = C.isDark ? "#1c1822" : "#ece6d9";
   return (
     <View style={{ gap: 4, marginTop: 14 }}>
       {rows.map((row, ri) => (
@@ -1332,7 +1332,7 @@ function MilestoneBar({ streak }) {
   if (!next) return <Text style={[s.note, { marginTop: 12 }]}>{t("Legend — past {n} days", { n: MILESTONES[MILESTONES.length - 1] })}</Text>;
   const left = next - streak;
   const pct = Math.max(0.02, Math.min(1, streak / next));
-  const track = C.isDark ? "#1c1822" : "#f0e6ec";
+  const track = C.isDark ? "#1c1822" : "#ece6d9";
   return (
     <View style={{ marginTop: 14 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
@@ -1392,7 +1392,7 @@ function Reel({ goal, onBack }) {
           <TouchableOpacity activeOpacity={0.95} onPress={() => setPlaying((p) => !p)}>
             <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} resizeMode="cover" />
           </TouchableOpacity>
-          <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1c1822" : "#f0e6ec", overflow: "hidden", marginTop: 12 }}>
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1c1822" : "#ece6d9", overflow: "hidden", marginTop: 12 }}>
             <View style={{ height: 4, width: ((idx + 1) / photos.length * 100) + "%", backgroundColor: C.red }} />
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
@@ -2233,9 +2233,9 @@ function Heatmap({ byDay }) {
   const weeks = [];
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
   const cellColor = (st) => (st === "approved" ? C.bronze
-    : st === "rejected" ? (C.isDark ? "rgba(226,59,46,0.5)" : "rgba(224,100,133,0.55)")
-    : st === "missed" ? (C.isDark ? "#3a2326" : "#f3dde5")
-    : (C.isDark ? "#1c1922" : "#f3edf1"));
+    : st === "rejected" ? (C.isDark ? "rgba(226,59,46,0.5)" : "rgba(180,120,70,0.5)")
+    : st === "missed" ? (C.isDark ? "#3a2326" : "#e6ddc9")
+    : (C.isDark ? "#1c1922" : "#f1ece0"));
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
       {weeks.map((wk, wi) => (
@@ -2274,7 +2274,7 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
             <Heatmap byDay={st.byDay} />
             <View style={{ flexDirection: "row", gap: 14, marginTop: 14, flexWrap: "wrap" }}>
               <Legend color={C.bronze} label={t("verified")} />
-              <Legend color={C.isDark ? "rgba(226,59,46,0.5)" : "rgba(224,100,133,0.55)"} label={t("rejected")} />
+              <Legend color={C.isDark ? "rgba(226,59,46,0.5)" : "rgba(180,120,70,0.5)"} label={t("rejected")} />
               <Legend color="#3a2326" label={t("missed")} />
               <Legend color="#1c1922" label={t("none")} />
             </View>
@@ -3190,8 +3190,10 @@ function makeStyles() { return StyleSheet.create({
   label: { color: C.mute, fontSize: 11, letterSpacing: 1, textTransform: "uppercase", marginBottom: 8 },
   input: { backgroundColor: C.inputBg, borderWidth: 1, borderColor: C.inputLine, borderRadius: 10, color: C.ink, fontSize: 16, padding: 14 },
   note: { color: C.faint, fontSize: 12, marginTop: 12, textAlign: "center" },
-  btn: { backgroundColor: C.red, borderRadius: 10, padding: 16, marginTop: 16, alignItems: "center" },
-  btnText: { color: C.isDark ? "#120606" : "#ffffff", fontWeight: "800", fontSize: 15, letterSpacing: 1 },
+  // Dark theme: solid red button. Light theme: a light cream button with a gold
+  // border + dark-gold text (per request — a light button, not a filled block).
+  btn: { backgroundColor: C.isDark ? C.red : "#f3ecda", borderWidth: C.isDark ? 0 : 1, borderColor: C.isDark ? "transparent" : "#e4d8b8", borderRadius: 10, padding: 16, marginTop: 16, alignItems: "center" },
+  btnText: { color: C.isDark ? "#120606" : "#5c4a1c", fontWeight: "800", fontSize: 15, letterSpacing: 1 },
   btnGhost: { borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 16, marginTop: 10, alignItems: "center" },
   btnGhostText: { color: C.ink, fontWeight: "700", fontSize: 14 },
   googleBtn: { backgroundColor: "#fff", borderRadius: 10, padding: 15, marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" },
@@ -3202,7 +3204,7 @@ function makeStyles() { return StyleSheet.create({
   skipBtn: { borderWidth: 1, borderColor: C.bronze, borderRadius: 10, padding: 13, marginTop: 22, alignItems: "center" },
   skipText: { color: C.bronze, fontWeight: "700", fontSize: 14 },
   pill: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 12, alignItems: "center" },
-  pillOn: { borderColor: C.red, backgroundColor: C.isDark ? "rgba(226,59,46,0.1)" : "rgba(224,100,133,0.14)" },
+  pillOn: { borderColor: C.red, backgroundColor: C.isDark ? "rgba(226,59,46,0.1)" : "rgba(166,129,43,0.14)" },
   pillText: { color: C.mute, fontSize: 13 },
   streakNum: { color: C.bronze, fontSize: 56, fontWeight: "800", textAlign: "center" },
   goalText: { color: C.ink, fontSize: 15, lineHeight: 22, marginTop: 8 },
@@ -3256,7 +3258,7 @@ function makeStyles() { return StyleSheet.create({
   tabLabel: { fontSize: 10.5, color: C.faint, fontWeight: "700", letterSpacing: 0.3 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  chipOn: { borderColor: C.red, backgroundColor: C.isDark ? "rgba(226,59,46,0.12)" : "rgba(224,100,133,0.16)" },
+  chipOn: { borderColor: C.red, backgroundColor: C.isDark ? "rgba(226,59,46,0.12)" : "rgba(166,129,43,0.16)" },
   chipText: { color: C.mute, fontSize: 13 },
   freezePill: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: C.card },
   freezePillNum: { color: C.ink, fontWeight: "800", fontSize: 14 },
