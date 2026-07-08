@@ -261,6 +261,8 @@ const RU = {
   "Record a short clip of your session — the AI watches the whole video, so it sees the activity actually happen. A propped photo or a pre-made clip won't pass.": "Сними короткий ролик своей сессии — ИИ смотрит всё видео и видит, что действие реально происходит. Подставленное фото или готовый клип не пройдут.",
   // --- personal goal wizard ---
   "Timing": "Время",
+  "More options": "Больше настроек",
+  "Defaults: repeats daily, ongoing, no deadline.": "По умолчанию: каждый день, бессрочно, без дедлайна.",
   "pinned": "закреплено",
   "Submit your proof before this. One proof, judged once.": "Отправь пруф до этого момента. Один пруф, одна проверка.",
   // --- delete personal goal ---
