@@ -1768,7 +1768,13 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       if (error) throw error;
       onDone();
     } catch (e) {
-      Alert.alert("Cert", e.message || t("Could not create goal."));
+      // server-side free-tier limit (DB trigger) — route to the paywall
+      if (String(e?.message || "").includes("free_goal_limit")) {
+        Alert.alert("Cert", t("Free includes 1 active goal. Go Pro for unlimited."));
+        onUpgrade && onUpgrade();
+      } else {
+        Alert.alert("Cert", e.message || t("Could not create goal."));
+      }
     } finally { setBusy(false); }
   }
 
@@ -1898,22 +1904,6 @@ const TL_MAX_SECONDS = 15;             // recording auto-stops here
 const TL_MIN_SECONDS = 3;              // enough to show a real attempt
 const TL_MAX_BYTES = 18 * 1024 * 1024; // ~18MB — safely under Gemini's inline cap
 
-// Read a recorded clip into a data URI (no extra native dep). A file:// blob's
-// mime can be empty, so derive it from the extension. iOS records .mov
-// (video/quicktime) which isn't on Gemini's list — relabel to video/mp4
-// (QuickTime container is MP4-compatible).
-async function videoToDataUri(uri) {
-  const res = await fetch(uri);
-  const blob = await res.blob();
-  const raw = await new Promise((resolve, reject) => {
-    const fr = new FileReader();
-    fr.onerror = () => reject(new Error("read failed"));
-    fr.onload = () => resolve(String(fr.result));
-    fr.readAsDataURL(blob);
-  });
-  const b64 = raw.slice(raw.indexOf("base64,") + 7);
-  return `data:video/mp4;base64,${b64}`;
-}
 
 function TimelapseCapture({ onCancel, onDone }) {
   const [perm, requestPerm] = useCameraPermissions();
@@ -1941,13 +1931,7 @@ function TimelapseCapture({ onCancel, onDone }) {
       const secs = Math.round((Date.now() - startedAt.current) / 1000);
       if (!clip?.uri) { onCancel(); return; }
       if (secs < TL_MIN_SECONDS) { Alert.alert("Cert", t("Record at least {n} seconds.", { n: TL_MIN_SECONDS })); return; }
-      setPreparing(true);
-      const dataUri = await videoToDataUri(clip.uri);
-      setPreparing(false);
-      if (dataUri.length * 0.75 > TL_MAX_BYTES) {
-        return Alert.alert("Cert", t("That clip is too heavy. Record a shorter one."));
-      }
-      onDone({ video: dataUri });
+      onDone({ uri: clip.uri }); // Submit uploads the file to storage itself
     } catch (e) {
       if (timer.current) { clearInterval(timer.current); timer.current = null; }
       setRecording(false); setPreparing(false);
@@ -2111,10 +2095,30 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     await runJudge({ photo });
   }
 
-  // Timelapse recorded in-app (front/back camera, time-limited) → send to judge.
-  function onTimelapseDone(result) {
+  // Timelapse recorded in-app → upload the clip to storage, then send its PATH
+  // to the judge (keeps the request body small — no giant base64 through the
+  // function; the judge downloads it server-side).
+  async function onTimelapseDone(result) {
     setCapturing(false);
-    if (result && result.video) runJudge({ video: result.video });
+    if (!result || !result.uri) return;
+    setBusy(true); setStage("judging"); setReject(null);
+    try {
+      const bytes = await fetch(result.uri).then((r) => r.arrayBuffer());
+      if (bytes.byteLength > TL_MAX_BYTES) {
+        setBusy(false); setStage("idle");
+        return Alert.alert("Cert", t("That clip is too heavy. Record a shorter one."));
+      }
+      const { data: sess } = await supabase.auth.getSession();
+      const uidNow = sess?.session?.user?.id;
+      if (!uidNow) throw new Error("no session");
+      const path = `${uidNow}/${goal.id}/${Date.now()}.mp4`;
+      const { error: upErr } = await supabase.storage.from("proofs").upload(path, bytes, { contentType: "video/mp4" });
+      if (upErr) throw upErr;
+      await runJudge({ videoPath: path });
+    } catch (e) {
+      setBusy(false); setStage("idle");
+      Alert.alert("Cert", (e && e.message) || t("Couldn't record. Try again."));
+    }
   }
 
   async function runJudge(payload) {

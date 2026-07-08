@@ -456,6 +456,7 @@ const RU = {
   "Hide streak count": "Скрывать счётчик серии",
   "Show up without the number staring at you.": "Приходи без давящей на тебя цифры.",
   "That clip is too heavy. Record a shorter one.": "Ролик слишком тяжёлый. Сними покороче.",
+  "Free includes 1 active goal. Go Pro for unlimited.": "На Free — 1 активная цель. Pro снимает лимит.",
 
   // --- new goal ---
   "3×/wk": "3×/нед",

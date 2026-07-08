@@ -6,6 +6,7 @@
 // Needs the GEMINI_API_KEY secret. SUPABASE_* are injected automatically.
 // =====================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -183,9 +184,12 @@ Deno.serve(async (req) => {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "bad_body" }, 400); }
-  const { goalId, photo, frames, video, geo, forceReject, peek, lang } = body || {};
+  const { goalId, photo, frames, video, videoPath, geo, forceReject, peek, lang } = body || {};
   const reasonLang = lang === "ru" ? "Russian" : "English"; // verdict reason language
-  const isVideo = typeof video === "string" && video.length > 0;   // real recorded clip
+  // videoPath = clip already uploaded to the proofs bucket by the client (small
+  // request body); inline `video` base64 kept for older builds.
+  const hasVideoPath = typeof videoPath === "string" && videoPath.length > 0;
+  const isVideo = hasVideoPath || (typeof video === "string" && video.length > 0);
   const isTimelapse = Array.isArray(frames) && frames.length > 0;   // legacy frame-based
   const geoLat = geo && typeof geo.lat === "number" ? geo.lat : null;
   const geoLng = geo && typeof geo.lng === "number" ? geo.lng : null;
@@ -289,7 +293,15 @@ Deno.serve(async (req) => {
         : { approved: false, reason: ru ? `Ты в ${fmtDist(km)} от места цели. Приди туда и отметься снова.` : `You're ${fmtDist(km)} away from the goal's place. Get there and check in again.`, confidence: 0.9 };
     }
   } else if (isVideo) {
-    try { verdict = await judgeVideo({ video, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
+    let videoData = video;
+    if (hasVideoPath) {
+      // client uploaded the clip to storage — fetch it here, keep the body small
+      if (!String(videoPath).startsWith(`${user.id}/`)) return json({ error: "bad_path" }, 400);
+      const { data: blob, error: dlErr } = await svc.storage.from("proofs").download(videoPath);
+      if (dlErr || !blob) return json({ error: true, busy: true, reason: "Could not read the uploaded video — please try again." });
+      videoData = `data:video/mp4;base64,${encodeBase64(new Uint8Array(await blob.arrayBuffer()))}`;
+    }
+    try { verdict = await judgeVideo({ video: videoData, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
     catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   } else if (isTimelapse) {
     try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
@@ -301,9 +313,10 @@ Deno.serve(async (req) => {
 
   // Store the proof. A video is one clip; a legacy timelapse is many frames
   // under one folder; a photo is one image. photo_path points at the first file.
-  let photoPath: string | null = null;
+  let photoPath: string | null = hasVideoPath ? videoPath : null;
   try {
-    const imgs: string[] = isVideo ? [video] : isTimelapse ? frames : (photo ? [photo] : []);
+    // a videoPath clip is already in storage — nothing to upload for it
+    const imgs: string[] = hasVideoPath ? [] : isVideo ? [video] : isTimelapse ? frames : (photo ? [photo] : []);
     const folder = crypto.randomUUID();
     for (let i = 0; i < imgs.length; i++) {
       const m = /^data:([^;]+);base64,(.*)$/s.exec(String(imgs[i]));
@@ -372,7 +385,9 @@ Deno.serve(async (req) => {
     lat: geoLat, lng: geoLng, place: geoPlace, geo_suspect: geoSuspect,
   }).select("id").single();
   await svc.from("goals").update({ streak: newStreak, best_streak: newBest, status: newStatus, completed_at: completedAt, verified_days_total: newVerified }).eq("id", goalId);
-  if (newStatus === "completed") await svc.from("certs").insert({ user_id: user.id, goal_id: goalId, title: goal.text, days: newBest });
+  // Cert always records verified DAYS (for weekly goals newBest counts weeks,
+  // which made the "verified days" label on the cert wrong).
+  if (newStatus === "completed") await svc.from("certs").insert({ user_id: user.id, goal_id: goalId, title: goal.text, days: newVerified });
 
   const { data: updatedGoal } = await svc.from("goals").select("*").eq("id", goalId).single();
   // attempts left TODAY after this one (both free and paid plans are capped).
