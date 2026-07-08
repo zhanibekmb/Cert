@@ -809,10 +809,18 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
   const [showDone, setShowDone] = useState(false);
   const [showCerts, setShowCerts] = useState(false); // collapsed by default — keeps home clean
   const myGoals = (goals || []).filter((g) => !g.challenge_id); // challenge goals live under Versus
-  const activeGoals = myGoals.filter((g) => g.status !== "completed");
   const doneGoals = myGoals.filter((g) => g.status === "completed");
   const subsByGoal = {};
   for (const x of subs || []) { (subsByGoal[x.goal_id] = subsByGoal[x.goal_id] || []).push(x); }
+  // Goals still needing today's proof float to the top; ones already done today
+  // drop below (stable within each group, so creation order is otherwise kept).
+  const todayStr = isoDateParts(new Date()).date;
+  const doneToday = (g) => (subsByGoal[g.id] || []).some((x) => (x.status === "approved" || x.status === "frozen") && x.day === todayStr);
+  const activeGoals = myGoals
+    .filter((g) => g.status !== "completed")
+    .map((g, i) => ({ g, i, done: doneToday(g) }))
+    .sort((a, b) => (a.done - b.done) || (a.i - b.i))
+    .map((x) => x.g);
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
