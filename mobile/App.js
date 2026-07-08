@@ -1,4 +1,4 @@
-// =====================================================================
+﻿// =====================================================================
 // CERT — mobile app (Expo / React Native). Talks to Supabase:
 //   - auth: email + password (sign up / sign in) or Google OAuth (PKCE)
 //   - goals + streak in Postgres (RLS-scoped)
@@ -533,7 +533,7 @@ function SetNewPassword({ onDone }) {
    makes them real → real streaks are worth bragging about → set one goal. */
 function ObFrame({ children }) {
   return (
-    <View style={{ width: "82%", alignSelf: "center", borderRadius: 30, borderWidth: 6, borderColor: C.isDark ? "#1d1922" : "#e3ddd0", backgroundColor: C.bg, padding: 16, minHeight: 330, justifyContent: "center", overflow: "hidden" }}>
+    <View style={{ width: "82%", alignSelf: "center", borderRadius: 30, borderWidth: 6, borderColor: C.isDark ? "#1d1922" : "#e3ddd0", backgroundColor: C.bg, padding: 14, minHeight: 270, justifyContent: "center", overflow: "hidden" }}>
       {children}
     </View>
   );
@@ -590,10 +590,10 @@ function Onboarding({ onDone }) {
           </TouchableOpacity>
         ) : null}
       </View>
-      <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+      <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}
         onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / W))}>
         {/* 1 — the pain: a dead generic tracker */}
-        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+        <View style={{ width: W, justifyContent: "center" }}>
           <ObFrame>
             <Text style={[s.kicker, { textAlign: "center", marginBottom: 6 }]}>{t("your old habit app")}</Text>
             <ObMockRow label={t("Meditate")} dead />
@@ -605,9 +605,9 @@ function Onboarding({ onDone }) {
           </ObFrame>
         </View>
         {/* 2 — the magic (hero): a proof photo gets stamped APPROVED */}
-        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+        <View style={{ width: W, justifyContent: "center" }}>
           <ObFrame>
-            <View style={{ borderRadius: 14, backgroundColor: C.isDark ? "#0d0c11" : "#eee9df", height: 190, alignItems: "center", justifyContent: "center" }}>
+            <View style={{ borderRadius: 14, backgroundColor: C.isDark ? "#0d0c11" : "#eee9df", height: 150, alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="camera-outline" size={40} color={C.faint} />
               <Text style={[s.note, { marginTop: 8 }]}>{t("your daily photo")}</Text>
             </View>
@@ -619,7 +619,7 @@ function Onboarding({ onDone }) {
           </ObFrame>
         </View>
         {/* 3 — the flex: cert card + friends leaderboard */}
-        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+        <View style={{ width: W, justifyContent: "center" }}>
           <ObFrame>
             <View style={{ borderWidth: 1.5, borderColor: C.bronze, borderRadius: 14, padding: 14, alignItems: "center" }}>
               <Text style={{ color: C.bronze, fontSize: 44, fontWeight: "800", lineHeight: 46 }}>47</Text>
@@ -637,7 +637,7 @@ function Onboarding({ onDone }) {
           </ObFrame>
         </View>
         {/* 4 — the start: one goal away */}
-        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+        <View style={{ width: W, justifyContent: "center" }}>
           <ObFrame>
             <Text style={[s.label, { marginBottom: 6 }]}>{t("Your goal")}</Text>
             <View style={[s.input, { justifyContent: "center" }]}>
@@ -653,8 +653,8 @@ function Onboarding({ onDone }) {
         </View>
       </ScrollView>
       <View style={{ paddingHorizontal: 28, paddingBottom: 30 }}>
-        <Text style={[s.h1, { fontSize: 27, lineHeight: 31, textAlign: "center" }]}>{PAGES[page].head}</Text>
-        <Text style={[s.lede, { textAlign: "center", marginBottom: 8 }]}>{PAGES[page].sub}</Text>
+        <Text style={[s.h1, { fontSize: 26, lineHeight: 30, textAlign: "center" }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.65}>{PAGES[page].head}</Text>
+        <Text style={[s.lede, { textAlign: "center", marginTop: 6, marginBottom: 8 }]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8}>{PAGES[page].sub}</Text>
         <View style={{ flexDirection: "row", justifyContent: "center", gap: 7, marginBottom: 2 }}>
           {PAGES.map((_, i) => (
             <View key={i} style={{ width: i === page ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i === page ? C.bronze : C.line }} />
@@ -1831,8 +1831,8 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       <Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Defaults: repeats daily, ongoing, no deadline.")}</Text>
 
       {showMore ? (
-      <>
-      <Text style={[s.label, { marginTop: 14 }]}>{t("Type")}</Text>
+      <View style={[s.card, { marginTop: 10 }]}>
+      <Text style={s.label}>{t("Type")}</Text>
       <TabSwitch value={type} onChange={(v) => { setDuration(null); setCustomDur(false); setType(v); }}
         options={[{ value: "recurring", label: t("Repeating") }, { value: "one_time", label: t("One-time") }]} />
 
@@ -1885,7 +1885,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
           <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick date & time")} />
         </>
       )}
-      </>
+      </View>
       ) : null}
 
       <Btn label={busy ? t("Creating…") : t("Create")} onPress={create} disabled={busy} />
@@ -1902,7 +1902,10 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
    the base64 payload stays under Gemini's ~20MB inline limit. Front/back camera. */
 const TL_MAX_SECONDS = 15;             // recording auto-stops here
 const TL_MIN_SECONDS = 3;              // enough to show a real attempt
-const TL_MAX_BYTES = 18 * 1024 * 1024; // ~18MB — safely under Gemini's inline cap
+// Gemini's ~20MB request cap applies to the base64-INFLATED payload (×1.33),
+// so raw bytes must stay ≤ ~14MB. With the 2 Mbps bitrate below, 15s ≈ 4MB.
+const TL_MAX_BYTES = 14 * 1024 * 1024;
+const TL_BITRATE = 2000000; // 2 Mbps — plenty for the AI to judge motion
 
 
 function TimelapseCapture({ onCancel, onDone }) {
@@ -1925,7 +1928,8 @@ function TimelapseCapture({ onCancel, onDone }) {
     try {
       // resolves when recording stops — manually or at maxDuration. No maxFileSize
       // (it was cutting recordings to a few seconds); size is checked after instead.
-      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS });
+      // codec is required on iOS for videoBitrate to take effect.
+      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS, codec: "avc1" });
       if (timer.current) { clearInterval(timer.current); timer.current = null; }
       setRecording(false);
       const secs = Math.round((Date.now() - startedAt.current) / 1000);
@@ -1954,7 +1958,7 @@ function TimelapseCapture({ onCancel, onDone }) {
   const remain = Math.max(0, TL_MAX_SECONDS - elapsed);
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <CameraView ref={camRef} style={{ flex: 1 }} facing={facing} mode="video" videoQuality="4:3" mute />
+      <CameraView ref={camRef} style={{ flex: 1 }} facing={facing} mode="video" videoQuality="4:3" videoBitrate={TL_BITRATE} mute />
       <View style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 18, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} disabled={preparing}>
           <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>✕</Text>
@@ -2115,9 +2119,10 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       const { error: upErr } = await supabase.storage.from("proofs").upload(path, bytes, { contentType: "video/mp4" });
       if (upErr) throw upErr;
       await runJudge({ videoPath: path });
-    } catch (e) {
+    } catch (_) {
+      // no raw error codes at the user — they can't act on them anyway
       setBusy(false); setStage("idle");
-      Alert.alert("Cert", (e && e.message) || t("Couldn't record. Try again."));
+      Alert.alert("Cert", t("Couldn't send the video. Check your connection and try again."));
     }
   }
 
@@ -3485,7 +3490,9 @@ function makeStyles() { return StyleSheet.create({
   skipBtn: { borderWidth: 1, borderColor: C.bronze, borderRadius: 10, padding: 13, marginTop: 22, alignItems: "center" },
   skipText: { color: C.bronze, fontWeight: "700", fontSize: 14 },
   pill: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 12, alignItems: "center" },
-  pillOn: { borderColor: C.red, backgroundColor: C.isDark ? "rgba(226,59,46,0.1)" : "rgba(166,129,43,0.14)" },
+  // Selection is ALWAYS bronze (red is reserved for CTAs/destructive) — mixed
+  // red/gold selected states in the wizards read as random coloring.
+  pillOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.12)" : "rgba(166,129,43,0.14)" },
   pillText: { color: C.mute, fontSize: 13 },
   streakNum: { color: C.bronze, fontSize: 56, fontWeight: "800", textAlign: "center" },
   goalText: { color: C.ink, fontSize: 15, lineHeight: 22, marginTop: 8 },
@@ -3539,7 +3546,7 @@ function makeStyles() { return StyleSheet.create({
   tabLabel: { fontSize: 10.5, color: C.faint, fontWeight: "700", letterSpacing: 0.3 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  chipOn: { borderColor: C.red, backgroundColor: C.isDark ? "rgba(226,59,46,0.12)" : "rgba(166,129,43,0.16)" },
+  chipOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.14)" : "rgba(166,129,43,0.16)" },
   chipText: { color: C.mute, fontSize: 13 },
   freezePill: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: C.card },
   freezePillNum: { color: C.ink, fontWeight: "800", fontSize: 14 },

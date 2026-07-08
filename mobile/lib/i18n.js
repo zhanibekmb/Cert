@@ -457,6 +457,7 @@ const RU = {
   "Show up without the number staring at you.": "Приходи без давящей на тебя цифры.",
   "That clip is too heavy. Record a shorter one.": "Ролик слишком тяжёлый. Сними покороче.",
   "Free includes 1 active goal. Go Pro for unlimited.": "На Free — 1 активная цель. Pro снимает лимит.",
+  "Couldn't send the video. Check your connection and try again.": "Не удалось отправить видео. Проверь соединение и попробуй ещё раз.",
 
   // --- new goal ---
   "3×/wk": "3×/нед",
