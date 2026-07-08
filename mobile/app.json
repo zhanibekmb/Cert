@@ -49,8 +49,7 @@
       [
         "expo-camera",
         {
-          "cameraPermission": "Cert needs the camera to take your daily proof photo and record timelapse video.",
-          "microphonePermission": "Cert needs the microphone to record your timelapse proof video."
+          "cameraPermission": "Cert needs the camera to take your daily proof photo and record timelapse video."
         }
       ],
       [

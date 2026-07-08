@@ -17,7 +17,7 @@ import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import MapView, { Marker } from "react-native-maps";
-import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
+import { CameraView, useCameraPermissions } from "expo-camera";
 import { VideoView, useVideoPlayer } from "expo-video";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Location from "expo-location";
@@ -1195,6 +1195,7 @@ function SettingsScreen({ session, onBack }) {
   const [themePref, setTheme] = useThemePref();
   const [langPref, setLang] = useLang();
   const [hideStreak, setHideStreak] = useHideStreak();
+  const [showIntro, setShowIntro] = useState(false);
 
   function deleteAccount() {
     Alert.alert(
@@ -1272,11 +1273,23 @@ function SettingsScreen({ session, onBack }) {
         <Text style={s.note}>{t("Used for day boundaries and deadlines, set from your device.")}</Text>
       </View>
 
+      <TouchableOpacity style={[s.card, { flexDirection: "row", alignItems: "center", gap: 12 }]} activeOpacity={0.8} onPress={() => setShowIntro(true)}>
+        <Ionicons name="help-circle-outline" size={22} color={C.bronze} />
+        <Text style={[s.goalText, { flex: 1, marginTop: 0 }]}>{t("How Cert works")}</Text>
+        <Text style={s.certRowChevron}>›</Text>
+      </TouchableOpacity>
+
       <BtnGhost label={t("Log out")} onPress={() => supabase.auth.signOut()} disabled={busy} />
       <TouchableOpacity onPress={deleteAccount} disabled={busy} style={{ marginTop: 10, paddingVertical: 12, alignItems: "center" }}>
         <Text style={{ color: C.red, fontWeight: "700", fontSize: 14 }}>{busy ? "…" : t("Delete account")}</Text>
       </TouchableOpacity>
       <Text style={[s.note, { textAlign: "center", marginTop: 16 }]}>Cert · v1.0 — {t("[ the streak you can't fake ]")}</Text>
+
+      <Modal visible={showIntro} animationType="slide" onRequestClose={() => setShowIntro(false)}>
+        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
+          <Onboarding onDone={() => setShowIntro(false)} />
+        </SafeAreaView>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1778,7 +1791,6 @@ async function videoToDataUri(uri) {
 
 function TimelapseCapture({ onCancel, onDone }) {
   const [perm, requestPerm] = useCameraPermissions();
-  const [micPerm, requestMic] = useMicrophonePermissions();
   const camRef = useRef(null);
   const [facing, setFacing] = useState("back");
   const [recording, setRecording] = useState(false);
@@ -1788,7 +1800,6 @@ function TimelapseCapture({ onCancel, onDone }) {
   const startedAt = useRef(0);
 
   useEffect(() => { if (perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [perm]);
-  useEffect(() => { if (micPerm && !micPerm.granted && micPerm.canAskAgain) requestMic(); }, [micPerm]);
   useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
 
   async function start() {
@@ -1819,7 +1830,7 @@ function TimelapseCapture({ onCancel, onDone }) {
   }
   function stop() { try { camRef.current?.stopRecording(); } catch (_) { /* */ } }
 
-  if (!perm || !micPerm) return <Center><ActivityIndicator color={C.bronze} /></Center>;
+  if (!perm) return <Center><ActivityIndicator color={C.bronze} /></Center>;
   if (!perm.granted) {
     return (
       <View style={[s.wrap, { flex: 1, justifyContent: "center" }]}>
@@ -1833,7 +1844,7 @@ function TimelapseCapture({ onCancel, onDone }) {
   const remain = Math.max(0, TL_MAX_SECONDS - elapsed);
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <CameraView ref={camRef} style={{ flex: 1 }} facing={facing} mode="video" videoQuality="4:3" />
+      <CameraView ref={camRef} style={{ flex: 1 }} facing={facing} mode="video" videoQuality="4:3" mute />
       <View style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 18, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} disabled={preparing}>
           <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>✕</Text>
