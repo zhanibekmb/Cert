@@ -17,6 +17,7 @@ import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import MapView, { Marker } from "react-native-maps";
+import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
 import * as Location from "expo-location";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -1641,16 +1642,19 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   );
 }
 
-/* ---------- TIMELAPSE (user uploads a short video; the AI judge watches it) ----------
-   The proof is a real clip the user picks from their library — the AI watches the
-   whole video (real motion), so a single propped photo can't pass. Bounded in
-   length + size so the base64 payload stays under Gemini's ~20MB inline limit. */
-const TL_MAX_SECONDS = 60;             // uploads longer than this are rejected
+/* ---------- TIMELAPSE (recorded IN-APP; the AI judge watches the clip) ----------
+   The proof is a short video the user records here — not picked from the library,
+   so a pre-made / faked clip can't be used. Hard-capped in length + file size so
+   the base64 payload stays under Gemini's ~20MB inline limit. Front/back camera. */
+const TL_MAX_SECONDS = 15;             // recording auto-stops here
+const TL_MIN_SECONDS = 3;              // enough to show a real attempt
 const TL_MAX_BYTES = 18 * 1024 * 1024; // ~18MB — safely under Gemini's inline cap
 
-// Read a local video file into a data URI (no extra native dep). A file:// blob's
-// mime can be empty, so we set it from the picked asset's mime / file extension.
-async function videoToDataUri(uri, mimeHint) {
+// Read a recorded clip into a data URI (no extra native dep). A file:// blob's
+// mime can be empty, so derive it from the extension. iOS records .mov
+// (video/quicktime) which isn't on Gemini's list — relabel to video/mp4
+// (QuickTime container is MP4-compatible).
+async function videoToDataUri(uri) {
   const res = await fetch(uri);
   const blob = await res.blob();
   const raw = await new Promise((resolve, reject) => {
@@ -1660,11 +1664,100 @@ async function videoToDataUri(uri, mimeHint) {
     fr.readAsDataURL(blob);
   });
   const b64 = raw.slice(raw.indexOf("base64,") + 7);
-  let mime = (mimeHint && mimeHint.startsWith("video/")) ? mimeHint : (/\.mov(\?|$)/i.test(uri) ? "video/quicktime" : "video/mp4");
-  // iOS reports .mov as video/quicktime, which isn't on Gemini's accepted list.
-  // The QuickTime container is MP4-compatible, so label it video/mp4.
-  if (mime === "video/quicktime") mime = "video/mp4";
-  return `data:${mime};base64,${b64}`;
+  return `data:video/mp4;base64,${b64}`;
+}
+
+function TimelapseCapture({ onCancel, onDone }) {
+  const [perm, requestPerm] = useCameraPermissions();
+  const [micPerm, requestMic] = useMicrophonePermissions();
+  const camRef = useRef(null);
+  const [facing, setFacing] = useState("back");
+  const [recording, setRecording] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const timer = useRef(null);
+  const startedAt = useRef(0);
+
+  useEffect(() => { if (perm && !perm.granted && perm.canAskAgain) requestPerm(); }, [perm]);
+  useEffect(() => { if (micPerm && !micPerm.granted && micPerm.canAskAgain) requestMic(); }, [micPerm]);
+  useEffect(() => () => { if (timer.current) clearInterval(timer.current); }, []);
+
+  async function start() {
+    if (recording || !camRef.current) return;
+    setRecording(true); setElapsed(0); startedAt.current = Date.now();
+    timer.current = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)), 250);
+    try {
+      // resolves when recording stops — manually, at maxDuration, or at maxFileSize
+      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS, maxFileSize: 8 * 1024 * 1024 });
+      if (timer.current) { clearInterval(timer.current); timer.current = null; }
+      setRecording(false);
+      const secs = Math.round((Date.now() - startedAt.current) / 1000);
+      if (!clip?.uri) { onCancel(); return; }
+      if (secs < TL_MIN_SECONDS) { Alert.alert("Cert", t("Record at least {n} seconds.", { n: TL_MIN_SECONDS })); return; }
+      setPreparing(true);
+      const dataUri = await videoToDataUri(clip.uri);
+      setPreparing(false);
+      onDone({ video: dataUri });
+    } catch (e) {
+      if (timer.current) { clearInterval(timer.current); timer.current = null; }
+      setRecording(false); setPreparing(false);
+      Alert.alert("Cert", (e && e.message) || t("Couldn't record. Try again."));
+    }
+  }
+  function stop() { try { camRef.current?.stopRecording(); } catch (_) { /* */ } }
+
+  if (!perm || !micPerm) return <Center><ActivityIndicator color={C.bronze} /></Center>;
+  if (!perm.granted) {
+    return (
+      <View style={[s.wrap, { flex: 1, justifyContent: "center" }]}>
+        <Text style={s.h2}>{t("Camera needed")}</Text>
+        <Text style={s.lede}>{t("Cert needs the camera to record your timelapse proof.")}</Text>
+        <Btn label={t("Grant camera access")} onPress={requestPerm} />
+        <BtnGhost label={t("Back")} onPress={onCancel} />
+      </View>
+    );
+  }
+  const remain = Math.max(0, TL_MAX_SECONDS - elapsed);
+  return (
+    <View style={{ flex: 1, backgroundColor: "#000" }}>
+      <CameraView ref={camRef} style={{ flex: 1 }} facing={facing} mode="video" videoQuality="4:3" />
+      <View style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 18, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+        <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} disabled={preparing}>
+          <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>✕</Text>
+        </TouchableOpacity>
+        {recording ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(0,0,0,.5)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
+            <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.red }} />
+            <Text style={{ color: "#fff", fontFamily: "System", fontSize: 13, fontWeight: "700" }}>REC · 0:{String(elapsed).padStart(2, "0")} / 0:{String(TL_MAX_SECONDS).padStart(2, "0")}</Text>
+          </View>
+        ) : (
+          <TouchableOpacity onPress={() => setFacing((f) => (f === "back" ? "front" : "back"))} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} disabled={preparing}
+            style={{ flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(0,0,0,.5)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
+            <Ionicons name="camera-reverse-outline" size={18} color="#fff" />
+            <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>{facing === "back" ? t("Front") : t("Back")}</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 24, paddingBottom: 38, backgroundColor: "rgba(0,0,0,.45)" }}>
+        {preparing ? (
+          <View style={{ alignItems: "center" }}>
+            <ActivityIndicator color={C.bronze} />
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginTop: 10, fontSize: 13 }}>{t("Preparing your clip…")}</Text>
+          </View>
+        ) : recording ? (
+          <>
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("{n}s left — stops automatically.", { n: remain })}</Text>
+            <Btn label={t("Stop & send")} onPress={stop} />
+          </>
+        ) : (
+          <>
+            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("Record up to {n}s of yourself actually doing it. The AI watches the whole clip.", { n: TL_MAX_SECONDS })}</Text>
+            <Btn label={t("Start recording")} onPress={start} />
+          </>
+        )}
+      </View>
+    </View>
+  );
 }
 
 /* ---------- SUBMIT (camera -> judge) ---------- */
@@ -1685,6 +1778,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
   const [early, setEarly] = useState(false);            // before the window opens
   const [geoPlace, setGeoPlace] = useState(null);       // the goal's pinned place label
   const [anchorSet, setAnchorSet] = useState(true);     // false → first check-in pins it
+  const [capturing, setCapturing] = useState(false);    // timelapse recorder open
 
   // Ask the judge what today's anti-cheat check is, so the screen shows EXACTLY
   // what the server will enforce (no client/server day drift).
@@ -1713,66 +1807,22 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
   }, [goal.id]);
   useEffect(() => { loadCheck(); }, [loadCheck]);
 
-  async function takeAndJudge(fromLibrary) {
-    const perm = fromLibrary
-      ? await ImagePicker.requestMediaLibraryPermissionsAsync()
-      : await ImagePicker.requestCameraPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Cert", "Permission needed to add a photo.");
-
-    const res = fromLibrary
-      ? await ImagePicker.launchImageLibraryAsync({ base64: true, quality: 0.4, mediaTypes: ["images"] })
-      : await ImagePicker.launchCameraAsync({ base64: true, quality: 0.4 });
+  // Photo proof is camera-only — no gallery pick (a saved photo is trivially fakeable).
+  async function takeAndJudge() {
+    const perm = await ImagePicker.requestCameraPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Cert", t("Camera permission needed."));
+    const res = await ImagePicker.launchCameraAsync({ base64: true, quality: 0.4 });
     if (res.canceled || !res.assets || !res.assets[0]?.base64) return;
-
     const a = res.assets[0];
     const mime = a.mimeType || "image/jpeg";
     const photo = `data:${mime};base64,${a.base64}`;
     await runJudge({ photo });
   }
 
-  // Pick a timelapse video from the library and send it to the judge. Guarded
-  // by duration + size so the base64 payload stays within Gemini's inline limit.
-  async function uploadVideo() {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return Alert.alert("Cert", t("Allow photo library access to upload your video."));
-      // `Current` returns the original asset WITHOUT transcoding — the transcode
-      // step is what throws PHPhotos error 3164 on iCloud / slow-mo / HEVC .mov
-      // clips (iOS time-lapses are exactly that).
-      const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["videos"],
-        allowsEditing: false,
-        preferredAssetRepresentationMode: ImagePicker.UIImagePickerPreferredAssetRepresentationMode.Current,
-      });
-      if (res.canceled || !res.assets?.[0]?.uri) return;
-      const a = res.assets[0];
-      if (a.duration && a.duration > (TL_MAX_SECONDS + 1) * 1000) {
-        return Alert.alert("Cert", t("That clip is too long — pick a timelapse up to {n}s.", { n: TL_MAX_SECONDS }));
-      }
-      if (a.fileSize && a.fileSize > TL_MAX_BYTES) {
-        return Alert.alert("Cert", t("That video is too large — use a shorter or more compressed timelapse."));
-      }
-      setBusy(true); setStage("judging"); setReject(null);
-      let dataUri;
-      try {
-        dataUri = await videoToDataUri(a.uri, a.mimeType);
-      } catch (_) {
-        setBusy(false); setStage("idle");
-        return Alert.alert("Cert", t("Couldn't read that video. Try another clip."));
-      }
-      if (dataUri.length * 0.75 > TL_MAX_BYTES) {
-        setBusy(false); setStage("idle");
-        return Alert.alert("Cert", t("That video is too large — use a shorter or more compressed timelapse."));
-      }
-      await runJudge({ video: dataUri });
-    } catch (e) {
-      setBusy(false); setStage("idle");
-      const raw = String((e && e.message) || "");
-      const msg = /PHPhotos|3164|export|iCloud/i.test(raw)
-        ? t("Couldn't load that video — it may still be in iCloud or in an unsupported format. Download it to your device or try another clip.")
-        : (raw || t("Couldn't upload the video. Try again."));
-      Alert.alert("Cert", msg);
-    }
+  // Timelapse recorded in-app (front/back camera, time-limited) → send to judge.
+  function onTimelapseDone(result) {
+    setCapturing(false);
+    if (result && result.video) runJudge({ video: result.video });
   }
 
   async function runJudge(payload) {
@@ -1844,12 +1894,14 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
     } finally { setAppealBusy(false); }
   }
 
+  if (capturing) return <TimelapseCapture onCancel={() => setCapturing(false)} onDone={onTimelapseDone} />;
+
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive">
       <BackBar onBack={onBack} />
       <Text style={s.h2}>{isGeo ? t("Check in") : t("Submit proof")}</Text>
       <View style={s.card}>
-        <Text style={[s.kicker, { color: C.bronze }]}>{isGeo ? t("Be at the place") : isTimelapse ? t("Upload a timelapse of this") : t("Send a photo like this")}</Text>
+        <Text style={[s.kicker, { color: C.bronze }]}>{isGeo ? t("Be at the place") : isTimelapse ? t("Record a timelapse of this") : t("Send a photo like this")}</Text>
         <Text style={s.goalText}>{(isGeo || isTimelapse) ? goal.text : (proofSpec(goal) || goal.text)}</Text>
         {isGeo ? (
           <Text style={[s.spec, { color: C.mute }]}>
@@ -1867,7 +1919,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       ) : isTimelapse ? (
         <View style={[s.card, { borderColor: C.red }]}>
           <Text style={[s.kicker, { color: C.red }]}>{t("Why a timelapse")}</Text>
-          <Text style={s.note}>{t("Upload a short clip of your session — the AI watches the whole video, so it sees the activity actually happen. A single propped photo won't pass.")}</Text>
+          <Text style={s.note}>{t("Record a short clip of your session — the AI watches the whole video, so it sees the activity actually happen. A propped photo or a pre-made clip won't pass.")}</Text>
         </View>
       ) : (
         <View style={[s.card, { borderColor: C.red }]}>
@@ -1947,12 +1999,9 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           {isGeo ? (
             <Btn label={reject ? t("Check in again") : t("📍 Check in now")} onPress={() => runJudge({ checkin: true })} disabled={busy || checkState !== "ok"} />
           ) : isTimelapse ? (
-            <Btn label={reject ? t("Upload another video") : t("Upload timelapse video")} onPress={uploadVideo} disabled={busy || checkState !== "ok"} />
+            <Btn label={reject ? t("Record again") : t("🎥 Record timelapse")} onPress={() => setCapturing(true)} disabled={busy || checkState !== "ok"} />
           ) : (
-            <>
-              <Btn label={reject ? t("Retake photo") : t("Take a photo")} onPress={() => takeAndJudge(false)} disabled={busy || checkState !== "ok"} />
-              <BtnGhost label={t("Choose from gallery")} onPress={() => takeAndJudge(true)} disabled={busy || checkState !== "ok"} />
-            </>
+            <Btn label={reject ? t("Retake photo") : t("📷 Take a photo")} onPress={takeAndJudge} disabled={busy || checkState !== "ok"} />
           )}
         </>
       )}
