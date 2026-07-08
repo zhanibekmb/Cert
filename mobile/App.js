@@ -1433,12 +1433,15 @@ function Reel({ goal, onBack }) {
   }, [goal.id]);
 
   const cur = items && items[idx];
-  // One player, re-pointed at the current clip when the item is a video.
-  const player = useVideoPlayer(null, (p) => { p.loop = false; });
+  // One player, re-pointed at the current clip when the item is a video. Clips
+  // play sped up (×REEL_SPEED) so a recorded video looks like a real timelapse.
+  const REEL_SPEED = 3;
+  const player = useVideoPlayer(null, (p) => { p.loop = false; p.playbackRate = REEL_SPEED; });
   useEffect(() => {
     if (!player) return;
-    if (cur && cur.isVideo) { try { player.replace(cur.url); if (playing) player.play(); } catch (_) { /* */ } }
-    else { try { player.pause(); } catch (_) { /* */ } }
+    if (cur && cur.isVideo) {
+      try { player.replace(cur.url); player.playbackRate = REEL_SPEED; if (playing) player.play(); } catch (_) { /* */ }
+    } else { try { player.pause(); } catch (_) { /* */ } }
   }, [cur && cur.url, cur && cur.isVideo, playing]);
   // advance: images on a timer, videos when they finish
   useEffect(() => {
