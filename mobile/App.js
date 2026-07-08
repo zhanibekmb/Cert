@@ -527,50 +527,140 @@ function SetNewPassword({ onDone }) {
 }
 
 /* ---------- MAIN (tab shell + overlay screens) ---------- */
-/* ---------- ONBOARDING (first-run: problem → judge → features) ---------- */
-// Onboarding as a plain numbered instruction — the whole app at a glance.
-const ONBOARD_STEPS = [
-  ["create-outline", "Set a goal", "Write one thing to do, in your own words."],
-  ["camera-outline", "Prove it daily", "Send a photo, video, or check in at the place."],
-  ["shield-checkmark-outline", "The AI judge decides", "Approved or rejected in seconds — no faking a tap."],
-  ["flame-outline", "Keep your streak", "Miss a day and it resets. That's what makes it real."],
-];
+/* ---------- ONBOARDING (first-run: pain → magic → flex → start) ----------
+   Four swipe screens, each a phone-frame mockup of the real product. The
+   emotional arc sells the hook: your old streaks were fake → Cert's judge
+   makes them real → real streaks are worth bragging about → set one goal. */
+function ObFrame({ children }) {
+  return (
+    <View style={{ width: "82%", alignSelf: "center", borderRadius: 30, borderWidth: 6, borderColor: C.isDark ? "#1d1922" : "#e3ddd0", backgroundColor: C.bg, padding: 16, minHeight: 330, justifyContent: "center", overflow: "hidden" }}>
+      {children}
+    </View>
+  );
+}
+function ObMockRow({ label, dead }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 13, marginTop: 8, opacity: dead ? 0.55 : 1 }}>
+      <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: dead ? C.faint : C.green, alignItems: "center", justifyContent: "center" }}>
+        <Ionicons name="checkmark" size={15} color={C.bg} />
+      </View>
+      <Text style={[s.goalText, { marginTop: 0, flex: 1 }]}>{label}</Text>
+    </View>
+  );
+}
+function ObStamp({ active, size = 26 }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (active) {
+      v.setValue(0);
+      Animated.spring(v, { toValue: 1, friction: 5, tension: 80, useNativeDriver: true }).start();
+    }
+  }, [active]);
+  return (
+    <Animated.View style={{ position: "absolute", alignSelf: "center", top: "34%", transform: [{ rotate: "-12deg" }, { scale: v.interpolate({ inputRange: [0, 1], outputRange: [2.4, 1] }) }], opacity: v, borderWidth: 3, borderColor: C.bronze, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: "rgba(7,6,8,0.35)" }}>
+      <Text style={{ color: C.bronze, fontSize: size, fontWeight: "800", letterSpacing: 2 }}>APPROVED ✓</Text>
+    </Animated.View>
+  );
+}
 function Onboarding({ onDone }) {
+  const [page, setPage] = useState(0);
+  const scrollRef = useRef(null);
   const [, setLangChoice] = useLang(); // re-render on RU/EN switch
   useEffect(() => { track("onboarding_view"); }, []);
+  const W = Dimensions.get("window").width;
+  const goTo = (i) => { scrollRef.current?.scrollTo({ x: i * W, animated: true }); setPage(i); };
+  const last = page === 3;
+  const PAGES = [
+    { head: t("Every streak is a lie."), sub: t("You tap a checkbox nobody checks. So you quit — and nothing happens.") },
+    { head: t("Cert makes it real."), sub: t("One photo a day. An AI judge decides if it counts — no faking a tap.") },
+    { head: t("Worth bragging about."), sub: t("Share a streak nobody can fake. Challenge friends — last place spins the wheel.") },
+    { head: t("What will you prove?"), sub: t("One goal. A streak that means something.") },
+  ];
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
-      <View style={{ flexDirection: "row", justifyContent: "flex-end", gap: 8, padding: 20, paddingBottom: 0 }}>
+      <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 8, padding: 20, paddingBottom: 0 }}>
         {[["ru", "RU"], ["en", "EN"]].map(([v, lbl]) => (
           <TouchableOpacity key={v} onPress={() => setLangChoice(v)} style={[s.langChip, activeLang() === v && s.langChipOn]}>
             <Text style={[s.langChipT, activeLang() === v && { color: C.bg }]}>{lbl}</Text>
           </TouchableOpacity>
         ))}
+        {!last ? (
+          <TouchableOpacity onPress={onDone} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Text style={[s.langChipT, { paddingHorizontal: 6 }]}>{t("Skip")}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 26, paddingTop: 8, paddingBottom: 24, flexGrow: 1, justifyContent: "center" }}>
-        <View style={{ alignItems: "center", marginBottom: 26 }}>
-          <Image source={LOGO} style={s.authLogo} resizeMode="contain" />
-          <Text style={[s.h1, { fontSize: 30 }]}>{t("How Cert works")}</Text>
-          <Text style={[s.lede, { textAlign: "center", marginBottom: 0 }]}>{t("The whole app in four steps.")}</Text>
+      <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / W))}>
+        {/* 1 — the pain: a dead generic tracker */}
+        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+          <ObFrame>
+            <Text style={[s.kicker, { textAlign: "center", marginBottom: 6 }]}>{t("your old habit app")}</Text>
+            <ObMockRow label={t("Meditate")} dead />
+            <ObMockRow label={t("Gym")} dead />
+            <ObMockRow label={t("Read")} dead />
+            <View style={{ position: "absolute", alignSelf: "center", top: "42%", transform: [{ rotate: "-10deg" }], borderWidth: 2.5, borderColor: C.red, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: C.isDark ? "rgba(7,6,8,0.4)" : "rgba(255,255,255,0.6)" }}>
+              <Text style={{ color: C.red, fontSize: 20, fontWeight: "800", letterSpacing: 2 }}>{t("UNVERIFIED")}</Text>
+            </View>
+          </ObFrame>
         </View>
-        {ONBOARD_STEPS.map(([icon, title, desc], i) => (
-          <View key={title} style={{ flexDirection: "row", gap: 14, alignItems: "flex-start", marginBottom: 18 }}>
-            <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: C.bronze, alignItems: "center", justifyContent: "center" }}>
-              <Text style={{ color: "#1a1200", fontWeight: "800", fontSize: 15 }}>{i + 1}</Text>
+        {/* 2 — the magic (hero): a proof photo gets stamped APPROVED */}
+        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+          <ObFrame>
+            <View style={{ borderRadius: 14, backgroundColor: C.isDark ? "#0d0c11" : "#eee9df", height: 190, alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name="camera-outline" size={40} color={C.faint} />
+              <Text style={[s.note, { marginTop: 8 }]}>{t("your daily photo")}</Text>
             </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                <Ionicons name={icon} size={18} color={C.bronze} />
-                <Text style={s.buyTitle}>{t(title)}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 10 }}>
+              <Ionicons name="shield-checkmark" size={16} color={C.bronze} />
+              <Text style={[s.note, { textAlign: "left", marginTop: 0, flex: 1 }]}>{t("AI judge: real workout. Counted.")}</Text>
+            </View>
+            <ObStamp active={page === 1} />
+          </ObFrame>
+        </View>
+        {/* 3 — the flex: cert card + friends leaderboard */}
+        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+          <ObFrame>
+            <View style={{ borderWidth: 1.5, borderColor: C.bronze, borderRadius: 14, padding: 14, alignItems: "center" }}>
+              <Text style={{ color: C.bronze, fontSize: 44, fontWeight: "800", lineHeight: 46 }}>47</Text>
+              <Text style={{ color: C.ink, fontSize: 11, letterSpacing: 3, fontWeight: "700" }}>{t("VERIFIED DAYS")}</Text>
+              <Text style={{ color: C.red, fontSize: 10, letterSpacing: 2, fontWeight: "800", marginTop: 4 }}>{t("NOT FAKED")}</Text>
+            </View>
+            {[["🥇", "Yerdan", "8"], ["🥈", t("You"), "5"], ["🥉", "Mukhtar", "3"]].map(([m, n, d]) => (
+              <View key={n} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 9, marginTop: 7 }}>
+                <Text style={{ fontSize: 15 }}>{m}</Text>
+                <Avatar name={n} size={24} />
+                <Text style={[s.goalText, { marginTop: 0, flex: 1, fontSize: 13 }]}>{n}</Text>
+                <Text style={[s.note, { marginTop: 0 }]}>{d} {t("days")}</Text>
               </View>
-              <Text style={[s.note, { textAlign: "left", marginTop: 3 }]}>{t(desc)}</Text>
+            ))}
+          </ObFrame>
+        </View>
+        {/* 4 — the start: one goal away */}
+        <View style={{ width: W, justifyContent: "center", paddingBottom: 10 }}>
+          <ObFrame>
+            <Text style={[s.label, { marginBottom: 6 }]}>{t("Your goal")}</Text>
+            <View style={[s.input, { justifyContent: "center" }]}>
+              <Text style={s.goalText}>{t("gym 45 min")}</Text>
             </View>
-          </View>
-        ))}
-        <Text style={[s.note, { textAlign: "left", marginTop: 4 }]}>{t("Or challenge friends on a shared goal — last place spins the wheel.")}</Text>
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+              <View style={[s.chip, s.chipOn]}><Text style={[s.chipText, { color: C.ink }]}>📷 {t("Photo")}</Text></View>
+              <View style={s.chip}><Text style={s.chipText}>🎥 {t("Video")}</Text></View>
+              <View style={s.chip}><Text style={s.chipText}>📍</Text></View>
+            </View>
+            <View style={[s.btn, { marginTop: 18 }]}><Text style={s.btnText}>{t("Create")}</Text></View>
+          </ObFrame>
+        </View>
       </ScrollView>
-      <View style={{ padding: 24, paddingTop: 6, paddingBottom: 30 }}>
-        <Btn label={t("Get started")} onPress={onDone} />
+      <View style={{ paddingHorizontal: 28, paddingBottom: 30 }}>
+        <Text style={[s.h1, { fontSize: 27, lineHeight: 31, textAlign: "center" }]}>{PAGES[page].head}</Text>
+        <Text style={[s.lede, { textAlign: "center", marginBottom: 8 }]}>{PAGES[page].sub}</Text>
+        <View style={{ flexDirection: "row", justifyContent: "center", gap: 7, marginBottom: 2 }}>
+          {PAGES.map((_, i) => (
+            <View key={i} style={{ width: i === page ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i === page ? C.bronze : C.line }} />
+          ))}
+        </View>
+        <Btn label={last ? t("Start") + " →" : t("Next") + " →"} onPress={last ? onDone : () => goTo(page + 1)} />
       </View>
     </View>
   );
@@ -1007,12 +1097,24 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
         <Text style={s.freezePillNum}>{t("You have {n} freezes", { n: freezes })}</Text>
       </View>
 
-      {/* Feature list */}
-      <View style={[s.card, { gap: 12, marginTop: 16 }]}>
-        {PRO_FEATURES.map(([icon, f]) => (
-          <View key={f} style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Ionicons name={icon} size={20} color={C.bronze} />
-            <Text style={[s.goalText, { marginTop: 0, flex: 1 }]}>{t(f)}</Text>
+      {/* Free vs Pro comparison — makes the upgrade reason obvious at a glance */}
+      <View style={[s.card, { marginTop: 16, paddingVertical: 12 }]}>
+        <View style={{ flexDirection: "row", paddingBottom: 9, borderBottomWidth: 1, borderColor: C.line }}>
+          <Text style={[s.kicker, { flex: 1.5 }]}>{t("What you get")}</Text>
+          <Text style={[s.kicker, { flex: 0.7, textAlign: "center" }]}>Free</Text>
+          <Text style={[s.kicker, { flex: 0.7, textAlign: "center", color: C.bronze }]}>PRO</Text>
+        </View>
+        {[
+          [t("Active goals"), "1", "∞"],
+          [t("Photo proof"), "✓", "✓"],
+          [t("Video & location proof"), "—", "✓"],
+          [t("Analytics & trophies"), "—", "✓"],
+          [t("Monthly freezes"), "—", "✓"],
+        ].map(([f, a, b], i, arr) => (
+          <View key={f} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderColor: C.line }}>
+            <Text style={[s.goalText, { flex: 1.5, marginTop: 0, fontSize: 13.5 }]}>{f}</Text>
+            <Text style={{ flex: 0.7, textAlign: "center", color: C.faint, fontSize: 14 }}>{a}</Text>
+            <Text style={{ flex: 0.7, textAlign: "center", color: C.bronze, fontSize: 15, fontWeight: "800" }}>{b}</Text>
           </View>
         ))}
       </View>
@@ -1048,7 +1150,8 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
             })}
           </View>
 
-          <Btn label={selProduct ? `${t("Continue")}  ·  ${selProduct.priceString}` : t("Continue")} onPress={() => selected && buy(selected)} disabled={!selected} />
+          <Btn label={selProduct ? `${t("Start Pro")}  ·  ${selProduct.priceString}` : t("Start Pro")} onPress={() => selected && buy(selected)} disabled={!selected} />
+          <Text style={[s.note, { textAlign: "center", marginTop: 8 }]}>{t("Cancel anytime in your App Store settings.")}</Text>
           <TouchableOpacity onPress={doRestore} disabled={restoring}>
             <Text style={s.restore}>{restoring ? t("Restoring…") : t("Restore purchases")}</Text>
           </TouchableOpacity>
@@ -1682,6 +1785,14 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       <TextInput style={[s.input, { height: 78, textAlignVertical: "top", marginTop: 14 }]} multiline blurOnSubmit returnKeyType="done"
         placeholder={t("e.g. gym 45 min, or read 20 pages")} placeholderTextColor={C.faint}
         value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+      {/* one-tap starters — kill the blank-page problem */}
+      <View style={[s.chipRow, { marginTop: 10 }]}>
+        {[t("🏋️ Gym 45 min"), t("📖 Read 20 pages"), t("🏃 Morning run"), t("🧘 Meditate 10 min")].map((sug) => (
+          <TouchableOpacity key={sug} style={s.chip} onPress={() => setText(sug.replace(/^\S+\s/, ""))}>
+            <Text style={s.chipText}>{sug}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
       <Text style={[s.note, { textAlign: "left" }]}>{t("Add a time if you want — e.g. \"gym at 19:00\".")}</Text>
 
       <Text style={[s.label, { marginTop: 16 }]}>{t("Proof")}</Text>
@@ -1899,6 +2010,47 @@ function TimelapseCapture({ onCancel, onDone }) {
   );
 }
 
+/* ---------- APPROVAL CELEBRATION (branded stamp instead of a system alert) ----------
+   The judge's approval is the product's magic moment — it deserves a stamp
+   slamming in, not a grey Alert. Fixed dark backdrop works over both themes. */
+function ApprovalOverlay({ data, onClose, onShare }) {
+  const stamp = useRef(new Animated.Value(0)).current;
+  const rest = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!data) return;
+    stamp.setValue(0); rest.setValue(0);
+    Animated.sequence([
+      Animated.spring(stamp, { toValue: 1, friction: 5, tension: 90, useNativeDriver: true }),
+      Animated.timing(rest, { toValue: 1, duration: 260, useNativeDriver: true }),
+    ]).start();
+  }, [data]);
+  if (!data) return null;
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: "rgba(5,4,6,0.94)", alignItems: "center", justifyContent: "center", padding: 28 }}>
+        <Animated.View style={{ transform: [{ rotate: "-12deg" }, { scale: stamp.interpolate({ inputRange: [0, 1], outputRange: [2.6, 1] }) }], opacity: stamp, borderWidth: 4, borderColor: "#c9a227", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10 }}>
+          <Text style={{ color: "#c9a227", fontSize: 32, fontWeight: "800", letterSpacing: 3 }}>{t("APPROVED")} ✓</Text>
+        </Animated.View>
+        <Animated.View style={{ opacity: rest, alignItems: "center", marginTop: 26, width: "100%" }}>
+          {typeof data.streak === "number" ? (
+            <>
+              <Text style={{ color: "#f4efe8", fontSize: 58, fontWeight: "800" }}>{data.streak}</Text>
+              <Text style={{ color: "#9a948d", fontSize: 11, letterSpacing: 2, textTransform: "uppercase" }}>{data.isWeekly ? t("week streak") : t("day streak")}</Text>
+            </>
+          ) : null}
+          {data.reason ? <Text style={{ color: "#cfc8bf", fontSize: 14, lineHeight: 20, textAlign: "center", marginTop: 14 }}>{data.reason}</Text> : null}
+          {data.completed ? <Text style={{ color: "#c9a227", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("Goal complete — Cert earned!")}</Text> : null}
+          {data.milestone ? <Text style={{ color: "#c9a227", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("You just unlocked a {n}-day verified badge.", { n: data.milestone })}</Text> : null}
+          <View style={{ width: "100%", maxWidth: 320, marginTop: 22 }}>
+            {data.milestone ? <Btn label={t("Share badge")} onPress={onShare} /> : null}
+            <BtnGhost label={t("Continue")} onPress={onClose} />
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+}
+
 /* ---------- SUBMIT (camera -> judge) ---------- */
 function Submit({ goal, onDone, onBack, onViewBadge }) {
   const isTimelapse = goal.proof_type === "timelapse";
@@ -1918,6 +2070,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
   const [geoPlace, setGeoPlace] = useState(null);       // the goal's pinned place label
   const [anchorSet, setAnchorSet] = useState(true);     // false → first check-in pins it
   const [capturing, setCapturing] = useState(false);    // timelapse recorder open
+  const [celebrate, setCelebrate] = useState(null);     // approval overlay payload
 
   // Ask the judge what today's anti-cheat check is, so the screen shows EXACTLY
   // what the server will enforce (no client/server day drift).
@@ -1989,19 +2142,14 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       }
       const v = data.verdict;
       if (v.approved) {
-        if (data.milestone) {
-          // Streak hit 7/30/100 — offer the celebratory shareable badge.
-          Alert.alert(
-            t("{n}-DAY STREAK!", { n: data.milestone }),
-            (v.reason || "") + "\n\n" + t("You just unlocked a {n}-day verified badge.", { n: data.milestone }),
-            [
-              { text: t("Share badge"), onPress: () => onViewBadge({ days: data.milestone, title: goal.text }) },
-              { text: t("Later"), style: "cancel", onPress: onDone },
-            ]
-          );
-        } else {
-          Alert.alert(t("APPROVED"), (v.reason || "") + (!isGeo && geoPlaceNow ? "\n" + geoPlaceNow : "") + (data.completed ? "\n\n" + t("Goal complete — Cert earned!") : ""), [{ text: "OK", onPress: onDone }]);
-        }
+        // Branded celebration overlay (stamp animation) instead of a system alert.
+        setCelebrate({
+          streak: typeof data.goal?.streak === "number" ? data.goal.streak : null,
+          isWeekly: !!data.weekly,
+          reason: (v.reason || "") + (!isGeo && geoPlaceNow ? "\n" + geoPlaceNow : ""),
+          milestone: data.milestone || null,
+          completed: !!data.completed,
+        });
       } else {
         // Let them retry while attempts remain; the appeal flow opens only once
         // today's attempts are used up (attemptsLeft === 0).
@@ -2144,6 +2292,10 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           )}
         </>
       )}
+
+      <ApprovalOverlay data={celebrate}
+        onClose={() => { setCelebrate(null); onDone(); }}
+        onShare={() => { const m = celebrate?.milestone; setCelebrate(null); if (m) onViewBadge({ days: m, title: goal.text }); }} />
     </ScrollView>
   );
 }
