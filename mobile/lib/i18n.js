@@ -102,6 +102,8 @@ const RU = {
   "Save name": "Сохранить имя",
   "Saving…": "Сохранение…",
   "Saved.": "Сохранено.",
+  "Photo permission needed.": "Нужен доступ к галерее.",
+  "Couldn't update photo.": "Не удалось обновить фото.",
   "certs": "сертификаты",
   "🧊 Streak freezes": "🧊 Заморозки серии",
   "A freeze auto-protects a missed day so your streak survives. Used automatically by the nightly check.": "Заморозка автоматически защищает пропущенный день, и серия выживает. Списывается ночной проверкой.",

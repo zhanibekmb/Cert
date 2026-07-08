@@ -1105,16 +1105,28 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
     Alert.alert("Cert", error ? error.message : t("Saved."));
   }
 
+  // Upload the avatar to Storage and save its URL (not a base64 blob in the DB —
+  // that made every profile/leaderboard load pull a huge string and lag).
   async function pickAvatar() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Cert", "Photo permission needed.");
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.3, base64: true });
-    if (res.canceled || !res.assets?.[0]?.base64) return;
+    if (!perm.granted) return Alert.alert("Cert", t("Photo permission needed."));
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.5 });
+    if (res.canceled || !res.assets?.[0]?.uri) return;
     const a = res.assets[0];
-    const uri = `data:${a.mimeType || "image/jpeg"};base64,${a.base64}`;
-    setAvatar(uri);
-    const { error } = await supabase.from("profiles").update({ avatar_url: uri }).eq("id", session.user.id);
-    if (error) Alert.alert("Cert", error.message);
+    try {
+      setSaving(true);
+      const bytes = await fetch(a.uri).then((r) => r.arrayBuffer());
+      const ext = ((a.mimeType || "image/jpeg").split("/")[1] || "jpg").replace("jpeg", "jpg");
+      const path = `${session.user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, bytes, { contentType: a.mimeType || "image/jpeg", upsert: true });
+      if (upErr) throw upErr;
+      const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+      const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", session.user.id);
+      if (error) throw error;
+      setAvatar(url);
+    } catch (e) {
+      Alert.alert("Cert", (e && e.message) || t("Couldn't update photo."));
+    } finally { setSaving(false); }
   }
 
   return (
