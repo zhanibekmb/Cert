@@ -21,7 +21,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const FREE_DAILY_ATTEMPTS = 2;
-const PAID_DAILY_ATTEMPTS = 5;   // subscribers get more tries, but not unlimited
+const PAID_DAILY_ATTEMPTS = 2;   // 2 tries a day for everyone — keeps the streak honest
 const MILESTONES = [7, 30, 100]; // streak thresholds that mint a shareable badge
 // Geo anti-cheat: a submission far from the goal's anchor (its first approved
 // location) is flagged, never auto-rejected — GPS drifts indoors and people

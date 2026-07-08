@@ -18,6 +18,8 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import MapView, { Marker } from "react-native-maps";
 import { CameraView, useCameraPermissions, useMicrophonePermissions } from "expo-camera";
+import { VideoView, useVideoPlayer } from "expo-video";
+import * as FileSystem from "expo-file-system/legacy";
 import * as Location from "expo-location";
 import * as WebBrowser from "expo-web-browser";
 import * as AppleAuthentication from "expo-apple-authentication";
@@ -83,6 +85,21 @@ function useThemePref() {
   return [_themePref, applyThemePref];
 }
 let s = makeStyles(); // built from the current palette; rebuilt on theme change
+
+/* Optional "hide my streak count" — some people focus better without the number
+   staring at them. Module-level so a Settings toggle updates the home live. */
+let _hideStreak = false;
+const _hideStreakListeners = new Set();
+function applyHideStreak(v) {
+  _hideStreak = !!v;
+  AsyncStorage.setItem("cert_hide_streak", _hideStreak ? "1" : "0").catch(() => {});
+  _hideStreakListeners.forEach((fn) => fn());
+}
+function useHideStreak() {
+  const [, force] = useState(0);
+  useEffect(() => { const fn = () => force((x) => x + 1); _hideStreakListeners.add(fn); return () => _hideStreakListeners.delete(fn); }, []);
+  return [_hideStreak, applyHideStreak];
+}
 
 /* Streak milestones that mint a shareable badge. Keep in sync with the judge. */
 const MILESTONES = [7, 30, 100];
@@ -173,6 +190,7 @@ export default function App() {
   // restore saved theme + language preferences once at startup
   useEffect(() => {
     AsyncStorage.getItem("cert_theme").then((p) => { if (p) applyThemePref(p); }).catch(() => {});
+    AsyncStorage.getItem("cert_hide_streak").then((v) => { if (v === "1") applyHideStreak(true); }).catch(() => {});
     initLang();
     AsyncStorage.getItem("cert_intro").then((v) => setFirstRun(v ? "done" : "onboarding")).catch(() => setFirstRun("done"));
   }, []);
@@ -808,6 +826,7 @@ function TabBar({ tab, setTab, onCreate }) {
 function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuyFreezes, onNew, onSubmit, onOpenCert, onReel, onDelete, onDeleteCert }) {
   const [showDone, setShowDone] = useState(false);
   const [showCerts, setShowCerts] = useState(false); // collapsed by default — keeps home clean
+  const [hideStreak] = useHideStreak();
   const myGoals = (goals || []).filter((g) => !g.challenge_id); // challenge goals live under Versus
   const doneGoals = myGoals.filter((g) => g.status === "completed");
   const subsByGoal = {};
@@ -872,7 +891,7 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
       ) : (
         <>
           {activeGoals.map((g) => (
-            <GoalCard key={g.id} goal={g} subs={subsByGoal[g.id] || []} onSubmit={() => onSubmit(g)} onReel={() => onReel(g)}
+            <GoalCard key={g.id} goal={g} subs={subsByGoal[g.id] || []} doneToday={doneToday(g)} hideStreak={hideStreak} onSubmit={() => onSubmit(g)} onReel={() => onReel(g)}
               onOpenCert={() => { const c = certs.find((x) => x.goal_id === g.id); if (c) onOpenCert(c); }} onDelete={() => onDelete && onDelete(g)} />
           ))}
           <BtnGhost label={"+ " + t("Add a goal")} onPress={onNew} />
@@ -1175,6 +1194,7 @@ function SettingsScreen({ session, onBack }) {
   const [busy, setBusy] = useState(false);
   const [themePref, setTheme] = useThemePref();
   const [langPref, setLang] = useLang();
+  const [hideStreak, setHideStreak] = useHideStreak();
 
   function deleteAccount() {
     Alert.alert(
@@ -1227,6 +1247,13 @@ function SettingsScreen({ session, onBack }) {
           <Pill label={t("System")} active={langPref === "system"} onPress={() => setLang("system")} />
           <Pill label="EN" active={langPref === "en"} onPress={() => setLang("en")} />
           <Pill label="RU" active={langPref === "ru"} onPress={() => setLang("ru")} />
+        </View>
+        <View style={[s.rowBetween, { marginTop: 16 }]}>
+          <View style={{ flex: 1, marginRight: 12 }}>
+            <Text style={[s.kicker, { marginBottom: 2 }]}>{t("Hide streak count")}</Text>
+            <Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Show up without the number staring at you.")}</Text>
+          </View>
+          <Switch value={hideStreak} onValueChange={setHideStreak} trackColor={{ true: C.bronze, false: C.line }} thumbColor={C.ink} />
         </View>
       </View>
 
@@ -1283,7 +1310,7 @@ function AnimatedStreakNum({ value }) {
   return <Animated.Text style={[s.streakNum, { transform: [{ scale }] }]}>{value}</Animated.Text>;
 }
 
-function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel, onDelete }) {
+function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onReel, onDelete }) {
   const completed = goal.status === "completed";
   const isWeekly = goal.type === "recurring" && (goal.format === "3x" || goal.format === "5x" || goal.format === "custom");
   const isRecurring = goal.type === "recurring";
@@ -1295,17 +1322,33 @@ function GoalCard({ goal, subs, onSubmit, onOpenCert, onReel, onDelete }) {
           <Ionicons name="trash-outline" size={18} color={C.faint} />
         </TouchableOpacity>
       ) : null}
-      <AnimatedStreakNum value={goal.streak} />
-      <Text style={s.kicker}>{isWeekly ? t("week streak · verified by the judge") : t("day streak · verified by the judge")}</Text>
+      {hideStreak ? (
+        <View style={{ alignItems: "center", paddingVertical: 10 }}>
+          <Ionicons name="eye-off-outline" size={22} color={C.faint} />
+          <Text style={[s.kicker, { marginTop: 4 }]}>{t("streak hidden")}</Text>
+        </View>
+      ) : (
+        <>
+          <AnimatedStreakNum value={goal.streak} />
+          <Text style={s.kicker}>{isWeekly ? t("week streak · verified by the judge") : t("day streak · verified by the judge")}</Text>
+        </>
+      )}
       <Text style={s.goalText}>{goal.text}</Text>
       <Text style={[s.spec, { color: C.mute }]}>{goalCadence(goal)}</Text>
       {goal.proof_type === "geo" ? <Text style={s.spec}>📍 {goal.geo_place || t("geo check-in")}{goal.daily_start ? ` · ${t("from")} ${goal.daily_start}` : ""}</Text> : null}
       {proofSpec(goal) ? <Text style={s.spec}>{proofSpec(goal)}</Text> : null}
-      {isRecurring ? <StreakCalendar subs={subs} /> : null}
-      {isRecurring && !completed ? <MilestoneBar streak={goal.streak || 0} /> : null}
-      {completed
-        ? <TouchableOpacity onPress={onOpenCert}><Text style={[s.kicker, { color: C.bronze, marginTop: 12 }]}>{t("Completed — view & share Cert")} ›</Text></TouchableOpacity>
-        : <Btn label={goal.proof_type === "geo" ? t("📍 Check in now") : t("Submit today's proof")} onPress={onSubmit} />}
+      {isRecurring && !hideStreak ? <StreakCalendar subs={subs} /> : null}
+      {isRecurring && !completed && !hideStreak ? <MilestoneBar streak={goal.streak || 0} /> : null}
+      {completed ? (
+        <TouchableOpacity onPress={onOpenCert}><Text style={[s.kicker, { color: C.bronze, marginTop: 12 }]}>{t("Completed — view & share Cert")} ›</Text></TouchableOpacity>
+      ) : doneToday ? (
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: C.green }}>
+          <Ionicons name="checkmark-circle" size={20} color={C.green} />
+          <Text style={[s.kicker, { color: C.green }]}>{isWeekly ? t("Done for today · come back tomorrow") : t("Done for today")}</Text>
+        </View>
+      ) : (
+        <Btn label={goal.proof_type === "geo" ? t("📍 Check in now") : t("Submit today's proof")} onPress={onSubmit} />
+      )}
       {verifiedCount >= 2 ? <BtnGhost label={t("Progress reel") + ` · ${verifiedCount} ` + t("days")} onPress={onReel} /> : null}
     </View>
   );
@@ -1356,62 +1399,106 @@ function MilestoneBar({ streak }) {
 
 /* ---------- TIMELAPSE REEL (flip-through of a goal's verified proofs) ---------- */
 function Reel({ goal, onBack }) {
-  const [photos, setPhotos] = useState(null); // null=loading · []=none · [{day,url}]
+  const [items, setItems] = useState(null); // null=loading · []=none · [{day,url,isVideo}]
   const [idx, setIdx] = useState(0);
   const [playing, setPlaying] = useState(true);
+  const [exporting, setExporting] = useState(false);
   useEffect(() => {
     let alive = true;
     (async () => {
       const { data } = await supabase.from("submissions").select("day,photo_path,status")
         .eq("goal_id", goal.id).in("status", ["approved", "frozen"]).order("day", { ascending: true });
-      // Only still images render in the flip-reel — skip video-clip proofs.
-      const rows = (data || []).filter((r) => r.photo_path && /\.(jpg|jpeg|png|webp)$/i.test(r.photo_path));
+      const rows = (data || []).filter((r) => r.photo_path); // photos AND recorded clips
       const out = [];
       for (const r of rows) {
         const { data: signed } = await supabase.storage.from("proofs").createSignedUrl(r.photo_path, 3600);
-        if (signed?.signedUrl) out.push({ day: r.day, url: signed.signedUrl });
+        if (signed?.signedUrl) out.push({ day: r.day, url: signed.signedUrl, isVideo: /\.(mp4|mov|m4v|webm)$/i.test(r.photo_path) });
       }
-      if (alive) { setPhotos(out); setIdx(0); }
+      if (alive) { setItems(out); setIdx(0); }
     })();
     return () => { alive = false; };
   }, [goal.id]);
+
+  const cur = items && items[idx];
+  // One player, re-pointed at the current clip when the item is a video.
+  const player = useVideoPlayer(null, (p) => { p.loop = false; });
   useEffect(() => {
-    if (!playing || !photos || photos.length < 2) return;
-    const t = setInterval(() => setIdx((i) => (i + 1) % photos.length), 650);
-    return () => clearInterval(t);
-  }, [playing, photos]);
+    if (!player) return;
+    if (cur && cur.isVideo) { try { player.replace(cur.url); if (playing) player.play(); } catch (_) { /* */ } }
+    else { try { player.pause(); } catch (_) { /* */ } }
+  }, [cur && cur.url, cur && cur.isVideo, playing]);
+  // advance: images on a timer, videos when they finish
+  useEffect(() => {
+    if (!playing || !items || items.length < 2) return;
+    if (cur && cur.isVideo) return;
+    const tmr = setInterval(() => setIdx((i) => (i + 1) % items.length), 900);
+    return () => clearInterval(tmr);
+  }, [playing, items, cur && cur.isVideo]);
+  useEffect(() => {
+    if (!player) return;
+    const sub = player.addListener("playToEnd", () => { if (items && items.length > 1) setIdx((i) => (i + 1) % items.length); });
+    return () => { try { sub.remove(); } catch (_) { /* */ } };
+  }, [player, items]);
+
   async function share() {
-    try { await Share.share({ message: `My Cert timelapse — "${goal.text}": ${(photos || []).length} days, each one verified by AI. The streak you can't fake.` }); } catch (_) { /* */ }
+    try { await Share.share({ message: `My Cert timelapse — "${goal.text}": ${(items || []).length} days, each one verified by AI. The streak you can't fake.` }); } catch (_) { /* */ }
   }
-  if (photos === null) return <Center><ActivityIndicator color={C.bronze} /></Center>;
-  const cur = photos[idx];
+  // Export the whole reel: download each proof and save it to the gallery, so it
+  // can be turned into a story / video in any editor.
+  async function exportAll() {
+    if (!items || !items.length) return;
+    try {
+      setExporting(true);
+      const perm = await MediaLibrary.requestPermissionsAsync(true);
+      if (!perm.granted) { Alert.alert("Cert", t("Allow photo library access to export.")); return; }
+      let saved = 0;
+      for (const it of items) {
+        try {
+          const ext = it.isVideo ? "mp4" : "jpg";
+          const target = `${FileSystem.cacheDirectory}cert_${goal.id}_${it.day}.${ext}`;
+          const dl = await FileSystem.downloadAsync(it.url, target);
+          if (dl?.uri) { await MediaLibrary.saveToLibraryAsync(dl.uri); saved++; }
+        } catch (_) { /* skip one, keep going */ }
+      }
+      Alert.alert("Cert", t("Saved {n} to your gallery.", { n: saved }));
+    } catch (e) {
+      Alert.alert("Cert", (e && e.message) || t("Couldn't export."));
+    } finally { setExporting(false); }
+  }
+
+  if (items === null) return <Center><ActivityIndicator color={C.bronze} /></Center>;
   return (
     <ScrollView contentContainerStyle={s.wrap}>
       <BackBar onBack={onBack} />
       <Text style={s.h2}>{t("Progress reel")}</Text>
       <Text style={s.lede} numberOfLines={2}>{goal.text}</Text>
-      {photos.length === 0 ? (
+      {items.length === 0 ? (
         <View style={[s.card, { alignItems: "center", marginTop: 16 }]}>
           <Text style={s.h2}>{t("No reel yet")}</Text>
-          <Text style={[s.lede, { textAlign: "center" }]}>{t("Verify a few days with photos and your timelapse builds itself.")}</Text>
+          <Text style={[s.lede, { textAlign: "center" }]}>{t("Verify a few days and your reel builds itself.")}</Text>
         </View>
       ) : (
         <>
           <TouchableOpacity activeOpacity={0.95} onPress={() => setPlaying((p) => !p)}>
-            <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} resizeMode="cover" />
+            {cur.isVideo ? (
+              <VideoView player={player} nativeControls={false} contentFit="cover"
+                style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} />
+            ) : (
+              <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} resizeMode="cover" />
+            )}
           </TouchableOpacity>
           <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1c1822" : "#ece6d9", overflow: "hidden", marginTop: 12 }}>
-            <View style={{ height: 4, width: ((idx + 1) / photos.length * 100) + "%", backgroundColor: C.red }} />
+            <View style={{ height: 4, width: ((idx + 1) / items.length * 100) + "%", backgroundColor: C.red }} />
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
-            <Text style={s.note}>{t("Day")} {idx + 1} / {photos.length}</Text>
+            <Text style={s.note}>{t("Day")} {idx + 1} / {items.length}</Text>
             <Text style={s.note}>{cur.day}</Text>
           </View>
           <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
             <View style={{ flex: 1 }}><BtnGhost label={playing ? t("Pause") : t("Play")} onPress={() => setPlaying((p) => !p)} /></View>
-            <View style={{ flex: 1 }}><Btn label={t("Share")} onPress={share} /></View>
+            <View style={{ flex: 1 }}><BtnGhost label={t("Share")} onPress={share} /></View>
           </View>
-          <Text style={[s.note, { textAlign: "center", marginTop: 14 }]}>{t("Save as a video file — coming with the app build.")}</Text>
+          <Btn label={exporting ? t("Exporting…") : t("⤓ Export to gallery")} onPress={exportAll} disabled={exporting} />
         </>
       )}
     </ScrollView>
@@ -1709,8 +1796,9 @@ function TimelapseCapture({ onCancel, onDone }) {
     setRecording(true); setElapsed(0); startedAt.current = Date.now();
     timer.current = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt.current) / 1000)), 250);
     try {
-      // resolves when recording stops — manually, at maxDuration, or at maxFileSize
-      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS, maxFileSize: 8 * 1024 * 1024 });
+      // resolves when recording stops — manually or at maxDuration. No maxFileSize
+      // (it was cutting recordings to a few seconds); size is checked after instead.
+      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS });
       if (timer.current) { clearInterval(timer.current); timer.current = null; }
       setRecording(false);
       const secs = Math.round((Date.now() - startedAt.current) / 1000);
@@ -1719,6 +1807,9 @@ function TimelapseCapture({ onCancel, onDone }) {
       setPreparing(true);
       const dataUri = await videoToDataUri(clip.uri);
       setPreparing(false);
+      if (dataUri.length * 0.75 > TL_MAX_BYTES) {
+        return Alert.alert("Cert", t("That clip is too heavy. Record a shorter one."));
+      }
       onDone({ video: dataUri });
     } catch (e) {
       if (timer.current) { clearInterval(timer.current); timer.current = null; }

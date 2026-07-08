@@ -401,9 +401,21 @@ const RU = {
   // --- reel ---
   "No reel yet": "Ленты пока нет",
   "Verify a few days with photos and your timelapse builds itself.": "Подтверди несколько дней фото — таймлапс соберётся сам.",
+  "Verify a few days and your reel builds itself.": "Подтверди несколько дней — лента соберётся сама.",
   "Pause": "Пауза",
   "Play": "Играть",
-  "Save as a video file — coming with the app build.": "Сохранение в видеофайл — появится в сборке приложения.",
+  "⤓ Export to gallery": "⤓ Экспорт в галерею",
+  "Exporting…": "Экспорт…",
+  "Allow photo library access to export.": "Разреши доступ к галерее для экспорта.",
+  "Saved {n} to your gallery.": "Сохранено в галерею: {n}.",
+  "Couldn't export.": "Не удалось экспортировать.",
+  // --- done today / hide streak / limits ---
+  "Done for today": "На сегодня готово",
+  "Done for today · come back tomorrow": "На сегодня готово · возвращайся завтра",
+  "streak hidden": "серия скрыта",
+  "Hide streak count": "Скрывать счётчик серии",
+  "Show up without the number staring at you.": "Приходи без давящей на тебя цифры.",
+  "That clip is too heavy. Record a shorter one.": "Ролик слишком тяжёлый. Сними покороче.",
 
   // --- new goal ---
   "3×/wk": "3×/нед",
