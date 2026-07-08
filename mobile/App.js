@@ -1653,7 +1653,7 @@ function Reel({ goal, onBack }) {
             )}
           </TouchableOpacity>
           <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1c1822" : "#ece6d9", overflow: "hidden", marginTop: 12 }}>
-            <View style={{ height: 4, width: ((idx + 1) / items.length * 100) + "%", backgroundColor: C.red }} />
+            <View style={{ height: 4, width: ((idx + 1) / items.length * 100) + "%", backgroundColor: C.bronze }} />
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
             <Text style={s.note}>{t("Day")} {idx + 1} / {items.length}</Text>
@@ -2279,7 +2279,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       {isGeo ? null : <Text style={s.note}>{t("The AI judges in a few seconds. A reject resets your streak — you can appeal once.")}</Text>}
       {stage === "judging" ? (
         <View style={{ alignItems: "center", marginTop: 24 }}>
-          <ActivityIndicator color={C.red} />
+          <ActivityIndicator color={C.bronze} />
           <Text style={[s.note, { marginTop: 10 }]}>{isGeo ? t("Checking your location…") : isTimelapse ? t("The judge is analyzing your timelapse…") : t("The judge is analyzing your photo…")}</Text>
         </View>
       ) : reject && reject.attemptsLeft === 0 ? (
@@ -3504,7 +3504,9 @@ function makeStyles() { return StyleSheet.create({
   rowBetween: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 },
   rowGap: { flexDirection: "row", gap: 10, marginTop: 6, marginBottom: 4 },
   brand: { color: C.ink, fontSize: 22, fontWeight: "800", letterSpacing: 4 },
-  kickerRed: { color: C.red, fontSize: 11, letterSpacing: 1, marginBottom: 16, textTransform: "uppercase" },
+  // bronze, not red: on auth it sat between bronze lang chips and a red CTA —
+  // three accents at once read as random coloring
+  kickerRed: { color: C.bronze, fontSize: 11, letterSpacing: 1, marginBottom: 16, textTransform: "uppercase" },
   kicker: { color: C.mute, fontSize: 11, letterSpacing: 1, textTransform: "uppercase" },
   h1: { color: C.ink, fontSize: 40, fontWeight: "800", lineHeight: 42 },
   h2: { color: C.ink, fontSize: 24, fontWeight: "800", marginTop: 8 },
@@ -3522,7 +3524,7 @@ function makeStyles() { return StyleSheet.create({
   googleBtn: { backgroundColor: "#fff", borderRadius: 10, padding: 15, marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" },
   googleText: { color: "#1f1f1f", fontWeight: "700", fontSize: 15 },
   orText: { color: C.faint, fontSize: 12, textAlign: "center", marginVertical: 14 },
-  infoBanner: { color: C.green, backgroundColor: "rgba(52,199,89,0.08)", borderWidth: 1, borderColor: "#1f3b25", borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 18 },
+  infoBanner: { color: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(166,129,43,0.10)", borderWidth: 1, borderColor: C.isDark ? "rgba(201,162,39,0.35)" : "rgba(166,129,43,0.35)", borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 18 },
   switchAuth: { color: C.bronze, fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 20 },
   skipBtn: { borderWidth: 1, borderColor: C.bronze, borderRadius: 10, padding: 13, marginTop: 22, alignItems: "center" },
   skipText: { color: C.bronze, fontWeight: "700", fontSize: 14 },
