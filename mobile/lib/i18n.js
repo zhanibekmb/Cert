@@ -458,6 +458,7 @@ const RU = {
   "That clip is too heavy. Record a shorter one.": "Ролик слишком тяжёлый. Сними покороче.",
   "Free includes 1 active goal. Go Pro for unlimited.": "На Free — 1 активная цель. Pro снимает лимит.",
   "Couldn't send the video. Check your connection and try again.": "Не удалось отправить видео. Проверь соединение и попробуй ещё раз.",
+  "Couldn't share this one. Try exporting instead.": "Не удалось поделиться. Попробуй экспорт.",
 
   // --- new goal ---
   "3×/wk": "3×/нед",

@@ -107,6 +107,10 @@ const MILESTONES = [7, 30, 100];
 /* Gladiator brand mark (transparent PNG). */
 const LOGO = require("./assets/gladiator-logo.png");
 
+/* Full profile cache — the Profile tab unmounts on every tab switch; rendering
+   from this cache makes it open instantly (refresh happens in the background). */
+let _profileCache = null; // { uid, data }
+
 /* Display name: set once in the profile, reused on every leaderboard. Cached so
    challenge screens don't re-query (and so a profile edit reflects immediately). */
 let _cachedName = null;
@@ -201,6 +205,7 @@ export default function App() {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
+      if (event === "SIGNED_OUT") { _profileCache = null; _cachedName = null; }
       // funnel: first successful sign-in on this device completes the first-run flow
       if (event === "SIGNED_IN") {
         AsyncStorage.getItem("cert_funnel_done").then((v) => {
@@ -782,9 +787,12 @@ function Main({ session }) {
   // fullscreen Modal on Android). The screen underneath stays mounted.
   const paywallModal = (
     <Modal visible={paywallOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setPaywallOpen(false)}>
+      {/* fresh provider: safe-area insets don't propagate into native Modals */}
+      <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
         <Paywall isPro={isPro} freezes={freezes} onDone={load} onBack={() => setPaywallOpen(false)} />
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 
@@ -1187,13 +1195,20 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
 }
 
 function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOpenSettings, onUpgrade, onReload, refreshing, onRefresh }) {
-  const [profile, setProfile] = useState(null);
-  const [name, setName] = useState("");
-  const [avatar, setAvatar] = useState(null);
+  // The tab unmounts on every tab switch — render instantly from the module
+  // cache and refresh silently in the background (no reload flash).
+  const cached = _profileCache && _profileCache.uid === session.user.id ? _profileCache.data : null;
+  const [profile, setProfile] = useState(cached);
+  const [name, setName] = useState(cached?.name || "");
+  const [avatar, setAvatar] = useState(cached?.avatar_url || null);
   const [saving, setSaving] = useState(false);
   const loadProfile = useCallback(() => {
     supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
-      .then(({ data }) => { setProfile(data); setName(data?.name || ""); setAvatar(data?.avatar_url || null); });
+      .then(({ data }) => {
+        if (!data) return;
+        _profileCache = { uid: session.user.id, data };
+        setProfile(data); setName(data.name || ""); setAvatar(data.avatar_url || null);
+      });
   }, [session.user.id]);
   useEffect(() => { loadProfile(); }, [loadProfile]);
   const handleRefresh = async () => { loadProfile(); if (onRefresh) await onRefresh(); };
@@ -1203,7 +1218,10 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
   async function save() {
     setSaving(true);
     const { error } = await supabase.from("profiles").update({ name: name.trim() }).eq("id", session.user.id);
-    if (!error) _cachedName = name.trim(); // keep challenge screens in sync
+    if (!error) {
+      _cachedName = name.trim(); // keep challenge screens in sync
+      if (_profileCache?.data) _profileCache.data.name = name.trim();
+    }
     setSaving(false);
     Alert.alert("Cert", error ? error.message : t("Saved."));
   }
@@ -1227,6 +1245,7 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
       const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", session.user.id);
       if (error) throw error;
       setAvatar(url);
+      if (_profileCache?.data) _profileCache.data.avatar_url = url;
     } catch (e) {
       Alert.alert("Cert", (e && e.message) || t("Couldn't update photo."));
     } finally { setSaving(false); }
@@ -1401,9 +1420,12 @@ function SettingsScreen({ session, onBack }) {
       <Text style={[s.note, { textAlign: "center", marginTop: 16 }]}>Cert · v1.0 — {t("[ the streak you can't fake ]")}</Text>
 
       <Modal visible={showIntro} animationType="slide" onRequestClose={() => setShowIntro(false)}>
-        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
-          <Onboarding onDone={() => setShowIntro(false)} />
-        </SafeAreaView>
+        {/* fresh provider: safe-area insets don't propagate into native Modals */}
+        <SafeAreaProvider>
+          <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
+            <Onboarding onDone={() => setShowIntro(false)} />
+          </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
     </ScrollView>
   );
@@ -1571,8 +1593,20 @@ function Reel({ goal, onBack }) {
     return () => { try { sub.remove(); } catch (_) { /* */ } };
   }, [player, items]);
 
+  // Share the CURRENT proof as a real file (photo or clip) — a text-only share
+  // had nothing to show.
+  const [sharing, setSharing] = useState(false);
   async function share() {
-    try { await Share.share({ message: `My Cert timelapse — "${goal.text}": ${(items || []).length} days, each one verified by AI. The streak you can't fake.` }); } catch (_) { /* */ }
+    if (!cur) return;
+    try {
+      setSharing(true);
+      const ext = cur.isVideo ? "mp4" : "jpg";
+      const dl = await FileSystem.downloadAsync(cur.url, `${FileSystem.cacheDirectory}cert_share_${cur.day}.${ext}`);
+      if (!dl?.uri || !(await Sharing.isAvailableAsync())) throw new Error("unavailable");
+      await Sharing.shareAsync(dl.uri, { mimeType: cur.isVideo ? "video/mp4" : "image/jpeg" });
+    } catch (_) {
+      Alert.alert("Cert", t("Couldn't share this one. Try exporting instead."));
+    } finally { setSharing(false); }
   }
   // Export the whole reel: download each proof and save it to the gallery, so it
   // can be turned into a story / video in any editor.
@@ -1627,7 +1661,7 @@ function Reel({ goal, onBack }) {
           </View>
           <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
             <View style={{ flex: 1 }}><BtnGhost label={playing ? t("Pause") : t("Play")} onPress={() => setPlaying((p) => !p)} /></View>
-            <View style={{ flex: 1 }}><BtnGhost label={t("Share")} onPress={share} /></View>
+            <View style={{ flex: 1 }}><BtnGhost label={sharing ? "…" : t("Share")} onPress={share} disabled={sharing} /></View>
           </View>
           <Btn label={exporting ? t("Exporting…") : t("⤓ Export to gallery")} onPress={exportAll} disabled={exporting} />
         </>
@@ -1666,6 +1700,8 @@ function MapPicker({ visible, initial, onPick, onClose }) {
   }
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      {/* fresh provider: safe-area insets don't propagate into native Modals */}
+      <SafeAreaProvider>
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, paddingVertical: 12 }}>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}><Ionicons name="close" size={24} color={C.ink} /></TouchableOpacity>
@@ -1688,6 +1724,7 @@ function MapPicker({ visible, initial, onPick, onClose }) {
           <Btn label={busy ? "…" : t("Use this place")} onPress={confirm} disabled={busy || !pt} />
         </View>
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }
