@@ -1538,9 +1538,9 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
       {completed ? (
         <TouchableOpacity onPress={onOpenCert}><Text style={[s.kicker, { color: C.bronze, marginTop: 12 }]}>{t("Completed — view & share Cert")} ›</Text></TouchableOpacity>
       ) : doneToday ? (
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: C.green }}>
-          <Ionicons name="checkmark-circle" size={20} color={C.green} />
-          <Text style={[s.kicker, { color: C.green }]}>{isWeekly ? t("Done for today · come back tomorrow") : t("Done for today")}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 16, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: C.green }}>
+          <Ionicons name="checkmark-circle" size={20} color={C.green} style={{ flexShrink: 0 }} />
+          <Text style={[s.kicker, { color: C.green, flexShrink: 1, textAlign: "center" }]} numberOfLines={2}>{isWeekly ? t("Done for today · come back tomorrow") : t("Done for today")}</Text>
         </View>
       ) : (
         <Btn label={goal.proof_type === "geo" ? t("📍 Check in now") : t("Submit today's proof")} onPress={onSubmit} />
