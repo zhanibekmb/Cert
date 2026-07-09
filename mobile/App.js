@@ -702,6 +702,7 @@ function Main({ session }) {
   // The paywall is a Modal ON TOP of whatever is open (not a screen swap), so
   // a half-filled form underneath keeps its state when the user backs out.
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const [freezeSheetOpen, setFreezeSheetOpen] = useState(false); // ❄️ mini-paywall
   const [createChooser, setCreateChooser] = useState(false); // center "+" → goal or challenge
   const [goals, setGoals] = useState(null);
   const [certs, setCerts] = useState([]);
@@ -795,6 +796,15 @@ function Main({ session }) {
       </SafeAreaProvider>
     </Modal>
   );
+  const freezeModal = (
+    <Modal visible={freezeSheetOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setFreezeSheetOpen(false)}>
+      <SafeAreaProvider>
+      <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top"]}>
+        <FreezeSheet freezes={freezes} onDone={load} onClose={() => setFreezeSheetOpen(false)} />
+      </SafeAreaView>
+      </SafeAreaProvider>
+    </Modal>
+  );
 
   // ----- overlay screens (full screen, own back + swipe-from-left to go back) -----
   let overlay = null;
@@ -809,7 +819,7 @@ function Main({ session }) {
   else if (screen === "cert" && activeCert) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="cert" days={activeCert.days} title={activeCert.title} subtitle={activeCert.issued_at ? "Earned " + new Date(activeCert.issued_at).toLocaleDateString() : null} onBack={back} /></SwipeBack>; }
   else if (screen === "badge" && activeBadge) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="milestone" days={activeBadge.days} title={activeBadge.title} onBack={back} /></SwipeBack>; }
   else if (screen === "reel" && activeReelGoal) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><Reel goal={activeReelGoal} onBack={back} /></SwipeBack>; }
-  if (overlay) return <View style={{ flex: 1, backgroundColor: C.bg }}>{overlay}{paywallModal}</View>;
+  if (overlay) return <View style={{ flex: 1, backgroundColor: C.bg }}>{overlay}{paywallModal}{freezeModal}</View>;
 
   // Delete a personal goal (cascades its submissions/appeals; Certs are kept,
   // their goal link just goes null). Verified-days total lives on the goal row,
@@ -873,7 +883,7 @@ function Main({ session }) {
       <View style={{ flex: 1 }} {...tabSwipe.panHandlers}>
         {tab === "home" && (
           <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
-            freezes={freezes} onBuyFreezes={() => buyFreezeFlow(load)}
+            freezes={freezes} onBuyFreezes={() => setFreezeSheetOpen(true)}
             onNew={startNewGoal} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} onDelete={deleteGoal} onDeleteCert={deleteCert} />
         )}
         {tab === "challenges" && (
@@ -881,10 +891,11 @@ function Main({ session }) {
             onCreate={() => setScreen("challengeNew")} onJoin={() => setScreen("challengeJoin")} />
         )}
         {tab === "stats" && <Stats goals={goals || []} subs={subs} onOpenBadge={openBadge} isPro={isPro} onUpgrade={openPaywall} refreshing={refreshing} onRefresh={onRefresh} />}
-        {tab === "profile" && <ProfileTab session={session} goals={goals || []} certs={certs} subs={subs} freezes={freezes} onOpenCert={openCert} onOpenSettings={() => setScreen("settings")} onUpgrade={openPaywall} onReload={load} refreshing={refreshing} onRefresh={onRefresh} />}
+        {tab === "profile" && <ProfileTab session={session} goals={goals || []} certs={certs} subs={subs} freezes={freezes} onOpenCert={openCert} onOpenSettings={() => setScreen("settings")} onUpgrade={openPaywall} onBuyFreezes={() => setFreezeSheetOpen(true)} onReload={load} refreshing={refreshing} onRefresh={onRefresh} />}
       </View>
       <TabBar tab={tab} setTab={setTab} onCreate={() => setCreateChooser(true)} />
       {paywallModal}
+      {freezeModal}
       {createChooserModal}
     </View>
   );
@@ -1030,15 +1041,53 @@ async function purchaseFlow(productId, onReload) {
     Alert.alert("Cert", msg);
   }
 }
-function buyFreezeFlow(onReload) {
-  if (!purchasesEnabled()) {
-    Alert.alert("Cert", t("Payments aren't configured yet (add your RevenueCat key in config.js)."));
-    return;
-  }
-  const labels = { freeze_pack_3: t("3 freezes"), freeze_pack_10: t("10 freezes") };
-  const buttons = FREEZE_PACK_PRODUCTS.map((id) => ({ text: labels[id] || id, onPress: () => purchaseFlow(id, onReload) }));
-  buttons.push({ text: t("Cancel"), style: "cancel" });
-  Alert.alert(t("Buy streak freezes"), t("A freeze protects a missed day. Pick a pack:"), buttons);
+/* ---------- FREEZE SHEET (buying freezes gets its own mini-paywall) ---------- */
+function FreezeSheet({ freezes = 0, onDone, onClose }) {
+  const [packs, setPacks] = useState(null); // null=loading · []=unavailable
+  const enabled = purchasesEnabled();
+  useEffect(() => {
+    let alive = true;
+    if (!enabled) { setPacks([]); return; }
+    getProducts().then((p) => { if (alive) setPacks(p.freezePacks || []); }).catch(() => { if (alive) setPacks([]); });
+    return () => { alive = false; };
+  }, [enabled]);
+  const NAMES = { freeze_pack_3: t("3 freezes"), freeze_pack_10: t("10 freezes") };
+  return (
+    <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 40 }]}>
+      <BackBar onBack={onClose} />
+      <View style={s.pwHero}>
+        <View style={s.pwGlow}><Ionicons name="snow" size={62} color={C.bronze} /></View>
+        <Text style={s.pwTitle}>{t("Streak freezes")}</Text>
+        <Text style={s.pwSub}>{t("Miss a day — a freeze is spent automatically overnight and your streak survives.")}</Text>
+      </View>
+      <View style={[s.freezePill, { alignSelf: "center", marginTop: 12 }]}>
+        <Ionicons name="snow-outline" size={16} color={C.bronze} />
+        <Text style={s.freezePillNum}>{t("You have {n} freezes", { n: freezes })}</Text>
+      </View>
+      {packs === null ? (
+        <ActivityIndicator color={C.bronze} style={{ marginTop: 24 }} />
+      ) : packs.length === 0 ? (
+        <Text style={[s.note, { marginTop: 16 }]}>{t("Payments aren't configured yet (add your RevenueCat key in config.js).")}</Text>
+      ) : (
+        packs.map((p) => {
+          const best = p.identifier === "freeze_pack_10";
+          return (
+            <TouchableOpacity key={p.identifier} activeOpacity={0.85} onPress={() => purchaseFlow(p.identifier, onDone)} style={[s.planLine, best && { borderColor: C.bronze }]}>
+              <Ionicons name={best ? "snow" : "snow-outline"} size={22} color={C.bronze} />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={[s.buyTitle, { fontSize: 15 }]}>{NAMES[p.identifier] || p.title || p.identifier}</Text>
+                  {best ? <Text style={s.planSave}>{t("BEST VALUE")}</Text> : null}
+                </View>
+                <Text style={[s.planPer, { marginTop: 3 }]}>{t("One-time purchase · works on Free too")}</Text>
+              </View>
+              <Text style={s.planLinePrice}>{p.priceString || ""}</Text>
+            </TouchableOpacity>
+          );
+        })
+      )}
+    </ScrollView>
+  );
 }
 
 const PRO_FEATURES = [
@@ -1100,7 +1149,7 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
       {/* Hero: glowing brand mark, "Pro" in bronze */}
       <View style={s.pwHero}>
         <View style={s.pwGlow}>
-          <Image source={LOGO} style={{ width: 52, height: 52 }} resizeMode="contain" />
+          <Image source={LOGO} style={{ width: 78, height: 78 }} resizeMode="contain" />
         </View>
         <Text style={s.pwTitle}>Cert <Text style={{ color: C.bronze }}>Pro</Text></Text>
         <Text style={s.pwSub}>{t("Stronger proof methods, more goals, and deeper stats.")}</Text>
@@ -1186,7 +1235,7 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
   );
 }
 
-function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOpenSettings, onUpgrade, onReload, refreshing, onRefresh }) {
+function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOpenSettings, onUpgrade, onBuyFreezes, onReload, refreshing, onRefresh }) {
   // The tab unmounts on every tab switch — render instantly from the module
   // cache and refresh silently in the background (no reload flash).
   const cached = _profileCache && _profileCache.uid === session.user.id ? _profileCache.data : null;
@@ -1280,7 +1329,7 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
           <Text style={[s.statNum, { fontSize: 22 }]}>{freezes}</Text>
         </View>
         <Text style={[s.note, { marginTop: 4 }]}>{t("A freeze auto-protects a missed day so your streak survives. Used automatically by the nightly check.")}</Text>
-        <Btn label={t("Buy freezes")} onPress={() => buyFreezeFlow(onReload)} />
+        <Btn label={t("Buy freezes")} onPress={onBuyFreezes} />
       </View>
 
       {plan !== "Pro" ? (
@@ -2610,11 +2659,33 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
           )}
         </>
       ) : (
-        <TouchableOpacity style={[s.card, { alignItems: "center", gap: 6 }]} activeOpacity={0.85} onPress={onUpgrade}>
-          <Text style={{ fontSize: 26 }}>📊🔒</Text>
-          <Text style={[s.kicker, { color: C.bronze }]}>{t("Analytics is a Pro feature")}</Text>
+        // Locked state teases the real thing: a faded heatmap behind a lock
+        // sells analytics better than an emoji ever did.
+        <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={onUpgrade}>
+          <View>
+            <View style={{ opacity: 0.35 }}>
+              {[
+                [1,1,0,1,1,1,0,1,1,1,1,0],
+                [0,1,1,1,0,1,1,1,0,1,1,1],
+                [1,0,1,1,1,1,1,0,1,1,0,1],
+                [1,1,1,0,1,1,0,1,1,1,1,1],
+              ].map((row, r) => (
+                <View key={r} style={{ flexDirection: "row", gap: 4, marginTop: r === 0 ? 0 : 4 }}>
+                  {row.map((v, i) => (
+                    <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 3, backgroundColor: v ? C.bronze : (C.isDark ? "#1c1922" : "#f1ece0") }} />
+                  ))}
+                </View>
+              ))}
+            </View>
+            <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" }}>
+              <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: C.card, borderWidth: 1.5, borderColor: C.bronze, alignItems: "center", justifyContent: "center" }}>
+                <Ionicons name="lock-closed" size={20} color={C.bronze} />
+              </View>
+            </View>
+          </View>
+          <Text style={[s.kicker, { color: C.bronze, textAlign: "center", marginTop: 14 }]}>{t("Analytics is a Pro feature")}</Text>
           <Text style={[s.note, { textAlign: "center" }]}>{t("Unlock the 12-week consistency heatmap, trophy shelf and trends.")}</Text>
-          <Text style={[s.kicker, { color: C.bronze, marginTop: 6 }]}>{t("Upgrade →")}</Text>
+          <Text style={[s.kicker, { color: C.bronze, textAlign: "center", marginTop: 8 }]}>{t("Upgrade →")}</Text>
         </TouchableOpacity>
       )}
     </ScrollView>
@@ -3601,7 +3672,7 @@ function makeStyles() { return StyleSheet.create({
   buyBadge: { color: "#120606", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, overflow: "hidden" },
   pwHero: { alignItems: "center", marginTop: 6, marginBottom: 4 },
   pwMark: { width: 64, height: 64, borderRadius: 20, borderWidth: 1, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card },
-  pwGlow: { width: 92, height: 92, borderRadius: 46, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#c9a227", shadowOpacity: 0.55, shadowRadius: 22, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+  pwGlow: { width: 118, height: 118, borderRadius: 59, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#c9a227", shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
   planLine: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
   planLineOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(166,129,43,0.08)" },
   planLinePrice: { color: C.ink, fontSize: 17, fontWeight: "800", marginLeft: 8 },

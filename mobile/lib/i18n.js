@@ -146,6 +146,9 @@ const RU = {
   "≈ {p}/mo · billed once a year": "≈ {p}/мес · оплата раз в год",
   "billed once a year": "оплата раз в год",
   "billed monthly": "оплата раз в месяц",
+  "Miss a day — a freeze is spent automatically overnight and your streak survives.": "Пропустил день — заморозка спишется ночью сама, и серия выживет.",
+  "BEST VALUE": "ВЫГОДНО",
+  "One-time purchase · works on Free too": "Разовая покупка · работает и на Free",
   "Cancel anytime in your App Store settings.": "Отмена в любой момент в настройках App Store.",
   // --- goal suggestion chips ---
   "🏋️ Gym 45 min": "🏋️ Зал 45 мин",
