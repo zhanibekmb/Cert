@@ -1051,7 +1051,7 @@ function FreezeSheet({ freezes = 0, onDone, onClose }) {
     getProducts().then((p) => { if (alive) setPacks(p.freezePacks || []); }).catch(() => { if (alive) setPacks([]); });
     return () => { alive = false; };
   }, [enabled]);
-  const NAMES = { freeze_pack_3: t("3 freezes"), freeze_pack_10: t("10 freezes") };
+  const NAMES = { freeze_pack_3: t("3 freezes") };
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 40 }]}>
       <BackBar onBack={onClose} />
@@ -1070,14 +1070,12 @@ function FreezeSheet({ freezes = 0, onDone, onClose }) {
         <Text style={[s.note, { marginTop: 16 }]}>{t("Payments aren't configured yet (add your RevenueCat key in config.js).")}</Text>
       ) : (
         packs.map((p) => {
-          const best = p.identifier === "freeze_pack_10";
           return (
-            <TouchableOpacity key={p.identifier} activeOpacity={0.85} onPress={() => purchaseFlow(p.identifier, onDone)} style={[s.planLine, best && { borderColor: C.bronze }]}>
-              <Ionicons name={best ? "snow" : "snow-outline"} size={22} color={C.bronze} />
+            <TouchableOpacity key={p.identifier} activeOpacity={0.85} onPress={() => purchaseFlow(p.identifier, onDone)} style={s.planLine}>
+              <Ionicons name="snow-outline" size={22} color={C.bronze} />
               <View style={{ flex: 1, marginLeft: 10 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                   <Text style={[s.buyTitle, { fontSize: 15 }]}>{NAMES[p.identifier] || p.title || p.identifier}</Text>
-                  {best ? <Text style={s.planSave}>{t("BEST VALUE")}</Text> : null}
                 </View>
                 <Text style={[s.planPer, { marginTop: 3 }]}>{t("One-time purchase · works on Free too")}</Text>
               </View>

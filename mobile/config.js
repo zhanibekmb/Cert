@@ -10,5 +10,5 @@ export const REVENUECAT_ANDROID_KEY = "goog_UjMToAwyMgreizfJiDxSwmWoBXc";  // go
 
 // Product / package identifiers — must match RevenueCat AND the
 // revenuecat-webhook FREEZE_PACKS / PRO_PRODUCTS maps.
-export const FREEZE_PACK_PRODUCTS = ["freeze_pack_3", "freeze_pack_10"]; // consumables (free users too)
+export const FREEZE_PACK_PRODUCTS = ["freeze_pack_3"]; // consumable (free users too) — freeze_pack_10 removed (too much for one pack)
 export const PRO_PRODUCTS = ["cert_pro_monthly", "cert_pro_yearly"];     // subscription
