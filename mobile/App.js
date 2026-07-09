@@ -873,7 +873,7 @@ function Main({ session }) {
       <View style={{ flex: 1 }} {...tabSwipe.panHandlers}>
         {tab === "home" && (
           <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
-            freezes={freezes} onBuyFreezes={openPaywall}
+            freezes={freezes} onBuyFreezes={() => buyFreezeFlow(load)}
             onNew={startNewGoal} onSubmit={(g) => { setActive(g); setSubmitReturn(null); setScreen("submit"); }} onOpenCert={openCert} onReel={openReel} onDelete={deleteGoal} onDeleteCert={deleteCert} />
         )}
         {tab === "challenges" && (
@@ -1069,17 +1069,22 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
     return () => { alive = false; };
   }, [enabled]);
 
-  const NAMES = { cert_pro_monthly: t("Monthly"), cert_pro_yearly: t("Yearly"), freeze_pack_3: t("3 freezes"), freeze_pack_10: t("10 freezes") };
-  const PER = { cert_pro_monthly: t("per month"), cert_pro_yearly: t("per year") };
+  const NAMES = { cert_pro_monthly: t("Monthly"), cert_pro_yearly: t("Yearly") };
   const buy = (id) => purchaseFlow(id, onDone);
   const pro = products?.pro || [];
-  const packs = products?.freezePacks || [];
   const nameOf = (p) => NAMES[p.identifier] || p.title || p.identifier;
   const monthly = pro.find((p) => p.identifier === "cert_pro_monthly");
   const yearly = pro.find((p) => p.identifier === "cert_pro_yearly");
   let savePct = null;
   if (monthly?.price && yearly?.price) { const v = Math.round((1 - yearly.price / (monthly.price * 12)) * 100); if (v > 0) savePct = v; }
   const selProduct = pro.find((p) => p.identifier === selected);
+  // "≈ X/mo" for the yearly plan — a yearly lump sum scares, per-month sells
+  const perMonth = (p) => {
+    try {
+      if (!p?.price || !p?.currencyCode) return null;
+      return new Intl.NumberFormat(undefined, { style: "currency", currency: p.currencyCode, maximumFractionDigits: 2 }).format(p.price / 12);
+    } catch (_) { return null; }
+  };
 
   async function doRestore() {
     setRestoring(true);
@@ -1092,17 +1097,13 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]}>
       <BackBar onBack={onBack} />
 
-      {/* Hero header */}
+      {/* Hero: glowing brand mark, "Pro" in bronze */}
       <View style={s.pwHero}>
-        <View style={s.pwMark}><Ionicons name="shield-checkmark" size={34} color={C.bronze} /></View>
-        <Text style={s.pwTitle}>{t("Cert Pro")}</Text>
+        <View style={s.pwGlow}>
+          <Image source={LOGO} style={{ width: 52, height: 52 }} resizeMode="contain" />
+        </View>
+        <Text style={s.pwTitle}>Cert <Text style={{ color: C.bronze }}>Pro</Text></Text>
         <Text style={s.pwSub}>{t("Stronger proof methods, more goals, and deeper stats.")}</Text>
-      </View>
-
-      {/* Current freeze balance */}
-      <View style={[s.freezePill, { alignSelf: "center", marginTop: 12 }]}>
-        <Ionicons name="snow-outline" size={16} color={C.bronze} />
-        <Text style={s.freezePillNum}>{t("You have {n} freezes", { n: freezes })}</Text>
       </View>
 
       {/* Free vs Pro comparison — makes the upgrade reason obvious at a glance */}
@@ -1141,55 +1142,46 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
         <Text style={[s.note, { marginTop: 16 }]}>{t("No products found. Check the product IDs in RevenueCat.")}</Text>
       ) : (
         <>
-          {/* Pricing grid */}
-          <Text style={[s.kicker, { marginTop: 22, marginBottom: 2 }]}>{t("Choose your plan")}</Text>
-          <View style={s.planRow}>
-            {pro.map((p) => {
-              const on = p.identifier === selected;
-              const best = p.identifier === "cert_pro_yearly";
-              return (
-                <TouchableOpacity key={p.identifier} activeOpacity={0.85} onPress={() => setSelected(p.identifier)} style={[s.plan, on && s.planOn]}>
-                  <Text style={[s.planName, on && { color: C.bronze }]}>{nameOf(p)}</Text>
-                  <Text style={s.planPrice}>{p.priceString}</Text>
-                  <Text style={s.planPer}>{PER[p.identifier] || ""}</Text>
-                  {best && savePct ? <Text style={s.planSave}>{t("SAVE {n}%", { n: savePct })}</Text> : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          {/* Plans — vertical rows, yearly first with per-month framing */}
+          {[yearly, monthly].filter(Boolean).map((p) => {
+            const on = p.identifier === selected;
+            const isYear = p.identifier === "cert_pro_yearly";
+            const mo = isYear ? perMonth(p) : null;
+            return (
+              <TouchableOpacity key={p.identifier} activeOpacity={0.85} onPress={() => setSelected(p.identifier)} style={[s.planLine, on && s.planLineOn]}>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Text style={[s.buyTitle, { fontSize: 15 }, on && { color: C.bronze }]}>{nameOf(p)}</Text>
+                    {isYear && savePct ? <Text style={s.planSave}>{t("SAVE {n}%", { n: savePct })}</Text> : null}
+                  </View>
+                  <Text style={[s.planPer, { marginTop: 3 }]}>
+                    {isYear ? (mo ? t("≈ {p}/mo · billed once a year", { p: mo }) : t("billed once a year")) : t("billed monthly")}
+                  </Text>
+                </View>
+                <Text style={s.planLinePrice}>{p.priceString}</Text>
+                <Ionicons name={on ? "checkmark-circle" : "ellipse-outline"} size={22} color={on ? C.bronze : C.line} style={{ marginLeft: 10 }} />
+              </TouchableOpacity>
+            );
+          })}
 
           <Btn label={selProduct ? `${t("Start Pro")}  ·  ${selProduct.priceString}` : t("Start Pro")} onPress={() => selected && buy(selected)} disabled={!selected} />
           <Text style={[s.note, { textAlign: "center", marginTop: 8 }]}>{t("Cancel anytime in your App Store settings.")}</Text>
-          <TouchableOpacity onPress={doRestore} disabled={restoring}>
-            <Text style={s.restore}>{restoring ? t("Restoring…") : t("Restore purchases")}</Text>
-          </TouchableOpacity>
         </>
       )}
 
-      {/* Freeze packs — for everyone, Pro or Free */}
-      {enabled && packs.length > 0 ? (
-        <>
-          <Text style={[s.kicker, { marginTop: 24 }]}>{t("Streak freezes")}</Text>
-          <Text style={s.note}>{t("A freeze auto-protects a missed day. Stock up before a busy stretch.")}</Text>
-          {packs.map((p) => (
-            <TouchableOpacity key={p.identifier} activeOpacity={0.85} onPress={() => buy(p.identifier)} style={s.buyCard}>
-              <Ionicons name="snow" size={22} color={C.bronze} />
-              <Text style={[s.buyTitle, { flex: 1 }]}>{nameOf(p)}</Text>
-              <Text style={s.buyPrice}>{p.priceString || ""}</Text>
-            </TouchableOpacity>
-          ))}
-        </>
-      ) : null}
-
-      <Text style={[s.note, { textAlign: "center", marginTop: 18 }]}>{t("Cert Pro is an auto-renewing subscription that renews at the price shown for the same period, unless cancelled at least 24 hours before the period ends. Manage or cancel anytime in your store account.")}</Text>
-      <View style={{ flexDirection: "row", justifyContent: "center", gap: 22, marginTop: 10 }}>
+      {/* fine print: one quiet links row + tiny auto-renew note */}
+      <View style={{ flexDirection: "row", justifyContent: "center", gap: 20, marginTop: 18 }}>
+        <TouchableOpacity onPress={doRestore} disabled={restoring}>
+          <Text style={s.finePrintLink}>{restoring ? t("Restoring…") : t("Restore purchases")}</Text>
+        </TouchableOpacity>
         <TouchableOpacity onPress={() => Linking.openURL("https://www.certapp.pro/terms.html")}>
-          <Text style={{ color: C.bronze, fontSize: 12, textDecorationLine: "underline" }}>{t("Terms of Use")}</Text>
+          <Text style={s.finePrintLink}>{t("Terms of Use")}</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => Linking.openURL("https://www.certapp.pro/privacy.html")}>
-          <Text style={{ color: C.bronze, fontSize: 12, textDecorationLine: "underline" }}>{t("Privacy Policy")}</Text>
+          <Text style={s.finePrintLink}>{t("Privacy Policy")}</Text>
         </TouchableOpacity>
       </View>
+      <Text style={s.finePrint}>{t("Cert Pro is an auto-renewing subscription that renews at the price shown for the same period, unless cancelled at least 24 hours before the period ends. Manage or cancel anytime in your store account.")}</Text>
     </ScrollView>
   );
 }
@@ -1288,7 +1280,7 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
           <Text style={[s.statNum, { fontSize: 22 }]}>{freezes}</Text>
         </View>
         <Text style={[s.note, { marginTop: 4 }]}>{t("A freeze auto-protects a missed day so your streak survives. Used automatically by the nightly check.")}</Text>
-        <Btn label={t("Buy freezes")} onPress={onUpgrade} />
+        <Btn label={t("Buy freezes")} onPress={() => buyFreezeFlow(onReload)} />
       </View>
 
       {plan !== "Pro" ? (
@@ -3609,6 +3601,12 @@ function makeStyles() { return StyleSheet.create({
   buyBadge: { color: "#120606", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, overflow: "hidden" },
   pwHero: { alignItems: "center", marginTop: 6, marginBottom: 4 },
   pwMark: { width: 64, height: 64, borderRadius: 20, borderWidth: 1, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card },
+  pwGlow: { width: 92, height: 92, borderRadius: 46, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#c9a227", shadowOpacity: 0.55, shadowRadius: 22, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+  planLine: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
+  planLineOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(166,129,43,0.08)" },
+  planLinePrice: { color: C.ink, fontSize: 17, fontWeight: "800", marginLeft: 8 },
+  finePrint: { color: C.faint, fontSize: 10.5, lineHeight: 15, textAlign: "center", marginTop: 10, opacity: 0.85 },
+  finePrintLink: { color: C.mute, fontSize: 12, textDecorationLine: "underline" },
   pwTitle: { color: C.ink, fontSize: 30, fontWeight: "800", textAlign: "center", marginTop: 12 },
   pwSub: { color: C.mute, fontSize: 14, textAlign: "center", marginTop: 6, lineHeight: 20, paddingHorizontal: 10 },
   planRow: { flexDirection: "row", gap: 10, marginTop: 14 },

@@ -143,6 +143,9 @@ const RU = {
   "Analytics & trophies": "Аналитика и трофеи",
   "Monthly freezes": "Заморозки каждый месяц",
   "Start Pro": "Включить Pro",
+  "≈ {p}/mo · billed once a year": "≈ {p}/мес · оплата раз в год",
+  "billed once a year": "оплата раз в год",
+  "billed monthly": "оплата раз в месяц",
   "Cancel anytime in your App Store settings.": "Отмена в любой момент в настройках App Store.",
   // --- goal suggestion chips ---
   "🏋️ Gym 45 min": "🏋️ Зал 45 мин",
