@@ -1146,13 +1146,12 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]}>
       <BackBar onBack={onBack} />
 
-      {/* Hero: glowing brand mark, "Pro" in bronze */}
+      {/* Hero: the brand's stamp motif — same language as the APPROVED stamp */}
       <View style={s.pwHero}>
-        <View style={s.pwGlow}>
-          <Image source={LOGO} style={{ width: 78, height: 78 }} resizeMode="contain" />
+        <View style={s.pwStamp}>
+          <Text style={s.pwStampT}>CERT PRO ✓</Text>
         </View>
-        <Text style={s.pwTitle}>Cert <Text style={{ color: C.bronze }}>Pro</Text></Text>
-        <Text style={s.pwSub}>{t("Stronger proof methods, more goals, and deeper stats.")}</Text>
+        <Text style={[s.pwSub, { marginTop: 20 }]}>{t("Stronger proof methods, more goals, and deeper stats.")}</Text>
       </View>
 
       {/* Free vs Pro comparison — makes the upgrade reason obvious at a glance */}
@@ -1325,20 +1324,26 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
       {/* Streak freeze — protects a missed day. Anyone can buy a pack, Pro or free. */}
       <View style={[s.card, { marginTop: 16 }]}>
         <View style={s.rowBetween}>
-          <Text style={s.kicker}>{t("🧊 Streak freezes")}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <View style={s.optIcon}><Ionicons name="snow-outline" size={20} color={C.bronze} /></View>
+            <Text style={s.kicker}>{t("Streak freezes")}</Text>
+          </View>
           <Text style={[s.statNum, { fontSize: 22 }]}>{freezes}</Text>
         </View>
-        <Text style={[s.note, { marginTop: 4 }]}>{t("A freeze auto-protects a missed day so your streak survives. Used automatically by the nightly check.")}</Text>
+        <Text style={[s.note, { marginTop: 8, textAlign: "left" }]}>{t("A freeze auto-protects a missed day so your streak survives. Used automatically by the nightly check.")}</Text>
         <Btn label={t("Buy freezes")} onPress={onBuyFreezes} />
       </View>
 
       {plan !== "Pro" ? (
-        <TouchableOpacity style={[s.card, { marginTop: 12, alignItems: "center", gap: 4 }]} activeOpacity={0.85} onPress={onUpgrade}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="flash" size={16} color={C.bronze} />
-            <Text style={[s.kicker, { color: C.bronze }]}>{t("Upgrade to Pro")}</Text>
+        <TouchableOpacity style={[s.card, { marginTop: 12 }]} activeOpacity={0.85} onPress={onUpgrade}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+            <View style={s.proChip}><Text style={s.proChipT}>PRO</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.kicker, { color: C.bronze }]}>{t("Upgrade to Pro")}</Text>
+              <Text style={[s.note, { textAlign: "left", marginTop: 3 }]}>{t("Video & location proof, unlimited goals, analytics, and monthly freezes.")}</Text>
+            </View>
+            <Text style={s.certRowChevron}>›</Text>
           </View>
-          <Text style={[s.note, { textAlign: "center" }]}>{t("Video & location proof, unlimited goals, analytics, and monthly freezes.")}</Text>
         </TouchableOpacity>
       ) : null}
 
@@ -3673,6 +3678,10 @@ function makeStyles() { return StyleSheet.create({
   pwHero: { alignItems: "center", marginTop: 6, marginBottom: 4 },
   pwMark: { width: 64, height: 64, borderRadius: 20, borderWidth: 1, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card },
   pwGlow: { width: 118, height: 118, borderRadius: 59, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#c9a227", shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+  pwStamp: { transform: [{ rotate: "-8deg" }], borderWidth: 3.5, borderColor: C.bronze, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 9, marginTop: 14, shadowColor: "#c9a227", shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  pwStampT: { color: C.bronze, fontSize: 28, fontWeight: "800", letterSpacing: 3 },
+  proChip: { borderWidth: 2, borderColor: C.bronze, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, transform: [{ rotate: "-6deg" }] },
+  proChipT: { color: C.bronze, fontSize: 11, fontWeight: "800", letterSpacing: 1 },
   planLine: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
   planLineOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(166,129,43,0.08)" },
   planLinePrice: { color: C.ink, fontSize: 17, fontWeight: "800", marginLeft: 8 },
