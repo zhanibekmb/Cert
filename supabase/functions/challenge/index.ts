@@ -289,9 +289,15 @@ Deno.serve(async (req) => {
     const last = rows[rows.length - 1];
     if (last.userId !== user.id) return json({ error: "not_last_place" }, 403);
 
-    // spin from the same deterministic pool the board shows (friends' dares first)
+    // spin from the same deterministic pool the board shows (friends' dares first).
+    // If anyone WROTE a dare, the wheel must land on one of the written ones —
+    // the default templates only pad the wheel visually and are eligible only
+    // when nobody wrote anything. buildDarePool puts customs first, so indexes
+    // 0..customCount-1 are exactly the written dares.
     const pool = buildDarePool(members.map((m: any) => m.dare_text));
-    const dare = pool[Math.floor(Math.random() * pool.length)];
+    const customCount = members.map((m: any) => String(m.dare_text || "").trim()).filter(Boolean).length;
+    const eligible = customCount > 0 ? Math.min(customCount, 12) : pool.length;
+    const dare = pool[Math.floor(Math.random() * eligible)];
     await svc.from("challenges").update({ dare, loser_user_id: user.id, status: "ended" }).eq("id", challengeId).is("dare", null);
     const { data: after } = await svc.from("challenges").select("dare").eq("id", challengeId).single();
     return json({ dare: after?.dare || dare });
