@@ -150,6 +150,7 @@ const RU = {
   "Save name": "Сохранить имя",
   "Saving…": "Сохранение…",
   "Saved.": "Сохранено.",
+  "Saved ✓": "Сохранено ✓",
   "Photo permission needed.": "Нужен доступ к галерее.",
   "Couldn't update photo.": "Не удалось обновить фото.",
   "certs": "сертификаты",

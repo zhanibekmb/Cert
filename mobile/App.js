@@ -1336,7 +1336,7 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
       <View style={s.statRow}>
         <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.verifiedTotal}</Text><Text style={s.statLabel}>{t("verified days")}</Text></View>
         <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.bestStreak}</Text><Text style={s.statLabel}>{t("best streak")}</Text></View>
-        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{certs.length}</Text><Text style={s.statLabel}>{t("certs")}</Text></View>
+        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{certs.length}</Text><Text style={s.statLabel} numberOfLines={1} adjustsFontSizeToFit>{t("certs")}</Text></View>
       </View>
 
       {/* Streak freeze — protects a missed day. Anyone can buy a pack, Pro or free. */}
@@ -1360,20 +1360,20 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
         </View>
         <Text style={[s.note, { marginTop: 8, textAlign: "left" }]}>{t("You both get {n} freezes when a friend joins with your code.", { n: 2 })}</Text>
         {refCode ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
-            <View style={[s.input, { flex: 1, alignItems: "center" }]}>
+          <>
+            <View style={[s.input, { alignItems: "center", marginTop: 10 }]}>
               <Text style={{ color: C.red, fontSize: 20, fontWeight: "800", letterSpacing: 4 }}>{refCode}</Text>
             </View>
-            <View style={{ flex: 1 }}><Btn style={{ marginTop: 0 }} label={t("Share code")} onPress={shareCode} /></View>
-          </View>
+            <Btn style={{ marginTop: 10 }} label={t("Share code")} onPress={shareCode} />
+          </>
         ) : null}
         {!refRedeemed ? (
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
-            <TextInput style={[s.input, { flex: 1 }]} autoCapitalize="characters" maxLength={6}
+          <>
+            <TextInput style={[s.input, { marginTop: 10 }]} autoCapitalize="characters" maxLength={6}
               placeholder={t("Enter a friend's code")} placeholderTextColor={C.faint}
               value={refInput} onChangeText={setRefInput} />
-            <View style={{ flex: 1 }}><BtnGhost style={{ marginTop: 0 }} label={refBusy ? "…" : t("Redeem")} onPress={redeemCode} disabled={refBusy} /></View>
-          </View>
+            <BtnGhost style={{ marginTop: 10 }} label={refBusy ? "…" : t("Redeem")} onPress={redeemCode} disabled={refBusy} />
+          </>
         ) : null}
       </View>
 
@@ -1424,6 +1424,7 @@ function SettingsScreen({ session, onBack }) {
   const [name, setName] = useState(cachedP?.name || "");
   const [avatar, setAvatar] = useState(cachedP?.avatar_url || null);
   const [savingP, setSavingP] = useState(false);
+  const [savedOk, setSavedOk] = useState(false); // brief "Saved" on the button
   useEffect(() => {
     if (cachedP) return;
     supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
@@ -1436,9 +1437,11 @@ function SettingsScreen({ session, onBack }) {
     if (!error) {
       _cachedName = name.trim(); // keep challenge screens in sync
       if (_profileCache?.data) _profileCache.data.name = name.trim();
+      setSavedOk(true); setTimeout(() => setSavedOk(false), 2000); // the button says it
+    } else {
+      Alert.alert("Cert", error.message);
     }
     setSavingP(false);
-    Alert.alert("Cert", error ? error.message : t("Saved."));
   }
 
   // Upload the avatar to Storage and save its URL (not a base64 blob in the DB —
@@ -1518,7 +1521,7 @@ function SettingsScreen({ session, onBack }) {
           </View>
         </View>
         <Text style={[s.note, { textAlign: "left", marginTop: 8 }]}>{t("tap to change photo")}</Text>
-        <Btn style={{ marginTop: 12 }} label={savingP ? t("Saving…") : t("Save name")} onPress={saveName} disabled={savingP} />
+        <Btn style={{ marginTop: 12 }} label={savedOk ? t("Saved ✓") : savingP ? t("Saving…") : t("Save name")} onPress={saveName} disabled={savingP || savedOk} />
       </View>
 
       <View style={[s.card, { marginTop: 14 }]}>
@@ -1548,11 +1551,11 @@ function SettingsScreen({ session, onBack }) {
         <View style={s.rowBetween}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
             <View style={s.optIcon}><Ionicons name="notifications-outline" size={20} color={C.bronze} /></View>
-            <Text style={s.kicker}>{t("Daily reminder")}</Text>
+            <Text style={[s.kicker, { flex: 1 }]} numberOfLines={2}>{t("Daily reminder")}</Text>
           </View>
           <Switch value={remEnabled} onValueChange={toggleReminder} trackColor={{ true: C.bronze, false: C.line }} thumbColor={C.ink} />
         </View>
-        <Text style={s.note}>{t("A nudge to submit your proof so you never break the streak.")}</Text>
+        <Text style={[s.note, { textAlign: "left", marginTop: 8 }]}>{t("A nudge to submit your proof so you never break the streak.")}</Text>
         <TimeField value={remTime} onChange={pickTime} placeholder="Pick a time" />
       </View>
 
@@ -1673,20 +1676,13 @@ function StreakCalendar({ subs, goal }) {
   const doneSubs = (subs || []).filter((x) => x.status === "approved" || x.status === "frozen")
     .sort((a, b) => (a.day < b.day ? -1 : 1)).slice(-total);
   const cells = Array.from({ length: total }, (_, i) => (i < doneSubs.length ? doneSubs[i].status : null));
-  const per = 10, rows = [];
-  for (let i = 0; i < cells.length; i += per) rows.push(cells.slice(i, i + per));
   const off = C.isDark ? "#1f242c" : "#e8ecf1";
   return (
-    <View style={{ gap: 3, marginTop: 14 }}>
-      {rows.map((row, ri) => (
-        <View key={ri} style={{ flexDirection: "row", gap: 3 }}>
-          {row.map((st, i) => {
-            const frozen = st === "frozen";
-            return <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 3, backgroundColor: st === "approved" ? C.bronze : frozen ? "transparent" : off, borderWidth: frozen ? 1.2 : 0, borderColor: C.red }} />;
-          })}
-          {row.length < per ? Array.from({ length: per - row.length }, (_, k) => <View key={"sp" + k} style={{ flex: 1, aspectRatio: 1 }} />) : null}
-        </View>
-      ))}
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 14 }}>
+      {cells.map((st, i) => {
+        const frozen = st === "frozen";
+        return <View key={i} style={{ width: 16, height: 16, borderRadius: 3, backgroundColor: st === "approved" ? C.bronze : frozen ? "transparent" : off, borderWidth: frozen ? 1.2 : 0, borderColor: C.red }} />;
+      })}
     </View>
   );
 }
@@ -2272,7 +2268,7 @@ function ApprovalOverlay({ data, goalSubs = [], onClose, onShare }) {
   // last 7 days ending today; done = verified before OR (today, once animated)
   const days = lastNDays(7);
   const todayStr = days[6];
-  const doneSet = new Set(goalSubs.filter((x) => x.status === "approved" || x.status === "frozen").map((x) => x.day));
+  const doneSet = new Set((goalSubs || []).filter((x) => x.status === "approved" || x.status === "frozen").map((x) => x.day));
   const dowShort = (d) => t(DOW_NAMES[(new Date(d + "T00:00:00Z").getUTCDay() + 6) % 7]).slice(0, 2);
   return (
     <Modal visible animationType="fade" onRequestClose={onClose}>
