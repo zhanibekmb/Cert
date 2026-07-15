@@ -2025,22 +2025,30 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
             value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
         )}
 
-        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 12 }}>
-          {type === "recurring" ? (
-            <>
+        {/* schedule: one labeled line per decision — nothing crowds */}
+        {type === "recurring" ? (
+          <View style={{ marginTop: 14, gap: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={[s.label, { marginBottom: 0, width: 100 }]} numberOfLines={1}>{t("How often?")}</Text>
               <SegPill label={cadenceLabel} onPress={() => setSheet("cadence")} />
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={[s.label, { marginBottom: 0, width: 100 }]} numberOfLines={1}>{t("Deadline")}</Text>
               <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("any time")}
                 trigger={(open) => <SegPill label={deadline ? t("by {t}", { t: deadline }) : t("any time")} onPress={open} />} />
+            </View>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={[s.label, { marginBottom: 0, width: 100 }]} numberOfLines={1}>{t("Length")}</Text>
               <SegPill label={durLabel} onPress={() => setSheet("duration")} />
-            </>
-          ) : (
-            <>
-              <Text style={s.sentenceText}>{t("by")} </Text>
-              <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline}
-                trigger={(open) => <SegPill label={otLabel} onPress={open} />} />
-            </>
-          )}
-        </View>
+            </View>
+          </View>
+        ) : (
+          <View style={{ flexDirection: "row", alignItems: "center", marginTop: 14 }}>
+            <Text style={[s.label, { marginBottom: 0, width: 100 }]} numberOfLines={1}>{t("Deadline")}</Text>
+            <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline}
+              trigger={(open) => <SegPill label={otLabel} onPress={open} />} />
+          </View>
+        )}
 
         {type === "recurring" && format === "custom" ? (
           <View style={[s.chipRow, { marginTop: 12 }]}>
