@@ -810,7 +810,7 @@ function Main({ session }) {
   // ----- overlay screens (full screen, own back + swipe-from-left to go back) -----
   let overlay = null;
   if (screen === "new") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><NewGoal session={session} isPro={isPro} onUpgrade={openPaywall} onDone={async () => { await load(); setScreen(null); }} onBack={back} /></SwipeBack>; }
-  else if (screen === "submit" && active) { const back = () => { setScreen(submitReturn); setSubmitReturn(null); }; overlay = <SwipeBack onBack={back}><Submit goal={active} onDone={async () => { await load(); setScreen(submitReturn); setSubmitReturn(null); }} onViewBadge={openBadge} onBack={back} /></SwipeBack>; }
+  else if (screen === "submit" && active) { const back = () => { setScreen(submitReturn); setSubmitReturn(null); }; overlay = <SwipeBack onBack={back}><Submit goal={active} goalSubs={(subs || []).filter((x) => x.goal_id === active.id)} onDone={async () => { await load(); setScreen(submitReturn); setSubmitReturn(null); }} onViewBadge={openBadge} onBack={back} /></SwipeBack>; }
   else if (screen === "challengeNew") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><CreateChallenge isPro={isPro} onUpgrade={openPaywall} onCreated={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
   else if (screen === "challengeJoin") { const back = () => { setJoinCode(""); setScreen(null); }; overlay = <SwipeBack onBack={back}><JoinChallenge initialCode={joinCode} onJoined={(id) => { setJoinCode(""); setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
   else if (screen === "challengeDetail" && activeChallenge) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ChallengeDetail challengeId={activeChallenge} onSubmitProof={(g) => { setActive(g); setSubmitReturn("challengeDetail"); setScreen("submit"); }} onReview={() => setScreen("review")} onSharePlacement={(rank, title) => { setActivePlacement({ rank, title }); setScreen("placement"); }} onBack={back} /></SwipeBack>; }
@@ -1432,9 +1432,9 @@ function SettingsScreen({ session, onBack }) {
             <TextInput style={s.input} placeholder={t("Your name")} placeholderTextColor={C.faint} value={name} onChangeText={setName} />
           </View>
         </View>
-        <View style={{ flexDirection: "row", gap: 10 }}>
-          <View style={{ flex: 1 }}><BtnGhost label={savingP ? "…" : t("Change photo")} onPress={pickAvatar} disabled={savingP} /></View>
-          <View style={{ flex: 1 }}><Btn label={savingP ? t("Saving…") : t("Save name")} onPress={saveName} disabled={savingP} /></View>
+        <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-end" }}>
+          <View style={{ flex: 1 }}><BtnGhost style={{ marginTop: 12 }} label={savingP ? "…" : t("Change photo")} onPress={pickAvatar} disabled={savingP} /></View>
+          <View style={{ flex: 1 }}><Btn style={{ marginTop: 12 }} label={savingP ? t("Saving…") : t("Save name")} onPress={saveName} disabled={savingP} /></View>
         </View>
       </View>
 
@@ -1817,6 +1817,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const [mapInitial, setMapInitial] = useState(null); // where the map opens centered
   const [customDur, setCustomDur] = useState(false); // "Custom" length → number input
   const [sheet, setSheet] = useState(null); // which pill's picker is open: 'proof' | 'cadence' | 'duration'
+  const [proofDesc, setProofDesc] = useState(""); // user's own "the photo will show…" promise
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
   const isGeo = proofType === "geo";
@@ -1845,9 +1846,12 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     setBusy(true);
     try {
       let spec = { en: null, ru: null };
-      // Only photo goals get an AI proof-spec (it's photo-worded, e.g. "Send a
-      // clear photo…"). Timelapse (video) and geo goals don't need it.
-      if (proofType === "photo") {
+      // The user's own "the photo will show…" promise IS the proof-spec — the
+      // judge uses it as the checklist hint. Only fall back to the AI-generated
+      // spec when the user left it empty. Timelapse/geo goals don't need one.
+      if (proofType === "photo" && proofDesc.trim().length >= 3) {
+        spec = { en: proofDesc.trim(), ru: proofDesc.trim() };
+      } else if (proofType === "photo") {
         try {
           const { data } = await supabase.functions.invoke("proof-spec", { body: { goal: text.trim() } });
           if (data && (data.en || data.ru)) spec = data;
@@ -1964,6 +1968,36 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
               value={duration ? String(duration) : ""} onChangeText={(v) => { const n = parseInt(String(v).replace(/[^0-9]/g, ""), 10); setDuration(!n || n <= 0 ? null : n); }} />
             <Text style={[s.note, { marginTop: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
           </View>
+        ) : null}
+        {/* what exactly the photo will show — the user's own promise becomes the
+            judge's checklist (skips the AI-generated proof-spec entirely) */}
+        {proofType === "photo" ? (
+          <View style={{ marginTop: 12 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+              <Text style={s.sentenceText}>{t("The photo will show")}:</Text>
+            </View>
+            <TextInput style={[s.input, { marginTop: 6 }]} blurOnSubmit returnKeyType="done"
+              placeholder={t("e.g. me holding a glass of water at the gym")} placeholderTextColor={C.faint}
+              value={proofDesc} onChangeText={(v) => setProofDesc(v.replace(/\n/g, " "))} />
+          </View>
+        ) : null}
+        {/* geo: a live mini-map appears right here — tap it to (re)pin the point */}
+        {isGeo ? (
+          <TouchableOpacity activeOpacity={0.85} onPress={openMap} style={{ marginTop: 12, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: C.line }}>
+            <View pointerEvents="none">
+              <MapView style={{ height: 132 }} region={{
+                latitude: geoAnchor?.lat ?? 40, longitude: geoAnchor?.lng ?? 0,
+                latitudeDelta: geoAnchor ? 0.01 : 80, longitudeDelta: geoAnchor ? 0.01 : 80,
+              }}>
+                {geoAnchor ? <Marker coordinate={{ latitude: geoAnchor.lat, longitude: geoAnchor.lng }} /> : null}
+              </MapView>
+            </View>
+            <View style={{ position: "absolute", bottom: 6, left: 8, right: 8, flexDirection: "row", justifyContent: "space-between" }}>
+              <Text style={{ fontSize: 11, fontWeight: "700", color: C.red, backgroundColor: C.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, overflow: "hidden" }}>
+                {geoAnchor ? (geoAnchor.place || t("pinned place")) : t("Tap to pin on the map")}
+              </Text>
+            </View>
+          </TouchableOpacity>
         ) : null}
         {isGeo && geoAnchor ? (
           <TouchableOpacity onPress={() => setGeoAnchor(null)} style={{ marginTop: 10 }}>
@@ -2118,37 +2152,90 @@ function TimelapseCapture({ onCancel, onDone }) {
 /* ---------- APPROVAL CELEBRATION (branded stamp instead of a system alert) ----------
    The judge's approval is the product's magic moment — it deserves a stamp
    slamming in, not a grey Alert. Fixed dark backdrop works over both themes. */
-function ApprovalOverlay({ data, onClose, onShare }) {
-  const stamp = useRef(new Animated.Value(0)).current;
-  const rest = useRef(new Animated.Value(0)).current;
+function ApprovalOverlay({ data, goalSubs = [], onClose, onShare }) {
+  // Full-screen streak celebration: badge pops in, flame springs up, the streak
+  // number COUNTS UP to today's value, then the week row lights up today's cell.
+  const badge = useRef(new Animated.Value(0)).current;   // "approved" pill
+  const flame = useRef(new Animated.Value(0)).current;   // big flame spring
+  const pop = useRef(new Animated.Value(1)).current;     // number pop at count end
+  const todayCell = useRef(new Animated.Value(0)).current; // week-row today flip
+  const rest = useRef(new Animated.Value(0)).current;    // reason + buttons
+  const [shown, setShown] = useState(0);                 // the counting number
   useEffect(() => {
     if (!data) return;
-    stamp.setValue(0); rest.setValue(0);
+    badge.setValue(0); flame.setValue(0); pop.setValue(1); todayCell.setValue(0); rest.setValue(0);
+    const target = typeof data.streak === "number" ? data.streak : 1;
+    setShown(Math.max(0, target - 1));
     Animated.sequence([
-      Animated.spring(stamp, { toValue: 1, friction: 5, tension: 90, useNativeDriver: true }),
-      Animated.timing(rest, { toValue: 1, duration: 260, useNativeDriver: true }),
-    ]).start();
+      Animated.spring(badge, { toValue: 1, friction: 6, tension: 120, useNativeDriver: true }),
+      Animated.spring(flame, { toValue: 1, friction: 5, tension: 70, useNativeDriver: true }),
+    ]).start(() => {
+      setTimeout(() => {
+        setShown(target); // the +1 tick
+        Animated.sequence([
+          Animated.spring(pop, { toValue: 1.35, friction: 3, tension: 160, useNativeDriver: true }),
+          Animated.spring(pop, { toValue: 1, friction: 5, useNativeDriver: true }),
+        ]).start();
+        Animated.spring(todayCell, { toValue: 1, friction: 5, tension: 90, useNativeDriver: true }).start();
+        Animated.timing(rest, { toValue: 1, duration: 320, delay: 250, useNativeDriver: true }).start();
+      }, 450);
+    });
   }, [data]);
   if (!data) return null;
+  // last 7 days ending today; done = verified before OR (today, once animated)
+  const days = lastNDays(7);
+  const todayStr = days[6];
+  const doneSet = new Set(goalSubs.filter((x) => x.status === "approved" || x.status === "frozen").map((x) => x.day));
+  const dowShort = (d) => t(DOW_NAMES[(new Date(d + "T00:00:00Z").getUTCDay() + 6) % 7]).slice(0, 2);
   return (
-    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(8,10,13,0.94)", alignItems: "center", justifyContent: "center", padding: 28 }}>
-        <Animated.View style={{ transform: [{ rotate: "-12deg" }, { scale: stamp.interpolate({ inputRange: [0, 1], outputRange: [2.6, 1] }) }], opacity: stamp, borderWidth: 4, borderColor: "#6366f1", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10 }}>
-          <Text style={{ color: "#6366f1", fontSize: 32, fontWeight: "800", letterSpacing: 3 }}>{t("APPROVED")} ✓</Text>
+    <Modal visible animationType="fade" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: C.bg, alignItems: "center", justifyContent: "center", padding: 28 }}>
+        <Animated.View style={{ transform: [{ scale: badge.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }) }], opacity: badge, flexDirection: "row", alignItems: "center", gap: 6, borderWidth: 2, borderColor: C.red, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 6 }}>
+          <Ionicons name="checkmark-circle" size={18} color={C.red} />
+          <Text style={{ color: C.red, fontSize: 14, fontWeight: "800", letterSpacing: 2 }}>{t("APPROVED")}</Text>
         </Animated.View>
-        <Animated.View style={{ opacity: rest, alignItems: "center", marginTop: 26, width: "100%" }}>
-          {typeof data.streak === "number" ? (
-            <>
-              <Text style={{ color: "#f2f4f7", fontSize: 58, fontWeight: "800" }}>{data.streak}</Text>
-              <Text style={{ color: "#98a1ad", fontSize: 11, letterSpacing: 2, textTransform: "uppercase" }}>{data.isWeekly ? t("week streak") : t("day streak")}</Text>
-            </>
-          ) : null}
-          {data.reason ? <Text style={{ color: "#c3cad4", fontSize: 14, lineHeight: 20, textAlign: "center", marginTop: 14 }}>{data.reason}</Text> : null}
-          {data.completed ? <Text style={{ color: "#6366f1", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("Goal complete — Cert earned!")}</Text> : null}
-          {data.milestone ? <Text style={{ color: "#6366f1", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("You just unlocked a {n}-day verified badge.", { n: data.milestone })}</Text> : null}
-          <View style={{ width: "100%", maxWidth: 320, marginTop: 22 }}>
+
+        <Animated.View style={{ alignItems: "center", marginTop: 26, transform: [{ scale: flame.interpolate({ inputRange: [0, 1], outputRange: [0.2, 1] }) }], opacity: flame }}>
+          <Ionicons name="flame" size={96} color={C.red} />
+        </Animated.View>
+
+        {typeof data.streak === "number" ? (
+          <Animated.View style={{ alignItems: "center", marginTop: 8, transform: [{ scale: pop }] }}>
+            <Text style={{ color: C.ink, fontSize: 72, fontWeight: "800", lineHeight: 76 }}>{shown}</Text>
+            <Text style={{ color: C.mute, fontSize: 12, letterSpacing: 2, textTransform: "uppercase" }}>{data.isWeekly ? t("week streak") : t("day streak")}</Text>
+          </Animated.View>
+        ) : null}
+
+        {/* Duolingo-style week row — today's cell flips on with a spring */}
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 22, alignSelf: "stretch", maxWidth: 340 }}>
+          {days.map((d) => {
+            const isToday = d === todayStr;
+            const done = doneSet.has(d);
+            const cell = (filled) => ({ flex: 1, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", backgroundColor: filled ? C.red : (C.isDark ? "#1f242c" : "#eef1f6") });
+            return (
+              <View key={d} style={{ flex: 1, alignItems: "stretch" }}>
+                <Text style={{ textAlign: "center", fontSize: 10, color: C.faint, marginBottom: 4 }}>{dowShort(d)}</Text>
+                {isToday ? (
+                  <View style={cell(false)}>
+                    <Animated.View style={[cell(true), { position: "absolute", left: 0, right: 0, opacity: todayCell, transform: [{ scale: todayCell.interpolate({ inputRange: [0, 1], outputRange: [0.4, 1] }) }] }]}>
+                      <Ionicons name="checkmark" size={20} color="#ffffff" />
+                    </Animated.View>
+                  </View>
+                ) : (
+                  <View style={cell(done)}>{done ? <Ionicons name="checkmark" size={18} color="#ffffff" /> : null}</View>
+                )}
+              </View>
+            );
+          })}
+        </View>
+
+        <Animated.View style={{ opacity: rest, alignItems: "center", marginTop: 20, width: "100%" }}>
+          {data.reason ? <Text style={{ color: C.mute, fontSize: 14, lineHeight: 20, textAlign: "center" }} numberOfLines={3}>{data.reason}</Text> : null}
+          {data.completed ? <Text style={{ color: C.red, fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("Goal complete — Cert earned!")}</Text> : null}
+          {data.milestone ? <Text style={{ color: C.red, fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("You just unlocked a {n}-day verified badge.", { n: data.milestone })}</Text> : null}
+          <View style={{ width: "100%", maxWidth: 320 }}>
             {data.milestone ? <Btn label={t("Share badge")} onPress={onShare} /> : null}
-            <BtnGhost label={t("Continue")} onPress={onClose} />
+            <Btn label={t("Continue")} onPress={onClose} style={data.milestone ? { marginTop: 10 } : null} />
           </View>
         </Animated.View>
       </View>
@@ -2157,7 +2244,7 @@ function ApprovalOverlay({ data, onClose, onShare }) {
 }
 
 /* ---------- SUBMIT (camera -> judge) ---------- */
-function Submit({ goal, onDone, onBack, onViewBadge }) {
+function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
   const isTimelapse = goal.proof_type === "timelapse";
   const isGeo = goal.proof_type === "geo";
   const [busy, setBusy] = useState(false);
@@ -2418,7 +2505,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
         </>
       )}
 
-      <ApprovalOverlay data={celebrate}
+      <ApprovalOverlay data={celebrate} goalSubs={goalSubs}
         onClose={() => { setCelebrate(null); onDone(); }}
         onShare={() => { const m = celebrate?.milestone; setCelebrate(null); if (m) onViewBadge({ days: m, title: goal.text }); }} />
     </ScrollView>
@@ -2715,8 +2802,12 @@ function Heatmap({ byDay, countByDay = {} }) {
 function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefresh }) {
   const st = computeStats(goals, subs);
   const windowVerified = lastNDays(182).filter((d) => st.byDay[d] === "approved").length;
-  const week = lastNDays(7); // oldest → today
+  // week pager: 0 = current week, 1 = last week, … (up to ~6 months back)
+  const [weekOff, setWeekOff] = useState(0);
+  const week = lastNDays(7 * (weekOff + 1)).slice(0, 7); // that week's 7 days, oldest first
   const thisWeek = week.filter((d) => st.byDay[d] === "approved" || st.byDay[d] === "frozen").length;
+  const fmtDay = (d) => { try { return new Date(d + "T00:00:00").toLocaleString(activeLang() === "ru" ? "ru" : "en", { day: "numeric", month: "short" }); } catch (_) { return d; } };
+  const weekTitle = weekOff === 0 ? t("This week") : `${fmtDay(week[0])} – ${fmtDay(week[6])}`;
   const dayDot = (d) => (st.byDay[d] === "approved" ? C.bronze
     : st.byDay[d] === "rejected" || st.byDay[d] === "missed" ? "rgba(220,38,38,0.45)"
     : (C.isDark ? "#1f242c" : "#e8ecf1"));
@@ -2748,10 +2839,18 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
         <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.approvalRate == null ? "—" : st.approvalRate + "%"}</Text><Text style={s.statLabel}>{t("approval rate")}</Text></View>
       </View>
 
-      {/* This week at a glance — 7 day cells, today rightmost; frozen = outlined */}
+      {/* Week-by-week view — ‹ › page through past weeks; frozen = outlined */}
       <View style={[s.card, { marginTop: 12 }]}>
         <View style={s.rowBetween}>
-          <Text style={s.kicker}>{t("This week")}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <TouchableOpacity onPress={() => setWeekOff((v) => Math.min(v + 1, 25))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="chevron-back" size={18} color={weekOff >= 25 ? C.line : C.mute} />
+            </TouchableOpacity>
+            <Text style={s.kicker}>{weekTitle}</Text>
+            <TouchableOpacity onPress={() => setWeekOff((v) => Math.max(v - 1, 0))} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} disabled={weekOff === 0}>
+              <Ionicons name="chevron-forward" size={18} color={weekOff === 0 ? C.line : C.mute} />
+            </TouchableOpacity>
+          </View>
           <Text style={[s.kicker, { color: C.bronze }]}>{thisWeek}/7</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
@@ -3540,8 +3639,8 @@ function BackBar({ onBack }) {
     </TouchableOpacity>
   );
 }
-function Btn({ label, onPress, disabled }) {
-  return <TouchableOpacity style={[s.btn, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled}><Text style={s.btnText}>{label}</Text></TouchableOpacity>;
+function Btn({ label, onPress, disabled, style }) {
+  return <TouchableOpacity style={[s.btn, style, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled}><Text style={s.btnText}>{label}</Text></TouchableOpacity>;
 }
 /* Touchable that springs down slightly while pressed (tactile card feedback). */
 function PressScale({ onPress, children, style, disabled }) {
@@ -3571,8 +3670,8 @@ function OptionCard({ icon, title, desc, active, locked, onPress }) {
     </PressScale>
   );
 }
-function BtnGhost({ label, onPress, disabled }) {
-  return <TouchableOpacity style={[s.btnGhost, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled}><Text style={s.btnGhostText}>{label}</Text></TouchableOpacity>;
+function BtnGhost({ label, onPress, disabled, style }) {
+  return <TouchableOpacity style={[s.btnGhost, style, disabled && { opacity: 0.5 }]} onPress={onPress} disabled={disabled}><Text style={s.btnGhostText}>{label}</Text></TouchableOpacity>;
 }
 /* Rounded segmented control (iOS-style tab switcher). options: [{value,label}]. */
 function TabSwitch({ options, value, onChange }) {
@@ -3795,7 +3894,9 @@ function makeStyles() { return StyleSheet.create({
   certRowDays: { color: C.bronze, fontSize: 28, fontWeight: "800", minWidth: 44, textAlign: "center" },
   certRowTitle: { color: C.ink, fontSize: 15, fontWeight: "700" },
   certRowChevron: { color: C.faint, fontSize: 24 },
-  shareCard: { width: "100%", aspectRatio: 9 / 16, backgroundColor: C.bg, borderWidth: 2, borderColor: C.bronze, borderRadius: 22, padding: 28, justifyContent: "space-between" },
+  // Cert artifact: fixed deep-indigo card (theme-independent — it's a shareable
+  // image, so it must look the same everywhere).
+  shareCard: { width: "100%", aspectRatio: 9 / 16, backgroundColor: "#1e1b4e", borderWidth: 2, borderColor: "#818cf8", borderRadius: 22, padding: 28, justifyContent: "space-between" },
   shareTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   shareLogo: { width: 30, height: 30 },
   shareLogoBig: { width: 72, height: 72, marginBottom: 14 },
@@ -3868,12 +3969,13 @@ function makeStyles() { return StyleSheet.create({
   planPer: { color: C.faint, fontSize: 12, marginTop: 3 },
   planSave: { color: "#ffffff", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 0.5, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, overflow: "hidden", marginTop: 10 },
   restore: { color: C.mute, fontSize: 13, fontWeight: "700", textAlign: "center", marginTop: 14, paddingVertical: 6 },
-  shareBrand: { color: C.ink, fontSize: 22, fontWeight: "800", letterSpacing: 5 },
-  shareVerified: { color: C.bronze, fontSize: 12, fontWeight: "800", letterSpacing: 1, borderWidth: 1, borderColor: C.bronze, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  shareKicker: { color: C.mute, fontSize: 13, letterSpacing: 3, fontWeight: "700", marginBottom: 4 },
-  shareDays: { color: C.bronze, fontSize: 120, fontWeight: "800", lineHeight: 124 },
-  shareDaysLabel: { color: C.ink, fontSize: 15, letterSpacing: 4, fontWeight: "700" },
-  shareNotFaked: { color: C.bronze, fontSize: 14, letterSpacing: 3, fontWeight: "800", marginTop: 14 },
-  shareGoal: { color: C.ink, fontSize: 22, fontWeight: "800", lineHeight: 28, marginBottom: 12 },
-  shareTagline: { color: C.faint, fontSize: 13, lineHeight: 18 },
+  // share-card text: fixed colors matched to the deep-indigo card above
+  shareBrand: { color: "#ffffff", fontSize: 22, fontWeight: "800", letterSpacing: 5 },
+  shareVerified: { color: "#a5b4fc", fontSize: 12, fontWeight: "800", letterSpacing: 1, borderWidth: 1, borderColor: "#a5b4fc", borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  shareKicker: { color: "#a5b4fc", fontSize: 13, letterSpacing: 3, fontWeight: "700", marginBottom: 4 },
+  shareDays: { color: "#ffffff", fontSize: 120, fontWeight: "800", lineHeight: 124 },
+  shareDaysLabel: { color: "#c7d2fe", fontSize: 15, letterSpacing: 4, fontWeight: "700" },
+  shareNotFaked: { color: "#a5b4fc", fontSize: 14, letterSpacing: 3, fontWeight: "800", marginTop: 14 },
+  shareGoal: { color: "#ffffff", fontSize: 22, fontWeight: "800", lineHeight: 28, marginBottom: 12 },
+  shareTagline: { color: "#8b93d8", fontSize: 13, lineHeight: 18 },
 }); }
