@@ -82,6 +82,8 @@ const RU = {
   "Your stats": "Твоя статистика",
   "This week": "Эта неделя",
   "Approval rate": "Процент одобрения",
+  "Less": "Меньше",
+  "More": "Больше",
   "verified days": "дней засчитано",
   "best streak": "лучшая серия",
   "current": "сейчас",

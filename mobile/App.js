@@ -45,10 +45,10 @@ function proofSpec(goal) {
 
 WebBrowser.maybeCompleteAuthSession();
 
-/* ---------- theme (Cert brand v2: emerald on white, LIGHT default) ----------
+/* ---------- theme (Cert brand v2: indigo on white, LIGHT default) ----------
    One hue family (emerald) + cool neutral grays. Slot names kept for history:
    `red` = PRIMARY accent (CTAs), `bronze` = secondary accent (selection /
-   verified / stamps) — both emerald shades now. `err` is the only true red
+   verified / stamps) — both indigo shades now. `err` is the only true red
    and is reserved for errors, rejections and destructive actions.
    C and s are module-level `let` bindings read live by every component on each
    render. Reassigning them + forcing the root to re-render repaints the whole
@@ -56,13 +56,13 @@ WebBrowser.maybeCompleteAuthSession();
 const DARK = {
   bg: "#0b0d10", card: "#14181e", line: "#262c36",
   ink: "#f2f4f7", mute: "#9aa3ad", faint: "#66707c",
-  red: "#10b981", bronze: "#34d399", green: "#4ade80", err: "#f87171",
+  red: "#6366f1", bronze: "#818cf8", green: "#4ade80", err: "#f87171",
   inputBg: "#10141a", inputLine: "#2a313c", isDark: true,
 };
 const LIGHT = {
   bg: "#ffffff", card: "#f6f8fa", line: "#e4e8ee",
   ink: "#171b21", mute: "#667080", faint: "#98a1ad",
-  red: "#059669", bronze: "#047857", green: "#16a34a", err: "#dc2626",
+  red: "#4f46e5", bronze: "#4338ca", green: "#16a34a", err: "#dc2626",
   inputBg: "#f2f5f8", inputLine: "#dfe4eb", isDark: false,
 };
 let C = LIGHT; // light is the default theme
@@ -2105,8 +2105,8 @@ function ApprovalOverlay({ data, onClose, onShare }) {
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: "rgba(8,10,13,0.94)", alignItems: "center", justifyContent: "center", padding: 28 }}>
-        <Animated.View style={{ transform: [{ rotate: "-12deg" }, { scale: stamp.interpolate({ inputRange: [0, 1], outputRange: [2.6, 1] }) }], opacity: stamp, borderWidth: 4, borderColor: "#10b981", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10 }}>
-          <Text style={{ color: "#10b981", fontSize: 32, fontWeight: "800", letterSpacing: 3 }}>{t("APPROVED")} ✓</Text>
+        <Animated.View style={{ transform: [{ rotate: "-12deg" }, { scale: stamp.interpolate({ inputRange: [0, 1], outputRange: [2.6, 1] }) }], opacity: stamp, borderWidth: 4, borderColor: "#6366f1", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10 }}>
+          <Text style={{ color: "#6366f1", fontSize: 32, fontWeight: "800", letterSpacing: 3 }}>{t("APPROVED")} ✓</Text>
         </Animated.View>
         <Animated.View style={{ opacity: rest, alignItems: "center", marginTop: 26, width: "100%" }}>
           {typeof data.streak === "number" ? (
@@ -2116,8 +2116,8 @@ function ApprovalOverlay({ data, onClose, onShare }) {
             </>
           ) : null}
           {data.reason ? <Text style={{ color: "#c3cad4", fontSize: 14, lineHeight: 20, textAlign: "center", marginTop: 14 }}>{data.reason}</Text> : null}
-          {data.completed ? <Text style={{ color: "#10b981", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("Goal complete — Cert earned!")}</Text> : null}
-          {data.milestone ? <Text style={{ color: "#10b981", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("You just unlocked a {n}-day verified badge.", { n: data.milestone })}</Text> : null}
+          {data.completed ? <Text style={{ color: "#6366f1", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("Goal complete — Cert earned!")}</Text> : null}
+          {data.milestone ? <Text style={{ color: "#6366f1", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("You just unlocked a {n}-day verified badge.", { n: data.milestone })}</Text> : null}
           <View style={{ width: "100%", maxWidth: 320, marginTop: 22 }}>
             {data.milestone ? <Btn label={t("Share badge")} onPress={onShare} /> : null}
             <BtnGhost label={t("Continue")} onPress={onClose} />
@@ -2403,7 +2403,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
    on screen and captured via react-native-view-shot, so what you see is what
    gets shared. */
 const PLACE_PALETTE = {
-  1: { bg: "#10b981", fg: "#052e1f", sub: "#065f46", label: "1ST PLACE", medal: "🥇" },
+  1: { bg: "#6366f1", fg: "#1e1b4e", sub: "#3730a3", label: "1ST PLACE", medal: "🥇" },
   2: { bg: "#b8bcc4", fg: "#16181c", sub: "#474b52", label: "2ND PLACE", medal: "🥈" },
   3: { bg: "#b5793f", fg: "#1a0f05", sub: "#3f2710", label: "3RD PLACE", medal: "🥉" },
 };
@@ -2595,29 +2595,77 @@ function computeStats(goals, subs) {
   for (const g of goals) for (const m of MILESTONES) if ((g.best_streak || 0) >= m) badges.push({ key: g.id + "-" + m, days: m, title: g.text });
   badges.sort((a, b) => b.days - a.days);
   const byDay = {};
+  const countByDay = {}; // approvals per day — drives contribution-graph intensity
   for (const s of subs) {
-    if (s.status === "approved" || s.status === "frozen") byDay[s.day] = "approved";
+    if (s.status === "approved" || s.status === "frozen") {
+      byDay[s.day] = "approved";
+      countByDay[s.day] = (countByDay[s.day] || 0) + 1;
+    }
     else if (s.status === "missed") { if (!byDay[s.day]) byDay[s.day] = "missed"; }
     else if (!byDay[s.day]) byDay[s.day] = "rejected";
   }
-  return { approved, rejected, approvalRate, bestStreak, curStreak, verifiedTotal, badges, byDay };
+  return { approved, rejected, approvalRate, bestStreak, curStreak, verifiedTotal, badges, byDay, countByDay };
 }
 
-function Heatmap({ byDay }) {
-  const days = lastNDays(84); // 12 weeks
+/* Contribution-style graph (GitHub-like): weeks as columns, Mon at the top,
+   month labels above, weekday labels on the left, and 3 intensity levels of
+   the accent driven by how many proofs were verified that day. */
+const HEAT_EMPTY = () => (C.isDark ? "#161b22" : "#eef1f6");
+const HEAT_LEVELS = () => (C.isDark
+  ? ["rgba(99,102,241,0.35)", "rgba(99,102,241,0.65)", "#6366f1"]
+  : ["rgba(79,70,229,0.30)", "rgba(79,70,229,0.60)", "#4f46e5"]);
+function Heatmap({ byDay, countByDay = {} }) {
+  // 12 calendar-aligned weeks (columns start on Monday, like a contribution graph);
+  // trailing days after today render as blanks.
+  const now = new Date();
+  const t0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const monday = new Date(t0); monday.setUTCDate(t0.getUTCDate() - ((t0.getUTCDay() + 6) % 7));
+  const start = new Date(monday); start.setUTCDate(monday.getUTCDate() - 77); // 11 weeks back → 12 columns
+  const days = [];
+  for (const d = new Date(start); d <= t0; d.setUTCDate(d.getUTCDate() + 1)) days.push(d.toISOString().slice(0, 10));
+  while (days.length % 7) days.push(null); // pad current week's future days
   const weeks = [];
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
-  const cellColor = (st) => (st === "approved" ? C.bronze
-    : st === "rejected" ? (C.isDark ? "rgba(220,38,38,0.5)" : "rgba(220,38,38,0.5)")
-    : st === "missed" ? (C.isDark ? "#2a3140" : "#dde3ec")
-    : (C.isDark ? "#161b22" : "#eef1f6"));
+  const levels = HEAT_LEVELS();
+  const cellColor = (d) => {
+    if (!d) return "transparent";
+    const st = byDay[d];
+    if (st === "approved") { const n = countByDay[d] || 1; return levels[n >= 3 ? 2 : n === 2 ? 1 : 0]; }
+    if (st === "rejected") return "rgba(220,38,38,0.5)";
+    if (st === "missed") return C.isDark ? "#2a3140" : "#dde3ec";
+    return HEAT_EMPTY();
+  };
+  // month label above the first week-column of each new month
+  const monthOf = (wk) => { try { return new Date(wk[0] + "T00:00:00").toLocaleString(activeLang() === "ru" ? "ru" : "en", { month: "short" }); } catch (_) { return ""; } };
+  let prevMonth = null;
+  const monthLabels = weeks.map((wk) => { const m = monthOf(wk); const out = m !== prevMonth ? m : ""; prevMonth = m; return out; });
+  const CELL = 14, GAP = 4;
+  const dowLabels = [t("Mon"), "", t("Wed"), "", t("Fri"), "", ""];
   return (
-    <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
-      {weeks.map((wk, wi) => (
-        <View key={wi} style={{ gap: 5 }}>
-          {wk.map((d) => <View key={d} style={{ width: 15, height: 15, borderRadius: 3, backgroundColor: cellColor(byDay[d]) }} />)}
+    <View style={{ marginTop: 10 }}>
+      <View style={{ flexDirection: "row", marginLeft: 26 }}>
+        {monthLabels.map((m, i) => (
+          <Text key={i} style={{ width: CELL + GAP, fontSize: 9, color: C.faint }} numberOfLines={1}>{m}</Text>
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", marginTop: 3 }}>
+        <View style={{ width: 26, gap: GAP }}>
+          {dowLabels.map((lbl, i) => (
+            <Text key={i} style={{ height: CELL, fontSize: 9, color: C.faint, lineHeight: CELL }}>{lbl}</Text>
+          ))}
         </View>
-      ))}
+        {weeks.map((wk, wi) => (
+          <View key={wi} style={{ gap: GAP, marginRight: GAP }}>
+            {wk.map((d) => <View key={d} style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: cellColor(d) }} />)}
+          </View>
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4, marginTop: 10 }}>
+        <Text style={{ fontSize: 10, color: C.faint }}>{t("Less")}</Text>
+        <View style={{ width: 11, height: 11, borderRadius: 2.5, backgroundColor: HEAT_EMPTY() }} />
+        {levels.map((clr, i) => <View key={i} style={{ width: 11, height: 11, borderRadius: 2.5, backgroundColor: clr }} />)}
+        <Text style={{ fontSize: 10, color: C.faint }}>{t("More")}</Text>
+      </View>
     </View>
   );
 }
@@ -2666,9 +2714,8 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
               <Text style={s.kicker}>{t("Last 12 weeks")}</Text>
               <Text style={s.note}>{windowVerified} {t("verified")}</Text>
             </View>
-            <Heatmap byDay={st.byDay} />
-            <View style={{ flexDirection: "row", gap: 14, marginTop: 14, flexWrap: "wrap" }}>
-              <Legend color={C.bronze} label={t("verified")} />
+            <Heatmap byDay={st.byDay} countByDay={st.countByDay} />
+            <View style={{ flexDirection: "row", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
               <Legend color="rgba(220,38,38,0.5)" label={t("rejected")} />
               <Legend color={C.isDark ? "#2a3140" : "#dde3ec"} label={t("missed")} />
             </View>
@@ -2761,7 +2808,7 @@ const WHEEL_DARES = [
   "Do 10 jumping jacks counting in another language. 🌍",
   "Send the group your goofiest camera-roll photo. 📸",
 ];
-const WHEEL_COLORS = ["#059669", "#27303c", "#10b981", "#1d242e"];
+const WHEEL_COLORS = ["#4f46e5", "#27303c", "#6366f1", "#1d242e"];
 // Custom (friend-written) dares often don't end with an emoji — fall back to 🎯
 // instead of printing a word fragment on the slice.
 const dareEmoji = (d) => {
@@ -3650,14 +3697,14 @@ function makeStyles() { return StyleSheet.create({
   googleBtn: { backgroundColor: "#fff", borderRadius: 10, padding: 15, marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" },
   googleText: { color: "#1f1f1f", fontWeight: "700", fontSize: 15 },
   orText: { color: C.faint, fontSize: 12, textAlign: "center", marginVertical: 14 },
-  infoBanner: { color: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.08)" : "rgba(5,150,105,0.10)", borderWidth: 1, borderColor: C.isDark ? "rgba(16,185,129,0.35)" : "rgba(5,150,105,0.35)", borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 18 },
+  infoBanner: { color: C.bronze, backgroundColor: C.isDark ? "rgba(99,102,241,0.08)" : "rgba(79,70,229,0.10)", borderWidth: 1, borderColor: C.isDark ? "rgba(99,102,241,0.35)" : "rgba(79,70,229,0.35)", borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 18 },
   switchAuth: { color: C.bronze, fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 20 },
   skipBtn: { borderWidth: 1, borderColor: C.bronze, borderRadius: 10, padding: 13, marginTop: 22, alignItems: "center" },
   skipText: { color: C.bronze, fontWeight: "700", fontSize: 14 },
   pill: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 12, alignItems: "center" },
   // Selection is ALWAYS bronze (red is reserved for CTAs/destructive) — mixed
   // red/gold selected states in the wizards read as random coloring.
-  pillOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.12)" : "rgba(5,150,105,0.14)" },
+  pillOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(99,102,241,0.12)" : "rgba(79,70,229,0.14)" },
   pillText: { color: C.mute, fontSize: 13 },
   streakNum: { color: C.bronze, fontSize: 56, fontWeight: "800", textAlign: "center" },
   goalText: { color: C.ink, fontSize: 15, lineHeight: 22, marginTop: 8 },
@@ -3711,10 +3758,10 @@ function makeStyles() { return StyleSheet.create({
   tabLabel: { fontSize: 10.5, color: C.faint, fontWeight: "700", letterSpacing: 0.3 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  chipOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.14)" : "rgba(5,150,105,0.16)" },
+  chipOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(99,102,241,0.14)" : "rgba(79,70,229,0.16)" },
   // sentence-builder: plain text + inline tappable pills (the only accent on the screen)
   sentenceText: { color: C.ink, fontSize: 17, lineHeight: 38, fontWeight: "600" },
-  segPill: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1.5, borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.10)" : "rgba(5,150,105,0.10)", borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginHorizontal: 2, marginVertical: 4, maxWidth: 240 },
+  segPill: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1.5, borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(99,102,241,0.10)" : "rgba(79,70,229,0.10)", borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginHorizontal: 2, marginVertical: 4, maxWidth: 240 },
   segPillText: { color: C.bronze, fontWeight: "700", fontSize: 15.5 },
   chipText: { color: C.mute, fontSize: 13 },
   freezePill: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: C.card },
@@ -3730,7 +3777,7 @@ function makeStyles() { return StyleSheet.create({
   dropdown: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.inputBg, borderWidth: 1, borderColor: C.inputLine, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, marginTop: 8 },
   dropdownText: { flex: 1, color: C.ink, fontSize: 15, fontWeight: "700" },
   optCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
-  optCardOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.08)" : "rgba(154,122,28,0.08)" },
+  optCardOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(99,102,241,0.08)" : "rgba(154,122,28,0.08)" },
   optIcon: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: C.bg },
   buyCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 16, marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12 },
   buyCardOn: { borderColor: C.bronze },
@@ -3739,13 +3786,13 @@ function makeStyles() { return StyleSheet.create({
   buyBadge: { color: "#ffffff", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, overflow: "hidden" },
   pwHero: { alignItems: "center", marginTop: 6, marginBottom: 4 },
   pwMark: { width: 64, height: 64, borderRadius: 20, borderWidth: 1, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card },
-  pwGlow: { width: 118, height: 118, borderRadius: 59, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#10b981", shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
-  pwStamp: { transform: [{ rotate: "-8deg" }], borderWidth: 3.5, borderColor: C.bronze, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 9, marginTop: 14, shadowColor: "#10b981", shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  pwGlow: { width: 118, height: 118, borderRadius: 59, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#6366f1", shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+  pwStamp: { transform: [{ rotate: "-8deg" }], borderWidth: 3.5, borderColor: C.bronze, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 9, marginTop: 14, shadowColor: "#6366f1", shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
   pwStampT: { color: C.bronze, fontSize: 28, fontWeight: "800", letterSpacing: 3 },
   proChip: { borderWidth: 2, borderColor: C.bronze, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, transform: [{ rotate: "-6deg" }] },
   proChipT: { color: C.bronze, fontSize: 11, fontWeight: "800", letterSpacing: 1 },
   planLine: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
-  planLineOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.08)" : "rgba(5,150,105,0.08)" },
+  planLineOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(99,102,241,0.08)" : "rgba(79,70,229,0.08)" },
   planLinePrice: { color: C.ink, fontSize: 17, fontWeight: "800", marginLeft: 8 },
   finePrint: { color: C.faint, fontSize: 10.5, lineHeight: 15, textAlign: "center", marginTop: 10, opacity: 0.85 },
   finePrintLink: { color: C.mute, fontSize: 12, textDecorationLine: "underline" },
@@ -3753,7 +3800,7 @@ function makeStyles() { return StyleSheet.create({
   pwSub: { color: C.mute, fontSize: 14, textAlign: "center", marginTop: 6, lineHeight: 20, paddingHorizontal: 10 },
   planRow: { flexDirection: "row", gap: 10, marginTop: 14 },
   plan: { flex: 1, borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 12, alignItems: "center", backgroundColor: C.card },
-  planOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.10)" : "rgba(154,122,28,0.10)" },
+  planOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(99,102,241,0.10)" : "rgba(154,122,28,0.10)" },
   planName: { color: C.mute, fontSize: 12, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
   planPrice: { color: C.ink, fontSize: 22, fontWeight: "800", marginTop: 8 },
   planPer: { color: C.faint, fontSize: 12, marginTop: 3 },
