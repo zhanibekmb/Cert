@@ -2595,16 +2595,18 @@ function computeStats(goals, subs) {
   for (const g of goals) for (const m of MILESTONES) if ((g.best_streak || 0) >= m) badges.push({ key: g.id + "-" + m, days: m, title: g.text });
   badges.sort((a, b) => b.days - a.days);
   const byDay = {};
-  const countByDay = {}; // approvals per day — drives contribution-graph intensity
+  const countByDay = {}; // real approvals per day — drives contribution-graph intensity
   for (const s of subs) {
-    if (s.status === "approved" || s.status === "frozen") {
-      byDay[s.day] = "approved";
-      countByDay[s.day] = (countByDay[s.day] || 0) + 1;
-    }
-    else if (s.status === "missed") { if (!byDay[s.day]) byDay[s.day] = "missed"; }
-    else if (!byDay[s.day]) byDay[s.day] = "rejected";
+    if (s.status === "approved") { byDay[s.day] = "approved"; countByDay[s.day] = (countByDay[s.day] || 0) + 1; }
   }
-  return { approved, rejected, approvalRate, bestStreak, curStreak, verifiedTotal, badges, byDay, countByDay };
+  for (const s of subs) {
+    // frozen days show as ice (Duolingo-style) — only when no real approval that day
+    if (s.status === "frozen") { if (!byDay[s.day]) byDay[s.day] = "frozen"; }
+    else if (s.status === "missed") { if (!byDay[s.day]) byDay[s.day] = "missed"; }
+    else if (s.status === "rejected") { if (!byDay[s.day]) byDay[s.day] = "rejected"; }
+  }
+  const frozenUsed = subs.filter((s) => s.status === "frozen").length;
+  return { approved, rejected, approvalRate, bestStreak, curStreak, verifiedTotal, badges, byDay, countByDay, frozenUsed };
 }
 
 /* Contribution-style graph (GitHub-like): weeks as columns, Mon at the top,
@@ -2631,6 +2633,7 @@ function Heatmap({ byDay, countByDay = {} }) {
     if (!d) return "transparent";
     const st = byDay[d];
     if (st === "approved") { const n = countByDay[d] || 1; return levels[n >= 3 ? 2 : n === 2 ? 1 : 0]; }
+    if (st === "frozen") return C.isDark ? "#38bdf8" : "#7dd3fc"; // ice — a freeze saved this day
     if (st === "rejected") return "rgba(220,38,38,0.5)";
     if (st === "missed") return C.isDark ? "#2a3140" : "#dde3ec";
     return HEAT_EMPTY();
@@ -2656,7 +2659,7 @@ function Heatmap({ byDay, countByDay = {} }) {
         </View>
         {weeks.map((wk, wi) => (
           <View key={wi} style={{ gap: GAP, marginRight: GAP }}>
-            {wk.map((d) => <View key={d} style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: cellColor(d) }} />)}
+            {wk.map((d, di) => <View key={d || "pad" + di} style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: cellColor(d) }} />)}
           </View>
         ))}
       </View>
@@ -2674,10 +2677,17 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
   const st = computeStats(goals, subs);
   const windowVerified = lastNDays(84).filter((d) => st.byDay[d] === "approved").length;
   const week = lastNDays(7); // oldest → today
-  const thisWeek = week.filter((d) => st.byDay[d] === "approved").length;
+  const thisWeek = week.filter((d) => st.byDay[d] === "approved" || st.byDay[d] === "frozen").length;
   const dayDot = (d) => (st.byDay[d] === "approved" ? C.bronze
+    : st.byDay[d] === "frozen" ? (C.isDark ? "#38bdf8" : "#7dd3fc")
     : st.byDay[d] === "rejected" || st.byDay[d] === "missed" ? "rgba(220,38,38,0.45)"
     : (C.isDark ? "#1f242c" : "#e8ecf1"));
+  // strongest weekday: which day of the week collects the most verified proofs
+  const dowCount = [0, 0, 0, 0, 0, 0, 0];
+  for (const d of Object.keys(st.byDay)) {
+    if (st.byDay[d] === "approved") dowCount[(new Date(d + "T00:00:00Z").getUTCDay() + 6) % 7]++;
+  }
+  const bestDow = Math.max(...dowCount) > 0 ? dowCount.indexOf(Math.max(...dowCount)) : null;
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       refreshControl={<RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
@@ -2699,11 +2709,18 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
         <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
           {week.map((d) => (
             <View key={d} style={{ flex: 1, height: 26, borderRadius: 8, backgroundColor: dayDot(d), alignItems: "center", justifyContent: "center" }}>
-              {st.byDay[d] === "approved" ? <Ionicons name="checkmark" size={14} color="#ffffff" /> : null}
+              {st.byDay[d] === "approved" ? <Ionicons name="checkmark" size={14} color="#ffffff" />
+                : st.byDay[d] === "frozen" ? <Ionicons name="snow" size={13} color="#075985" /> : null}
             </View>
           ))}
         </View>
-        {st.approvalRate !== null ? <Text style={[s.note, { textAlign: "left", marginTop: 10 }]}>{t("Approval rate")}: {st.approvalRate}%</Text> : null}
+      </View>
+
+      {/* second row of tiles: freezes saved you, judge strictness, your power day */}
+      <View style={[s.statRow, { marginTop: 10 }]}>
+        <View style={s.statBox}><Text style={[s.statNum, { color: C.isDark ? "#38bdf8" : "#0284c7" }]} numberOfLines={1} adjustsFontSizeToFit>❄ {st.frozenUsed}</Text><Text style={s.statLabel}>{t("freezes used")}</Text></View>
+        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.approvalRate == null ? "—" : st.approvalRate + "%"}</Text><Text style={s.statLabel}>{t("approval rate")}</Text></View>
+        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{bestDow == null ? "—" : t(DOW_NAMES[bestDow])}</Text><Text style={s.statLabel}>{t("strongest day")}</Text></View>
       </View>
 
       {/* Analytics (heatmap + trophies) is a Pro feature. */}
@@ -2716,6 +2733,7 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
             </View>
             <Heatmap byDay={st.byDay} countByDay={st.countByDay} />
             <View style={{ flexDirection: "row", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
+              <Legend color={C.isDark ? "#38bdf8" : "#7dd3fc"} label={"❄ " + t("frozen")} />
               <Legend color="rgba(220,38,38,0.5)" label={t("rejected")} />
               <Legend color={C.isDark ? "#2a3140" : "#dde3ec"} label={t("missed")} />
             </View>
