@@ -106,7 +106,8 @@ function useHideStreak() {
 const MILESTONES = [7, 30, 100];
 
 /* Gladiator brand mark (transparent PNG). */
-const LOGO = require("./assets/gladiator-logo.png");
+const LOGO = require("./assets/logo-mark.png"); // check-flame brand mark (v2)
+let _tabSwipeLocked = false; // set while an inner horizontal scroller is touched
 
 /* Full profile cache — the Profile tab unmounts on every tab switch; rendering
    from this cache makes it open instantly (refresh happens in the background). */
@@ -532,6 +533,17 @@ function SetNewPassword({ onDone }) {
   );
 }
 
+/* Slide+fade transition for screen/tab changes — re-runs when `k` changes. */
+function ScreenFade({ children, k }) {
+  const v = useRef(new Animated.Value(0)).current;
+  useEffect(() => { v.setValue(0); Animated.timing(v, { toValue: 1, duration: 210, useNativeDriver: true }).start(); }, [k]);
+  return (
+    <Animated.View style={{ flex: 1, opacity: v, transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [22, 0] }) }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
 /* ---------- MAIN (tab shell + overlay screens) ---------- */
 /* ---------- ONBOARDING (first-run: pain → magic → flex → start) ----------
    Four swipe screens, each a phone-frame mockup of the real product. The
@@ -820,7 +832,7 @@ function Main({ session }) {
   else if (screen === "cert" && activeCert) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="cert" days={activeCert.days} title={activeCert.title} subtitle={activeCert.issued_at ? "Earned " + new Date(activeCert.issued_at).toLocaleDateString() : null} onBack={back} /></SwipeBack>; }
   else if (screen === "badge" && activeBadge) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="milestone" days={activeBadge.days} title={activeBadge.title} onBack={back} /></SwipeBack>; }
   else if (screen === "reel" && activeReelGoal) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><Reel goal={activeReelGoal} onBack={back} /></SwipeBack>; }
-  if (overlay) return <View style={{ flex: 1, backgroundColor: C.bg }}>{overlay}{paywallModal}{freezeModal}</View>;
+  if (overlay) return <View style={{ flex: 1, backgroundColor: C.bg }}><ScreenFade k={screen}>{overlay}</ScreenFade>{paywallModal}{freezeModal}</View>;
 
   // Delete a personal goal (cascades its submissions/appeals; Certs are kept,
   // their goal link just goes null). Verified-days total lives on the goal row,
@@ -872,7 +884,7 @@ function Main({ session }) {
   // ----- tab shell (horizontal swipe switches tabs) -----
   const TAB_ORDER = ["home", "challenges", "stats", "profile"];
   const tabSwipe = PanResponder.create({
-    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 28 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
+    onMoveShouldSetPanResponder: (_, g) => !_tabSwipeLocked && Math.abs(g.dx) > 28 && Math.abs(g.dx) > Math.abs(g.dy) * 1.6,
     onPanResponderRelease: (_, g) => {
       const i = TAB_ORDER.indexOf(tab);
       if (g.dx <= -55 && i < TAB_ORDER.length - 1) setTab(TAB_ORDER[i + 1]);
@@ -882,6 +894,7 @@ function Main({ session }) {
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ flex: 1 }} {...tabSwipe.panHandlers}>
+        <ScreenFade k={tab}>
         {tab === "home" && (
           <HomeTab goals={goals} certs={certs} subs={subs} refreshing={refreshing} onRefresh={onRefresh}
             freezes={freezes} onBuyFreezes={() => setFreezeSheetOpen(true)}
@@ -893,6 +906,7 @@ function Main({ session }) {
         )}
         {tab === "stats" && <Stats goals={goals || []} subs={subs} onOpenBadge={openBadge} isPro={isPro} onUpgrade={openPaywall} refreshing={refreshing} onRefresh={onRefresh} />}
         {tab === "profile" && <ProfileTab session={session} goals={goals || []} certs={certs} subs={subs} freezes={freezes} onOpenCert={openCert} onOpenSettings={() => setScreen("settings")} onUpgrade={openPaywall} onBuyFreezes={() => setFreezeSheetOpen(true)} onReload={load} refreshing={refreshing} onRefresh={onRefresh} />}
+        </ScreenFade>
       </View>
       <TabBar tab={tab} setTab={setTab} onCreate={() => setCreateChooser(true)} />
       {paywallModal}
@@ -1817,7 +1831,6 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const [mapInitial, setMapInitial] = useState(null); // where the map opens centered
   const [customDur, setCustomDur] = useState(false); // "Custom" length → number input
   const [sheet, setSheet] = useState(null); // which pill's picker is open: 'proof' | 'cadence' | 'duration'
-  const [proofDesc, setProofDesc] = useState(""); // user's own "the photo will show…" promise
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
   const isGeo = proofType === "geo";
@@ -1846,12 +1859,9 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     setBusy(true);
     try {
       let spec = { en: null, ru: null };
-      // The user's own "the photo will show…" promise IS the proof-spec — the
-      // judge uses it as the checklist hint. Only fall back to the AI-generated
-      // spec when the user left it empty. Timelapse/geo goals don't need one.
-      if (proofType === "photo" && proofDesc.trim().length >= 3) {
-        spec = { en: proofDesc.trim(), ru: proofDesc.trim() };
-      } else if (proofType === "photo") {
+      // The goal text itself is written proof-first ("a photo with my coffee") —
+      // the AI spec is just a supporting hint. Timelapse/geo goals don't need one.
+      if (proofType === "photo") {
         try {
           const { data } = await supabase.functions.invoke("proof-spec", { body: { goal: text.trim() } });
           if (data && (data.en || data.ru)) spec = data;
@@ -1933,7 +1943,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
         </View>
 
         <TextInput style={[s.input, { marginTop: 10 }]} blurOnSubmit returnKeyType="done"
-          placeholder={t("e.g. gym 45 min, or read 20 pages")} placeholderTextColor={C.faint}
+          placeholder={t("e.g. a photo with my morning coffee")} placeholderTextColor={C.faint}
           value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
 
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 12 }}>
@@ -1969,18 +1979,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
             <Text style={[s.note, { marginTop: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
           </View>
         ) : null}
-        {/* what exactly the photo will show — the user's own promise becomes the
-            judge's checklist (skips the AI-generated proof-spec entirely) */}
-        {proofType === "photo" ? (
-          <View style={{ marginTop: 12 }}>
-            <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
-              <Text style={s.sentenceText}>{t("The photo will show")}:</Text>
-            </View>
-            <TextInput style={[s.input, { marginTop: 6 }]} blurOnSubmit returnKeyType="done"
-              placeholder={t("e.g. me holding a glass of water at the gym")} placeholderTextColor={C.faint}
-              value={proofDesc} onChangeText={(v) => setProofDesc(v.replace(/\n/g, " "))} />
-          </View>
-        ) : null}
+
         {/* geo: a live mini-map appears right here — tap it to (re)pin the point */}
         {isGeo ? (
           <TouchableOpacity activeOpacity={0.85} onPress={openMap} style={{ marginTop: 12, borderRadius: 12, overflow: "hidden", borderWidth: 1, borderColor: C.line }}>
@@ -2769,12 +2768,13 @@ function Heatmap({ byDay, countByDay = {} }) {
           ))}
         </View>
         <ScrollView ref={scrollRef} horizontal showsHorizontalScrollIndicator={false}
+          onTouchStart={() => { _tabSwipeLocked = true; }}
+          onTouchEnd={() => { setTimeout(() => { _tabSwipeLocked = false; }, 300); }}
+          onTouchCancel={() => { _tabSwipeLocked = false; }}
           onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}>
           <View>
-            <View style={{ flexDirection: "row", height: 15 }}>
-              {monthLabels.map((m, i) => (
-                <Text key={i} style={{ width: CELL + GAP, fontSize: 9, color: C.faint }} numberOfLines={1}>{m}</Text>
-              ))}
+            <View style={{ height: 15, width: weeks.length * (CELL + GAP) }}>
+              {monthLabels.map((m, i) => (m ? <Text key={i} style={{ position: "absolute", left: i * (CELL + GAP), width: 40, fontSize: 9, color: C.faint }} numberOfLines={1}>{m}</Text> : null))}
             </View>
             <View style={{ flexDirection: "row", marginTop: 3 }}>
               {weeks.map((wk, wi) => (
@@ -3181,7 +3181,7 @@ function CreateChallenge({ isPro, onUpgrade, onCreated, onBack }) {
         {step === 0 ? (
           <>
             <Text style={[s.label, { marginTop: 18 }]}>{t("Shared goal")}</Text>
-            <TextInput style={[s.input, { height: 78, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done" placeholder={t("e.g. gym 45 min with equipment")} placeholderTextColor={C.faint} value={goalText} onChangeText={(val) => setGoalText(val.replace(/\n/g, " "))} />
+            <TextInput style={[s.input, { height: 78, textAlignVertical: "top" }]} multiline blurOnSubmit returnKeyType="done" placeholder={t("e.g. a photo from the morning run")} placeholderTextColor={C.faint} value={goalText} onChangeText={(val) => setGoalText(val.replace(/\n/g, " "))} />
             <Text style={[s.note, { textAlign: "left" }]}>{t("Add a time if you want — e.g. \"gym at 19:00\".")}</Text>
             {hasProfileName
               ? <Text style={[s.note, { marginTop: 12 }]}>{t("Playing as")} <Text style={{ color: C.bronze, fontWeight: "800" }}>{name}</Text> · {t("change it in Profile")}</Text>
@@ -3399,13 +3399,16 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
       <BtnGhost label={t("Share invite link")} onPress={shareInvite} />
 
       {board.members.map((m) => (
-        <View key={m.userId} style={[s.lbRow, m.isMe && { borderColor: C.bronze }]}>
-          <Text style={[s.lbRank, { minWidth: 26 }]}>{m.rank <= 3 ? medal(m.rank) : m.rank}</Text>
+        <View key={m.userId} style={[s.lbRow, m.rank === 1 && { borderColor: C.red, borderWidth: 1.5 }, m.isMe && { backgroundColor: C.isDark ? "rgba(99,102,241,0.08)" : "rgba(79,70,229,0.06)" }]}>
+          <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center", backgroundColor: m.rank === 1 ? C.red : (C.isDark ? "#1f242c" : "#eef1f6") }}>
+            <Text style={{ fontSize: 13, fontWeight: "800", color: m.rank === 1 ? "#ffffff" : C.mute }}>{m.rank}</Text>
+          </View>
           <Avatar uri={m.avatar} name={m.name} size={38} />
           <View style={{ flex: 1 }}>
-            <Text style={s.lbName}>{m.name}{m.isMe ? " (" + t("you") + ")" : ""}</Text>
-            <Text style={s.note}>{m.verifiedDays} {t("verified")} · {m.streak}{isWk ? t("w") : t("d")} {t("streak")}</Text>
+            <Text style={s.lbName} numberOfLines={1}>{m.name}{m.isMe ? " (" + t("you") + ")" : ""}</Text>
+            <Text style={s.note}>{t("verified")}: {m.verifiedDays} · {t("streak")}: {m.streak}{isWk ? t("w") : t("d")}</Text>
           </View>
+          <Text style={[s.lbRank, { fontSize: 18, color: m.rank === 1 ? C.red : C.ink }]}>{m.verifiedDays}</Text>
           {board.ended && board.loser && board.loser.userId === m.userId ? <Text style={s.lbLast}>{t("LAST")}</Text> : null}
         </View>
       ))}
@@ -3594,7 +3597,13 @@ function SwipeReview({ onBack }) {
                 ? <Image source={{ uri: current.photoUrl }} style={s.swipePhoto} resizeMode="cover" />
                 : <View style={[s.swipePhoto, { alignItems: "center", justifyContent: "center" }]}><Text style={s.note}>{t("no photo")}</Text></View>}
               <Text style={[s.lbName, { marginTop: 12 }]}>{current.name}</Text>
-              <Text style={s.note}>{current.goalText} · {current.day}</Text>
+              <Text style={s.note}>{current.goalText}</Text>
+              {/* when + where the proof was sent — helps friends judge honestly */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 4 }}>
+                <Ionicons name="time-outline" size={13} color={C.faint} />
+                <Text style={[s.note, { marginTop: 0 }]}>{current.at ? new Date(current.at).toLocaleString([], { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : current.day}</Text>
+                {current.place ? (<><Ionicons name="location-outline" size={13} color={C.faint} style={{ marginLeft: 6 }} /><Text style={[s.note, { marginTop: 0, flexShrink: 1 }]} numberOfLines={1}>{current.place}</Text></>) : null}
+              </View>
             </Animated.View>
           </View>
           <View style={{ flexDirection: "row", gap: 14, marginTop: 16 }}>

@@ -358,7 +358,7 @@ Deno.serve(async (req) => {
       const info = goalInfo[sub.goal_id]; if (!info) continue;
       let photoUrl: string | null = null;
       if (sub.photo_path) { const { data: signed } = await svc.storage.from("proofs").createSignedUrl(sub.photo_path, 3600); photoUrl = signed?.signedUrl || null; }
-      queue.push({ submissionId: sub.id, userId: sub.user_id, name: info.name, goalText: chById[info.challengeId]?.goal_text || "", day: sub.day, photoUrl });
+      queue.push({ submissionId: sub.id, userId: sub.user_id, name: info.name, goalText: chById[info.challengeId]?.goal_text || "", day: sub.day, photoUrl, at: sub.created_at || null, place: sub.place || null });
     }
     return json({ queue });
   }
