@@ -632,9 +632,9 @@ function Onboarding({ onDone }) {
               <Text style={{ color: C.ink, fontSize: 11, letterSpacing: 3, fontWeight: "700" }}>{t("VERIFIED DAYS")}</Text>
               <Text style={{ color: C.bronze, fontSize: 10, letterSpacing: 2, fontWeight: "800", marginTop: 4 }}>{t("NOT FAKED")}</Text>
             </View>
-            {[["🥇", "Yerdan", "8"], ["🥈", t("You"), "5"], ["🥉", "Mukhtar", "3"]].map(([m, n, d]) => (
+            {[["1", "Yerdan", "8"], ["2", t("You"), "5"], ["3", "Mukhtar", "3"]].map(([m, n, d]) => (
               <View key={n} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 9, marginTop: 7 }}>
-                <Text style={{ fontSize: 15 }}>{m}</Text>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: C.red, alignItems: "center", justifyContent: "center" }}><Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "800" }}>{m}</Text></View>
                 <Avatar name={n} size={24} />
                 <Text style={[s.goalText, { marginTop: 0, flex: 1, fontSize: 13 }]}>{n}</Text>
                 <Text style={[s.note, { marginTop: 0 }]}>{d} {t("days")}</Text>
@@ -650,9 +650,9 @@ function Onboarding({ onDone }) {
               <Text style={s.goalText}>{t("gym 45 min")}</Text>
             </View>
             <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-              <View style={[s.chip, s.chipOn]}><Text style={[s.chipText, { color: C.ink }]}>📷 {t("Photo")}</Text></View>
-              <View style={s.chip}><Text style={s.chipText}>🎥 {t("Video")}</Text></View>
-              <View style={s.chip}><Text style={s.chipText}>📍</Text></View>
+              <View style={[s.chip, s.chipOn]}><Text style={[s.chipText, { color: C.ink }]}>{t("Photo")}</Text></View>
+              <View style={s.chip}><Text style={s.chipText}>{t("Video")}</Text></View>
+              <View style={s.chip}><Text style={s.chipText}>{t("Geo")}</Text></View>
             </View>
             <View style={[s.btn, { marginTop: 18 }]}><Text style={s.btnText}>{t("Create")}</Text></View>
           </ObFrame>
@@ -969,7 +969,7 @@ function HomeTab({ goals, certs, subs, refreshing, onRefresh, freezes = 0, onBuy
         <View style={{ marginTop: 8, marginBottom: 6 }}>
           <TouchableOpacity onPress={() => setShowCerts((v) => !v)} activeOpacity={0.7}
             style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6 }}>
-            <Text style={[s.kicker, { color: C.bronze, flex: 1 }]}>🏅 {t("Your Certs")} · {certs.length}</Text>
+            <Text style={[s.kicker, { color: C.bronze, flex: 1 }]}>{t("Your Certs")} · {certs.length}</Text>
             <Ionicons name={showCerts ? "chevron-up" : "chevron-down"} size={18} color={C.bronze} />
           </TouchableOpacity>
           {showCerts ? certs.map((c) => (
@@ -1240,7 +1240,6 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
   const [profile, setProfile] = useState(cached);
   const [name, setName] = useState(cached?.name || "");
   const [avatar, setAvatar] = useState(cached?.avatar_url || null);
-  const [saving, setSaving] = useState(false);
   const loadProfile = useCallback(() => {
     supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
       .then(({ data }) => {
@@ -1254,42 +1253,6 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
   const st = computeStats(goals, subs);
   const plan = profile?.plan === "monthly" || profile?.plan === "yearly" ? "Pro" : "Free";
 
-  async function save() {
-    setSaving(true);
-    const { error } = await supabase.from("profiles").update({ name: name.trim() }).eq("id", session.user.id);
-    if (!error) {
-      _cachedName = name.trim(); // keep challenge screens in sync
-      if (_profileCache?.data) _profileCache.data.name = name.trim();
-    }
-    setSaving(false);
-    Alert.alert("Cert", error ? error.message : t("Saved."));
-  }
-
-  // Upload the avatar to Storage and save its URL (not a base64 blob in the DB —
-  // that made every profile/leaderboard load pull a huge string and lag).
-  async function pickAvatar() {
-    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!perm.granted) return Alert.alert("Cert", t("Photo permission needed."));
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.5 });
-    if (res.canceled || !res.assets?.[0]?.uri) return;
-    const a = res.assets[0];
-    try {
-      setSaving(true);
-      const bytes = await fetch(a.uri).then((r) => r.arrayBuffer());
-      const ext = ((a.mimeType || "image/jpeg").split("/")[1] || "jpg").replace("jpeg", "jpg");
-      const path = `${session.user.id}/${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("avatars").upload(path, bytes, { contentType: a.mimeType || "image/jpeg", upsert: true });
-      if (upErr) throw upErr;
-      const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
-      const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", session.user.id);
-      if (error) throw error;
-      setAvatar(url);
-      if (_profileCache?.data) _profileCache.data.avatar_url = url;
-    } catch (e) {
-      Alert.alert("Cert", (e && e.message) || t("Couldn't update photo."));
-    } finally { setSaving(false); }
-  }
-
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive"
@@ -1300,19 +1263,15 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
           <Ionicons name="settings-outline" size={22} color={C.mute} />
         </TouchableOpacity>
       </View>
-      <View style={[s.card, { alignItems: "center" }]}>
-        <TouchableOpacity onPress={pickAvatar} activeOpacity={0.8} style={{ alignItems: "center" }}>
-          {avatar
-            ? <Image source={{ uri: avatar }} style={s.avatar} />
-            : <View style={[s.avatar, s.avatarEmpty]}><Image source={LOGO} style={{ width: 46, height: 46 }} resizeMode="contain" /></View>}
-          <Text style={[s.note, { textAlign: "center", marginTop: 6 }]}>{t("tap to change photo")}</Text>
-        </TouchableOpacity>
-        <Text style={[s.kicker, { marginTop: 6 }]}>{t("PLAN")} · {plan}</Text>
-      </View>
-
-      <Text style={[s.label, { marginTop: 16 }]}>{t("Display name")}</Text>
-      <TextInput style={s.input} placeholder={t("Your name")} placeholderTextColor={C.faint} value={name} onChangeText={setName} />
-      <Btn label={saving ? t("Saving…") : t("Save name")} onPress={save} disabled={saving} />
+      {/* identity is display-only here — editing (name/photo) lives in Settings */}
+      <TouchableOpacity style={[s.card, { alignItems: "center" }]} activeOpacity={0.85} onPress={onOpenSettings}>
+        {avatar
+          ? <Image source={{ uri: avatar }} style={s.avatar} />
+          : <View style={[s.avatar, s.avatarEmpty]}><Image source={LOGO} style={{ width: 46, height: 46 }} resizeMode="contain" /></View>}
+        <Text style={[s.goalText, { marginTop: 8, fontWeight: "700" }]}>{name || t("Your name")}</Text>
+        <Text style={[s.kicker, { marginTop: 4 }]}>{t("PLAN")} · {plan}</Text>
+        <Text style={[s.note, { marginTop: 6 }]}>{t("Edit in settings")} ›</Text>
+      </TouchableOpacity>
 
       <View style={s.statRow}>
         <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.verifiedTotal}</Text><Text style={s.statLabel}>{t("verified days")}</Text></View>
@@ -1348,7 +1307,7 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
 
       {certs.length > 0 ? (
         <>
-          <Text style={[s.kicker, { color: C.bronze, marginTop: 20, marginBottom: 8 }]}>🏅 {t("Your Certs")}</Text>
+          <Text style={[s.kicker, { color: C.bronze, marginTop: 20, marginBottom: 8 }]}>{t("Your Certs")}</Text>
           {certs.map((c) => (
             <TouchableOpacity key={c.id} style={s.certRow} onPress={() => onOpenCert(c)}>
               <Text style={s.certRowDays}>{c.days}</Text>
@@ -1375,6 +1334,52 @@ function SettingsScreen({ session, onBack }) {
   const [langPref, setLang] = useLang();
   const [hideStreak, setHideStreak] = useHideStreak();
   const [showIntro, setShowIntro] = useState(false);
+  // profile identity (name + avatar) is edited HERE, not on the Profile tab
+  const cachedP = _profileCache && _profileCache.uid === session.user.id ? _profileCache.data : null;
+  const [name, setName] = useState(cachedP?.name || "");
+  const [avatar, setAvatar] = useState(cachedP?.avatar_url || null);
+  const [savingP, setSavingP] = useState(false);
+  useEffect(() => {
+    if (cachedP) return;
+    supabase.from("profiles").select("*").eq("id", session.user.id).maybeSingle()
+      .then(({ data }) => { if (data) { _profileCache = { uid: session.user.id, data }; setName(data.name || ""); setAvatar(data.avatar_url || null); } });
+  }, [session.user.id]);
+
+  async function saveName() {
+    setSavingP(true);
+    const { error } = await supabase.from("profiles").update({ name: name.trim() }).eq("id", session.user.id);
+    if (!error) {
+      _cachedName = name.trim(); // keep challenge screens in sync
+      if (_profileCache?.data) _profileCache.data.name = name.trim();
+    }
+    setSavingP(false);
+    Alert.alert("Cert", error ? error.message : t("Saved."));
+  }
+
+  // Upload the avatar to Storage and save its URL (not a base64 blob in the DB —
+  // that made every profile/leaderboard load pull a huge string and lag).
+  async function pickAvatar() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) return Alert.alert("Cert", t("Photo permission needed."));
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], allowsEditing: true, aspect: [1, 1], quality: 0.5 });
+    if (res.canceled || !res.assets?.[0]?.uri) return;
+    const a = res.assets[0];
+    try {
+      setSavingP(true);
+      const bytes = await fetch(a.uri).then((r) => r.arrayBuffer());
+      const ext = ((a.mimeType || "image/jpeg").split("/")[1] || "jpg").replace("jpeg", "jpg");
+      const path = `${session.user.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, bytes, { contentType: a.mimeType || "image/jpeg", upsert: true });
+      if (upErr) throw upErr;
+      const url = supabase.storage.from("avatars").getPublicUrl(path).data.publicUrl;
+      const { error } = await supabase.from("profiles").update({ avatar_url: url }).eq("id", session.user.id);
+      if (error) throw error;
+      setAvatar(url);
+      if (_profileCache?.data) _profileCache.data.avatar_url = url;
+    } catch (e) {
+      Alert.alert("Cert", (e && e.message) || t("Couldn't update photo."));
+    } finally { setSavingP(false); }
+  }
 
   function deleteAccount() {
     Alert.alert(
@@ -1410,9 +1415,28 @@ function SettingsScreen({ session, onBack }) {
   async function pickTime(t) { if (!t) return; setRemTime(t); if (remEnabled) await enableReminder(t); }
 
   return (
-    <ScrollView contentContainerStyle={s.wrap}>
+    <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <BackBar onBack={onBack} />
       <Text style={s.h2}>{t("Settings")}</Text>
+
+      {/* Profile identity — moved here from the Profile tab */}
+      <View style={[s.card, { marginTop: 14 }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          <TouchableOpacity onPress={pickAvatar} activeOpacity={0.8} disabled={savingP}>
+            {avatar
+              ? <Image source={{ uri: avatar }} style={[s.avatar, { width: 62, height: 62, borderRadius: 31 }]} />
+              : <View style={[s.avatar, s.avatarEmpty, { width: 62, height: 62, borderRadius: 31 }]}><Ionicons name="person-outline" size={26} color={C.faint} /></View>}
+          </TouchableOpacity>
+          <View style={{ flex: 1 }}>
+            <Text style={s.label}>{t("Display name")}</Text>
+            <TextInput style={s.input} placeholder={t("Your name")} placeholderTextColor={C.faint} value={name} onChangeText={setName} />
+          </View>
+        </View>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <View style={{ flex: 1 }}><BtnGhost label={savingP ? "…" : t("Change photo")} onPress={pickAvatar} disabled={savingP} /></View>
+          <View style={{ flex: 1 }}><Btn label={savingP ? t("Saving…") : t("Save name")} onPress={saveName} disabled={savingP} /></View>
+        </View>
+      </View>
 
       <View style={[s.card, { marginTop: 14 }]}>
         <Text style={s.label}>{t("Appearance")}</Text>
@@ -1524,13 +1548,17 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
         </View>
       ) : (
         <>
-          <AnimatedStreakNum value={goal.streak} />
-          <Text style={s.kicker}>{isWeekly ? t("week streak · verified by the judge") : t("day streak · verified by the judge")}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+            <Ionicons name="flame" size={26} color={C.red} />
+            <AnimatedStreakNum value={goal.streak} />
+            <Text style={[s.kicker, { marginBottom: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
+          </View>
+          <Text style={s.kicker}>{t("verified by the judge")}</Text>
         </>
       )}
       <Text style={s.goalText}>{goal.text}</Text>
       <Text style={[s.spec, { color: C.mute }]}>{goalCadence(goal)}</Text>
-      {goal.proof_type === "geo" ? <Text style={s.spec}>📍 {goal.geo_place || t("geo check-in")}{goal.daily_start ? ` · ${t("from")} ${goal.daily_start}` : ""}</Text> : null}
+      {goal.proof_type === "geo" ? <Text style={s.spec}>{goal.geo_place || t("geo check-in")}{goal.daily_start ? ` · ${t("from")} ${goal.daily_start}` : ""}</Text> : null}
       {proofSpec(goal) ? <Text style={s.spec}>{proofSpec(goal)}</Text> : null}
       {isRecurring && !hideStreak ? <StreakCalendar subs={subs} /> : null}
       {isRecurring && !completed && !hideStreak ? <MilestoneBar streak={goal.streak || 0} /> : null}
@@ -1542,7 +1570,7 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
           <Text style={[s.kicker, { color: C.green, flexShrink: 1, textAlign: "center" }]} numberOfLines={2}>{isWeekly ? t("Done for today · come back tomorrow") : t("Done for today")}</Text>
         </View>
       ) : (
-        <Btn label={goal.proof_type === "geo" ? t("📍 Check in now") : t("Submit today's proof")} onPress={onSubmit} />
+        <Btn label={goal.proof_type === "geo" ? t("Check in now") : t("Submit today's proof")} onPress={onSubmit} />
       )}
       {verifiedCount >= 2 ? <BtnGhost label={t("Progress reel") + ` · ${verifiedCount} ` + t("days")} onPress={onReel} /> : null}
     </View>
@@ -1765,7 +1793,7 @@ function MapPicker({ visible, initial, onPick, onClose }) {
           </MapView>
         ) : <View style={{ flex: 1 }} />}
         <View style={{ padding: 16 }}>
-          <Text style={[s.note, { textAlign: "center", marginTop: 0 }]}>{pt ? `📍 ${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}` : t("Tap the map or drag the pin to your spot.")}</Text>
+          <Text style={[s.note, { textAlign: "center", marginTop: 0 }]}>{pt ? `${pt.lat.toFixed(5)}, ${pt.lng.toFixed(5)}` : t("Tap the map or drag the pin to your spot.")}</Text>
           <Btn label={busy ? "…" : t("Use this place")} onPress={confirm} disabled={busy || !pt} />
         </View>
       </SafeAreaView>
@@ -1949,8 +1977,8 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
 
       {/* one-tap starters — kill the blank-page problem */}
       <View style={[s.chipRow, { marginTop: 12 }]}>
-        {[t("🏋️ Gym 45 min"), t("📖 Read 20 pages"), t("🏃 Morning run"), t("🧘 Meditate 10 min")].map((sug) => (
-          <TouchableOpacity key={sug} style={s.chip} onPress={() => setText(sug.replace(/^\S+\s/, ""))}>
+        {[t("Gym 45 min"), t("Read 20 pages"), t("Morning run"), t("Meditate 10 min")].map((sug) => (
+          <TouchableOpacity key={sug} style={s.chip} onPress={() => setText(sug)}>
             <Text style={s.chipText}>{sug}</Text>
           </TouchableOpacity>
         ))}
@@ -1959,9 +1987,9 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
 
       {/* pill pickers */}
       <OptionSheet visible={sheet === "proof"} title={t("Proof")} onClose={() => setSheet(null)}>
-        <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One quick photo.")} active={proofType === "photo"} onPress={() => pickProof("photo", false)} />
-        <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={proofType === "timelapse"} onPress={() => pickProof("timelapse", !isPro)} />
-        <OptionCard icon="location-outline" title={t("📍 Location")} locked={!isPro} desc={t("Be at a place.")} active={proofType === "geo"} onPress={() => pickProof("geo", !isPro)} />
+        <OptionCard icon="camera-outline" title={t("Photo")} desc={t("One quick photo.")} active={proofType === "photo"} onPress={() => pickProof("photo", false)} />
+        <OptionCard icon="videocam-outline" title={t("Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={proofType === "timelapse"} onPress={() => pickProof("timelapse", !isPro)} />
+        <OptionCard icon="location-outline" title={t("Location")} locked={!isPro} desc={t("Be at a place.")} active={proofType === "geo"} onPress={() => pickProof("geo", !isPro)} />
       </OptionSheet>
       <OptionSheet visible={sheet === "cadence"} title={t("How often?")} onClose={() => setSheet(null)}>
         <OptionCard icon="repeat" title={t("every day")} active={format === "daily"} onPress={() => pickCadence("daily")} />
@@ -2291,8 +2319,8 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
         {isGeo ? (
           <Text style={[s.spec, { color: C.mute }]}>
             {anchorSet
-              ? "📍 " + (geoPlace || t("pinned place"))
-              : "📍 " + t("No place pinned yet — your first check-in pins it. Do it AT the right place.")}
+              ? (geoPlace || t("pinned place"))
+              : t("No place pinned yet — your first check-in pins it. Do it AT the right place.")}
           </Text>
         ) : null}
       </View>
@@ -2307,14 +2335,13 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           <Text style={s.note}>{t("Record a short clip of your session — the AI watches the whole video, so it sees the activity actually happen. A propped photo or a pre-made clip won't pass.")}</Text>
         </View>
       ) : (
+        // Fingers/poses retired: photos are captured live in-app — that IS the
+        // freshness check. checkState still gates buttons (it carries deadlines).
         <View style={[s.card, { borderColor: C.bronze }]}>
-          <Text style={[s.kicker, { color: C.bronze }]}>{t("Today's anti-cheat check")}</Text>
-          {checkState === "ok"
-            ? <Text style={s.goalText}>{activeLang() === "ru" ? (todaysCheck?.ru || todaysCheck?.en) : (todaysCheck?.en || todaysCheck?.ru)}</Text>
-            : checkState === "loading"
-              ? <ActivityIndicator color={C.bronze} style={{ marginTop: 8, alignSelf: "flex-start" }} />
-              : <TouchableOpacity onPress={loadCheck}><Text style={[s.goalText, { color: C.err }]}>{t("Couldn't load — tap to retry")}</Text></TouchableOpacity>}
-          <Text style={s.note}>{t("Changes every day so an old photo can't be reused. Include it in the same shot.")}</Text>
+          <Text style={[s.kicker, { color: C.bronze }]}>{t("Live proof")}</Text>
+          <Text style={s.note}>{t("Photos are taken with the camera right here — no gallery, no old shots. Just show the goal happening.")}</Text>
+          {checkState === "loading" ? <ActivityIndicator color={C.bronze} style={{ marginTop: 8, alignSelf: "flex-start" }} /> : null}
+          {checkState === "error" ? <TouchableOpacity onPress={loadCheck}><Text style={[s.goalText, { color: C.err }]}>{t("Couldn't load — tap to retry")}</Text></TouchableOpacity> : null}
         </View>
       )}
       {windowStart || deadline ? (
@@ -2382,11 +2409,11 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
             </View>
           ) : null}
           {isGeo ? (
-            <Btn label={reject ? t("Check in again") : t("📍 Check in now")} onPress={() => runJudge({ checkin: true })} disabled={busy || checkState !== "ok"} />
+            <Btn label={reject ? t("Check in again") : t("Check in now")} onPress={() => runJudge({ checkin: true })} disabled={busy || checkState !== "ok"} />
           ) : isTimelapse ? (
-            <Btn label={reject ? t("Record again") : t("🎥 Record timelapse")} onPress={() => setCapturing(true)} disabled={busy || checkState !== "ok"} />
+            <Btn label={reject ? t("Record again") : t("Record timelapse")} onPress={() => setCapturing(true)} disabled={busy || checkState !== "ok"} />
           ) : (
-            <Btn label={reject ? t("Retake photo") : t("📷 Take a photo")} onPress={takeAndJudge} disabled={busy || checkState !== "ok"} />
+            <Btn label={reject ? t("Retake photo") : t("Take a photo")} onPress={takeAndJudge} disabled={busy || checkState !== "ok"} />
           )}
         </>
       )}
@@ -2403,9 +2430,9 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
    on screen and captured via react-native-view-shot, so what you see is what
    gets shared. */
 const PLACE_PALETTE = {
-  1: { bg: "#6366f1", fg: "#1e1b4e", sub: "#3730a3", label: "1ST PLACE", medal: "🥇" },
-  2: { bg: "#b8bcc4", fg: "#16181c", sub: "#474b52", label: "2ND PLACE", medal: "🥈" },
-  3: { bg: "#b5793f", fg: "#1a0f05", sub: "#3f2710", label: "3RD PLACE", medal: "🥉" },
+  1: { bg: "#6366f1", fg: "#1e1b4e", sub: "#3730a3", label: "1ST PLACE", medal: "1" },
+  2: { bg: "#b8bcc4", fg: "#16181c", sub: "#474b52", label: "2ND PLACE", medal: "2" },
+  3: { bg: "#b5793f", fg: "#1a0f05", sub: "#3f2710", label: "3RD PLACE", medal: "3" },
 };
 function ShareableCard({ cardRef, kind, days, title, rank, bg, sticker }) {
   // ----- placement cert (gold / silver / bronze by rank) -----
@@ -2617,12 +2644,15 @@ const HEAT_LEVELS = () => (C.isDark
   ? ["rgba(99,102,241,0.35)", "rgba(99,102,241,0.65)", "#6366f1"]
   : ["rgba(79,70,229,0.30)", "rgba(79,70,229,0.60)", "#4f46e5"]);
 function Heatmap({ byDay, countByDay = {} }) {
-  // 12 calendar-aligned weeks (columns start on Monday, like a contribution graph);
-  // trailing days after today render as blanks.
+  // 26 calendar-aligned weeks (~6 months), columns start on Monday. The grid
+  // scrolls horizontally and opens at the latest week; weekday labels stay
+  // fixed on the left. Trailing days after today render as blanks. Frozen days
+  // draw as accent-OUTLINED cells (no fill) — distinct without a new color.
+  const scrollRef = useRef(null);
   const now = new Date();
   const t0 = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   const monday = new Date(t0); monday.setUTCDate(t0.getUTCDate() - ((t0.getUTCDay() + 6) % 7));
-  const start = new Date(monday); start.setUTCDate(monday.getUTCDate() - 77); // 11 weeks back → 12 columns
+  const start = new Date(monday); start.setUTCDate(monday.getUTCDate() - 7 * 25); // 25 weeks back → 26 columns
   const days = [];
   for (const d = new Date(start); d <= t0; d.setUTCDate(d.getUTCDate() + 1)) days.push(d.toISOString().slice(0, 10));
   while (days.length % 7) days.push(null); // pad current week's future days
@@ -2633,7 +2663,6 @@ function Heatmap({ byDay, countByDay = {} }) {
     if (!d) return "transparent";
     const st = byDay[d];
     if (st === "approved") { const n = countByDay[d] || 1; return levels[n >= 3 ? 2 : n === 2 ? 1 : 0]; }
-    if (st === "frozen") return C.isDark ? "#38bdf8" : "#7dd3fc"; // ice — a freeze saved this day
     if (st === "rejected") return "rgba(220,38,38,0.5)";
     if (st === "missed") return C.isDark ? "#2a3140" : "#dde3ec";
     return HEAT_EMPTY();
@@ -2642,26 +2671,36 @@ function Heatmap({ byDay, countByDay = {} }) {
   const monthOf = (wk) => { try { return new Date(wk[0] + "T00:00:00").toLocaleString(activeLang() === "ru" ? "ru" : "en", { month: "short" }); } catch (_) { return ""; } };
   let prevMonth = null;
   const monthLabels = weeks.map((wk) => { const m = monthOf(wk); const out = m !== prevMonth ? m : ""; prevMonth = m; return out; });
-  const CELL = 14, GAP = 4;
+  const CELL = 15, GAP = 4;
   const dowLabels = [t("Mon"), "", t("Wed"), "", t("Fri"), "", ""];
   return (
     <View style={{ marginTop: 10 }}>
-      <View style={{ flexDirection: "row", marginLeft: 26 }}>
-        {monthLabels.map((m, i) => (
-          <Text key={i} style={{ width: CELL + GAP, fontSize: 9, color: C.faint }} numberOfLines={1}>{m}</Text>
-        ))}
-      </View>
-      <View style={{ flexDirection: "row", marginTop: 3 }}>
-        <View style={{ width: 26, gap: GAP }}>
+      <View style={{ flexDirection: "row" }}>
+        <View style={{ width: 26, marginTop: 15 + 3, gap: GAP }}>
           {dowLabels.map((lbl, i) => (
             <Text key={i} style={{ height: CELL, fontSize: 9, color: C.faint, lineHeight: CELL }}>{lbl}</Text>
           ))}
         </View>
-        {weeks.map((wk, wi) => (
-          <View key={wi} style={{ gap: GAP, marginRight: GAP }}>
-            {wk.map((d, di) => <View key={d || "pad" + di} style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: cellColor(d) }} />)}
+        <ScrollView ref={scrollRef} horizontal showsHorizontalScrollIndicator={false}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: false })}>
+          <View>
+            <View style={{ flexDirection: "row", height: 15 }}>
+              {monthLabels.map((m, i) => (
+                <Text key={i} style={{ width: CELL + GAP, fontSize: 9, color: C.faint }} numberOfLines={1}>{m}</Text>
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", marginTop: 3 }}>
+              {weeks.map((wk, wi) => (
+                <View key={wi} style={{ gap: GAP, marginRight: GAP }}>
+                  {wk.map((d, di) => {
+                    const frozen = d && byDay[d] === "frozen";
+                    return <View key={d || "pad" + di} style={{ width: CELL, height: CELL, borderRadius: 3, backgroundColor: frozen ? "transparent" : cellColor(d), borderWidth: frozen ? 1.5 : 0, borderColor: C.red }} />;
+                  })}
+                </View>
+              ))}
+            </View>
           </View>
-        ))}
+        </ScrollView>
       </View>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 4, marginTop: 10 }}>
         <Text style={{ fontSize: 10, color: C.faint }}>{t("Less")}</Text>
@@ -2675,11 +2714,10 @@ function Heatmap({ byDay, countByDay = {} }) {
 
 function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefresh }) {
   const st = computeStats(goals, subs);
-  const windowVerified = lastNDays(84).filter((d) => st.byDay[d] === "approved").length;
+  const windowVerified = lastNDays(182).filter((d) => st.byDay[d] === "approved").length;
   const week = lastNDays(7); // oldest → today
   const thisWeek = week.filter((d) => st.byDay[d] === "approved" || st.byDay[d] === "frozen").length;
   const dayDot = (d) => (st.byDay[d] === "approved" ? C.bronze
-    : st.byDay[d] === "frozen" ? (C.isDark ? "#38bdf8" : "#7dd3fc")
     : st.byDay[d] === "rejected" || st.byDay[d] === "missed" ? "rgba(220,38,38,0.45)"
     : (C.isDark ? "#1f242c" : "#e8ecf1"));
   // strongest weekday: which day of the week collects the most verified proofs
@@ -2693,34 +2731,43 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
       refreshControl={<RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
       <Text style={s.h2}>{t("Your stats")}</Text>
 
-      {/* Heroes: permanent, only ever grow — they cushion the brutal streak reset. */}
-      <View style={s.statRow}>
-        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.verifiedTotal}</Text><Text style={s.statLabel}>{t("verified days")}</Text></View>
-        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.bestStreak}</Text><Text style={s.statLabel}>{t("best streak")}</Text></View>
-        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.curStreak}</Text><Text style={s.statLabel}>{t("current")}</Text></View>
+      {/* Hero: the current streak, big, with progress toward the next badge. */}
+      <View style={[s.card, { alignItems: "center" }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Ionicons name="flame" size={30} color={C.red} />
+          <Text style={[s.statNum, { fontSize: 46, color: C.ink }]} numberOfLines={1} adjustsFontSizeToFit>{st.curStreak}</Text>
+        </View>
+        <Text style={s.statLabel}>{t("current streak")}</Text>
+        <View style={{ alignSelf: "stretch" }}><MilestoneBar streak={st.curStreak} /></View>
       </View>
 
-      {/* This week at a glance — 7 day dots, today rightmost */}
+      {/* Permanent counters — they only ever grow, cushioning the brutal reset. */}
+      <View style={[s.statRow, { marginTop: 10 }]}>
+        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.verifiedTotal}</Text><Text style={s.statLabel}>{t("verified days")}</Text></View>
+        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.bestStreak}</Text><Text style={s.statLabel}>{t("best streak")}</Text></View>
+        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.approvalRate == null ? "—" : st.approvalRate + "%"}</Text><Text style={s.statLabel}>{t("approval rate")}</Text></View>
+      </View>
+
+      {/* This week at a glance — 7 day cells, today rightmost; frozen = outlined */}
       <View style={[s.card, { marginTop: 12 }]}>
         <View style={s.rowBetween}>
           <Text style={s.kicker}>{t("This week")}</Text>
           <Text style={[s.kicker, { color: C.bronze }]}>{thisWeek}/7</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-          {week.map((d) => (
-            <View key={d} style={{ flex: 1, height: 26, borderRadius: 8, backgroundColor: dayDot(d), alignItems: "center", justifyContent: "center" }}>
-              {st.byDay[d] === "approved" ? <Ionicons name="checkmark" size={14} color="#ffffff" />
-                : st.byDay[d] === "frozen" ? <Ionicons name="snow" size={13} color="#075985" /> : null}
-            </View>
-          ))}
+          {week.map((d) => {
+            const frozen = st.byDay[d] === "frozen";
+            return (
+              <View key={d} style={{ flex: 1, height: 26, borderRadius: 8, backgroundColor: frozen ? "transparent" : dayDot(d), borderWidth: frozen ? 1.5 : 0, borderColor: C.red, alignItems: "center", justifyContent: "center" }}>
+                {st.byDay[d] === "approved" ? <Ionicons name="checkmark" size={14} color="#ffffff" />
+                  : frozen ? <Ionicons name="snow" size={13} color={C.red} /> : null}
+              </View>
+            );
+          })}
         </View>
-      </View>
-
-      {/* second row of tiles: freezes saved you, judge strictness, your power day */}
-      <View style={[s.statRow, { marginTop: 10 }]}>
-        <View style={s.statBox}><Text style={[s.statNum, { color: C.isDark ? "#38bdf8" : "#0284c7" }]} numberOfLines={1} adjustsFontSizeToFit>❄ {st.frozenUsed}</Text><Text style={s.statLabel}>{t("freezes used")}</Text></View>
-        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.approvalRate == null ? "—" : st.approvalRate + "%"}</Text><Text style={s.statLabel}>{t("approval rate")}</Text></View>
-        <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{bestDow == null ? "—" : t(DOW_NAMES[bestDow])}</Text><Text style={s.statLabel}>{t("strongest day")}</Text></View>
+        <Text style={[s.note, { textAlign: "left", marginTop: 10 }]}>
+          {t("freezes used")}: {st.frozenUsed}{bestDow == null ? "" : " · " + t("strongest day") + ": " + t(DOW_NAMES[bestDow])}
+        </Text>
       </View>
 
       {/* Analytics (heatmap + trophies) is a Pro feature. */}
@@ -2728,18 +2775,18 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
         <>
           <View style={s.card}>
             <View style={s.rowBetween}>
-              <Text style={s.kicker}>{t("Last 12 weeks")}</Text>
+              <Text style={s.kicker}>{t("Last 6 months")}</Text>
               <Text style={s.note}>{windowVerified} {t("verified")}</Text>
             </View>
             <Heatmap byDay={st.byDay} countByDay={st.countByDay} />
             <View style={{ flexDirection: "row", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
-              <Legend color={C.isDark ? "#38bdf8" : "#7dd3fc"} label={"❄ " + t("frozen")} />
+              <Legend color={C.red} outline label={t("frozen")} />
               <Legend color="rgba(220,38,38,0.5)" label={t("rejected")} />
               <Legend color={C.isDark ? "#2a3140" : "#dde3ec"} label={t("missed")} />
             </View>
           </View>
 
-          <Text style={[s.kicker, { color: C.bronze, marginTop: 20, marginBottom: 8 }]}>🏆 {t("Trophy shelf")} · {st.badges.length}</Text>
+          <Text style={[s.kicker, { color: C.bronze, marginTop: 20, marginBottom: 8 }]}>{t("Trophy shelf")} · {st.badges.length}</Text>
           {st.badges.length === 0 ? (
             <Text style={s.note}>{t("Hit a 7, 30 or 100-day verified streak to earn shareable badges.")}</Text>
           ) : (
@@ -2786,10 +2833,12 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
     </ScrollView>
   );
 }
-function Legend({ color, label }) {
+function Legend({ color, label, outline }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-      <View style={{ width: 11, height: 11, borderRadius: 3, backgroundColor: color }} />
+      <View style={outline
+        ? { width: 11, height: 11, borderRadius: 3, borderWidth: 1.5, borderColor: color }
+        : { width: 11, height: 11, borderRadius: 3, backgroundColor: color }} />
       <Text style={s.note}>{label}</Text>
     </View>
   );
@@ -2803,7 +2852,7 @@ function timeLeft(endsAt) {
   const h = Math.floor((ms % 86400000) / 3600000);
   return d > 0 ? `${d}d ${h}h left` : `${h}h left`;
 }
-function medal(rank) { return rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`; }
+function medal(rank) { return `#${rank}`; }
 function cadenceLabel(ch) {
   if (ch.goal_type === "one_time") return t("One-time");
   return ch.goal_format === "3x" ? t("3× / week") : ch.goal_format === "5x" ? t("5× / week") : t("Daily");
@@ -2827,12 +2876,7 @@ const WHEEL_DARES = [
   "Send the group your goofiest camera-roll photo. 📸",
 ];
 const WHEEL_COLORS = ["#4f46e5", "#27303c", "#6366f1", "#1d242e"];
-// Custom (friend-written) dares often don't end with an emoji — fall back to 🎯
-// instead of printing a word fragment on the slice.
-const dareEmoji = (d) => {
-  const last = String(d || "").trim().split(/\s+/).pop() || "";
-  return last && !/[a-zA-Zа-яА-Я0-9]/.test(last) ? last : "🎯";
-};
+
 const dareIndex = (d, list = WHEEL_DARES) => { const i = list.indexOf(d); return i >= 0 ? i : 0; };
 
 // Animated wheel of fortune. Pass landIndex to spin + settle on that slice
@@ -2856,7 +2900,7 @@ function WheelOfFortune({ landIndex, size = 268, dares = WHEEL_DARES }) {
       {dares.map((d, i) => (
         <View key={i} style={{ position: "absolute", width: size, height: size, transform: [{ rotate: `${i * seg}deg` }] }}>
           <View style={{ position: "absolute", top: 0, left: (size - base) / 2, width: 0, height: 0, borderLeftWidth: base / 2, borderRightWidth: base / 2, borderTopWidth: R, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: WHEEL_COLORS[i % WHEEL_COLORS.length] }} />
-          <Text style={{ position: "absolute", top: 12, left: 0, width: size, textAlign: "center", fontSize: 20 }}>{dareEmoji(d)}</Text>
+          <Text style={{ position: "absolute", top: 10, left: 0, width: size, textAlign: "center", fontSize: 13, fontWeight: "800", color: "#ffffff" }}>{i + 1}</Text>
         </View>
       ))}
       <View style={{ position: "absolute", top: R - 17, left: R - 17, width: 34, height: 34, borderRadius: 17, backgroundColor: C.bronze, borderWidth: 3, borderColor: C.bg }} />
@@ -3519,7 +3563,7 @@ function OptionCard({ icon, title, desc, active, locked, onPress }) {
           <Ionicons name={icon} size={20} color={active ? C.bronze : C.mute} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={[s.buyTitle, { fontSize: 15 }, active && { color: C.bronze }]}>{title}{locked ? " 🔒" : ""}</Text>
+          <Text style={[s.buyTitle, { fontSize: 15 }, active && { color: C.bronze }]}>{title}{locked ? "  ·  PRO" : ""}</Text>
           {desc ? <Text style={[s.note, { textAlign: "left", marginTop: 2 }]}>{desc}</Text> : null}
         </View>
         <Ionicons name={active ? "checkmark-circle" : "ellipse-outline"} size={22} color={active ? C.bronze : C.line} />
@@ -3573,7 +3617,7 @@ function OptionSheet({ visible, title, children, onClose }) {
    until tapped, so the creation screen isn't a wall of cards. */
 function ProofSelect({ value, onChange, isPro, onUpgrade, withGeo }) {
   const [open, setOpen] = useState(false);
-  const meta = { photo: ["camera-outline", t("📷 Photo")], timelapse: ["videocam-outline", t("🎥 Video")], geo: ["location-outline", t("📍 Location")] };
+  const meta = { photo: ["camera-outline", t("Photo")], timelapse: ["videocam-outline", t("Video")], geo: ["location-outline", t("Location")] };
   const [icon, label] = meta[value] || meta.photo;
   const pick = (v, locked) => { if (locked) { onUpgrade && onUpgrade(); return; } onChange(v); setOpen(false); };
   return (
@@ -3585,9 +3629,9 @@ function ProofSelect({ value, onChange, isPro, onUpgrade, withGeo }) {
       </TouchableOpacity>
       {open ? (
         <View style={{ marginTop: 2 }}>
-          <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One quick photo.")} active={value === "photo"} onPress={() => pick("photo", false)} />
-          <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={value === "timelapse"} onPress={() => pick("timelapse", !isPro)} />
-          {withGeo ? <OptionCard icon="location-outline" title={t("📍 Location")} locked={!isPro} desc={t("Be at a place.")} active={value === "geo"} onPress={() => pick("geo", !isPro)} /> : null}
+          <OptionCard icon="camera-outline" title={t("Photo")} desc={t("One quick photo.")} active={value === "photo"} onPress={() => pick("photo", false)} />
+          <OptionCard icon="videocam-outline" title={t("Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={value === "timelapse"} onPress={() => pick("timelapse", !isPro)} />
+          {withGeo ? <OptionCard icon="location-outline" title={t("Location")} locked={!isPro} desc={t("Be at a place.")} active={value === "geo"} onPress={() => pick("geo", !isPro)} /> : null}
         </View>
       ) : null}
     </>
@@ -3667,7 +3711,7 @@ function DateTimeField({ value, onChange, placeholder = "Pick date & time", trig
     <View style={trigger ? null : { marginTop: 6 }}>
       {trigger ? trigger(open) : (
         <TouchableOpacity style={[s.chip, value && s.chipOn]} onPress={open}>
-          <Text style={[s.chipText, value && { color: C.ink }]}>📅 {value ? fmt(value) : placeholder}</Text>
+          <Text style={[s.chipText, value && { color: C.ink }]}>{value ? fmt(value) : placeholder}</Text>
         </TouchableOpacity>
       )}
       {Platform.OS === "android" && androidStep ? (

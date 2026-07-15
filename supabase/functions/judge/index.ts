@@ -69,9 +69,10 @@ function parseImage(photo: string): { mimeType: string; data: string } {
   if (m) return { mimeType: m[1], data: m[2] };
   return { mimeType: "image/jpeg", data: String(photo).replace(/^data:[^,]*,/, "") };
 }
-// Anti-replay token built from things you ALWAYS have on you — works anywhere
-// (street, gym, home), one-handed, no props, no timer. Freshness comes from the
-// finger count, which rotates daily, so an old photo can't satisfy today's token.
+// RETIRED as a requirement: photos are now captured live in-app (no gallery
+// picking), so freshness is guaranteed by capture, not by finger poses — users
+// found posing awkward. The generator is kept only so older builds that still
+// display the daily check keep getting a value; the judge no longer enforces it.
 function dailyRequirement(day: string, goalId: string): { en: string; ru: string } {
   let h = 0; const s = day + "|" + goalId;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
@@ -88,7 +89,7 @@ function buildJudgePrompt(goalText: string, proofSpec?: string, dailyReq?: strin
     "APPROVE if the photo plausibly shows the goal actually happening. The user shoots solo, one-handed, with no timer, and often has NO special equipment, mat, gym gear, or ideal location — never require any of those. A setup, a scene, a result, or an aftermath of the activity all count. Be very forgiving about angle, lighting, framing, distance and image quality — but NOT about relevance.",
     "RELEVANCE IS REQUIRED: the object or activity named in the goal must be visibly present in the photo. If the goal is reading a book and the photo shows a laptop, a desk, or no book at all — REJECT, and kindly say what to show instead. Also reject blank/black photos, screenshots, memes, stock/internet images, or anything clearly faked. A messy but genuinely relevant attempt MUST be approved.",
   ];
-  if (dailyReq) lines.push(`Freshness check (anti-cheat): the photo should also show "${dailyReq}". If the required fingers are present in ANY clear form, accept. Only reject for this if the fingers are plainly absent — and then explain kindly what to add.`);
+  if (dailyReq) lines.push(`Optional bonus signal (NEVER a reason to reject): the user may show "${dailyReq}" in the photo. If present, treat it as extra proof of freshness. If absent, IGNORE it completely — do not mention it, do not lower confidence for it.`);
   lines.push(`Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, written in ${reasonLang}>", "confidence": <0..1>}.`);
   return lines.join("\n");
 }
