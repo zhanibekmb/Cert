@@ -106,7 +106,8 @@ function useHideStreak() {
 const MILESTONES = [7, 30, 100];
 
 /* Gladiator brand mark (transparent PNG). */
-const LOGO = require("./assets/logo-mark.png"); // check-flame brand mark (v2)
+const LOGO = require("./assets/logo-mark.png");        // indigo mark, transparent bg (light surfaces)
+const LOGO_WHITE = require("./assets/logo-white.png"); // white mark, transparent bg (dark cards / photos)
 let _tabSwipeLocked = false; // set while an inner horizontal scroller is touched
 
 /* Full profile cache — the Profile tab unmounts on every tab switch; rendering
@@ -587,11 +588,12 @@ function Onboarding({ onDone }) {
   useEffect(() => { track("onboarding_view"); }, []);
   const W = Dimensions.get("window").width;
   const goTo = (i) => { scrollRef.current?.scrollTo({ x: i * W, animated: true }); setPage(i); };
-  const last = page === 3;
+  const last = page === PAGES.length - 1;
   const PAGES = [
     { head: t("Every streak is a lie."), sub: t("You tap a checkbox nobody checks. So you quit — and nothing happens.") },
     { head: t("Cert makes it real."), sub: t("One photo a day. An AI judge decides if it counts — no faking a tap.") },
     { head: t("Worth bragging about."), sub: t("Share a streak nobody can fake. Challenge friends — last place spins the wheel.") },
+    { head: t("Simple every day."), sub: t("Create a goal, send proof, the judge counts it. That's the whole loop.") },
     { head: t("What will you prove?"), sub: t("One goal. A streak that means something.") },
   ];
   return (
@@ -654,7 +656,21 @@ function Onboarding({ onDone }) {
             ))}
           </ObFrame>
         </View>
-        {/* 4 — the start: one goal away */}
+        {/* 4 — how to use: the whole loop in three numbered steps */}
+        <View style={{ width: W, justifyContent: "center" }}>
+          <ObFrame>
+            {[["create-outline", t("Set one goal")], ["camera-outline", t("Send proof every day")], ["shield-checkmark-outline", t("The judge approves — streak grows")]].map(([ic, txt], i) => (
+              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 13, marginTop: i ? 8 : 0 }}>
+                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.red, alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ color: "#ffffff", fontSize: 12, fontWeight: "800" }}>{i + 1}</Text>
+                </View>
+                <Ionicons name={ic} size={18} color={C.bronze} />
+                <Text style={[s.goalText, { marginTop: 0, flex: 1, fontSize: 14 }]}>{txt}</Text>
+              </View>
+            ))}
+          </ObFrame>
+        </View>
+        {/* 5 — the start: one goal away */}
         <View style={{ width: W, justifyContent: "center" }}>
           <ObFrame>
             <Text style={[s.label, { marginBottom: 6 }]}>{t("Your goal")}</Text>
@@ -1267,6 +1283,36 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
   const st = computeStats(goals, subs);
   const plan = profile?.plan === "monthly" || profile?.plan === "yearly" ? "Pro" : "Free";
 
+  // referral freezes: my code + one-time redemption of a friend's code
+  const [refCode, setRefCode] = useState(null);
+  const [refRedeemed, setRefRedeemed] = useState(true); // hide input until we know
+  const [refInput, setRefInput] = useState("");
+  const [refBusy, setRefBusy] = useState(false);
+  useEffect(() => {
+    supabase.functions.invoke("referral", { body: { action: "me" } })
+      .then(({ data }) => { if (data) { setRefCode(data.code || null); setRefRedeemed(!!data.redeemed); } })
+      .catch(() => {});
+  }, [session.user.id]);
+  async function redeemCode() {
+    if (refInput.trim().length < 3) return;
+    setRefBusy(true);
+    try {
+      const { data } = await supabase.functions.invoke("referral", { body: { action: "redeem", code: refInput.trim() } });
+      if (data?.ok) {
+        setRefRedeemed(true);
+        Alert.alert("Cert", t("Code accepted — you both got {n} freezes!", { n: data.granted }));
+        onReload && onReload();
+      } else {
+        Alert.alert("Cert", t("Invalid or already used code."));
+      }
+    } catch (_) { Alert.alert("Cert", t("Invalid or already used code.")); }
+    finally { setRefBusy(false); }
+  }
+  function shareCode() {
+    if (!refCode) return;
+    Share.share({ message: t("Join me on Cert — the streak you can't fake. Use my code {code} and we both get freezes: https://www.certapp.pro", { code: refCode }) }).catch(() => {});
+  }
+
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive"
@@ -1304,6 +1350,31 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
         </View>
         <Text style={[s.note, { marginTop: 8, textAlign: "left" }]}>{t("A freeze auto-protects a missed day so your streak survives. Used automatically by the nightly check.")}</Text>
         <Btn label={t("Buy freezes")} onPress={onBuyFreezes} />
+      </View>
+
+      {/* referral freezes — invite a friend, both sides get freezes */}
+      <View style={[s.card, { marginTop: 12 }]}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <View style={s.optIcon}><Ionicons name="gift-outline" size={20} color={C.bronze} /></View>
+          <Text style={s.kicker}>{t("Invite a friend")}</Text>
+        </View>
+        <Text style={[s.note, { marginTop: 8, textAlign: "left" }]}>{t("You both get {n} freezes when a friend joins with your code.", { n: 2 })}</Text>
+        {refCode ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
+            <View style={[s.input, { flex: 1, alignItems: "center" }]}>
+              <Text style={{ color: C.red, fontSize: 20, fontWeight: "800", letterSpacing: 4 }}>{refCode}</Text>
+            </View>
+            <View style={{ flex: 1 }}><Btn style={{ marginTop: 0 }} label={t("Share code")} onPress={shareCode} /></View>
+          </View>
+        ) : null}
+        {!refRedeemed ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 10 }}>
+            <TextInput style={[s.input, { flex: 1 }]} autoCapitalize="characters" maxLength={6}
+              placeholder={t("Enter a friend's code")} placeholderTextColor={C.faint}
+              value={refInput} onChangeText={setRefInput} />
+            <View style={{ flex: 1 }}><BtnGhost style={{ marginTop: 0 }} label={refBusy ? "…" : t("Redeem")} onPress={redeemCode} disabled={refBusy} /></View>
+          </View>
+        ) : null}
       </View>
 
       {plan !== "Pro" ? (
@@ -1446,10 +1517,8 @@ function SettingsScreen({ session, onBack }) {
             <TextInput style={s.input} placeholder={t("Your name")} placeholderTextColor={C.faint} value={name} onChangeText={setName} />
           </View>
         </View>
-        <View style={{ flexDirection: "row", gap: 10, alignItems: "flex-end" }}>
-          <View style={{ flex: 1 }}><BtnGhost style={{ marginTop: 12 }} label={savingP ? "…" : t("Change photo")} onPress={pickAvatar} disabled={savingP} /></View>
-          <View style={{ flex: 1 }}><Btn style={{ marginTop: 12 }} label={savingP ? t("Saving…") : t("Save name")} onPress={saveName} disabled={savingP} /></View>
-        </View>
+        <Text style={[s.note, { textAlign: "left", marginTop: 8 }]}>{t("tap to change photo")}</Text>
+        <Btn style={{ marginTop: 12 }} label={savingP ? t("Saving…") : t("Save name")} onPress={saveName} disabled={savingP} />
       </View>
 
       <View style={[s.card, { marginTop: 14 }]}>
@@ -1477,7 +1546,10 @@ function SettingsScreen({ session, onBack }) {
 
       <View style={[s.card, { marginTop: 14 }]}>
         <View style={s.rowBetween}>
-          <Text style={[s.h2, { flex: 1, marginRight: 12 }]} numberOfLines={2}>{t("Daily reminder")}</Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
+            <View style={s.optIcon}><Ionicons name="notifications-outline" size={20} color={C.bronze} /></View>
+            <Text style={s.kicker}>{t("Daily reminder")}</Text>
+          </View>
           <Switch value={remEnabled} onValueChange={toggleReminder} trackColor={{ true: C.bronze, false: C.line }} thumbColor={C.ink} />
         </View>
         <Text style={s.note}>{t("A nudge to submit your proof so you never break the streak.")}</Text>
@@ -1574,7 +1646,7 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
       <Text style={[s.spec, { color: C.mute }]}>{goalCadence(goal)}</Text>
       {goal.proof_type === "geo" ? <Text style={s.spec}>{goal.geo_place || t("geo check-in")}{goal.daily_start ? ` · ${t("from")} ${goal.daily_start}` : ""}</Text> : null}
       {proofSpec(goal) ? <Text style={s.spec}>{proofSpec(goal)}</Text> : null}
-      {isRecurring && !hideStreak ? <StreakCalendar subs={subs} /> : null}
+      {isRecurring && !hideStreak ? <StreakCalendar subs={subs} goal={goal} /> : null}
       {isRecurring && !completed && !hideStreak ? <MilestoneBar streak={goal.streak || 0} /> : null}
       {completed ? (
         <TouchableOpacity onPress={onOpenCert}><Text style={[s.kicker, { color: C.bronze, marginTop: 12 }]}>{t("Completed — view & share Cert")} ›</Text></TouchableOpacity>
@@ -1593,21 +1665,26 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
 
 /* Last 5 weeks of verified days as a grid (recent streak at a glance).
    Rows of 7 flex cells, so the grid stretches to the card's full width. */
-function StreakCalendar({ subs }) {
-  const done = new Set((subs || []).filter((x) => x.status === "approved" || x.status === "frozen").map((x) => x.day));
-  const today = new Date();
-  const cells = [];
-  for (let i = 34; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); cells.push({ key: isoDateParts(d).date, on: done.has(isoDateParts(d).date), isToday: i === 0 }); }
-  const rows = [];
-  for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+function StreakCalendar({ subs, goal }) {
+  // Progress cells sized to the goal: a 14-day goal shows exactly 14 cells;
+  // ongoing / longer goals cap at 30. Verified days fill sequentially (indigo),
+  // days saved by a freeze render as outlined cells with the accent border.
+  const total = Math.max(1, Math.min(goal?.duration_days || 30, 30));
+  const doneSubs = (subs || []).filter((x) => x.status === "approved" || x.status === "frozen")
+    .sort((a, b) => (a.day < b.day ? -1 : 1)).slice(-total);
+  const cells = Array.from({ length: total }, (_, i) => (i < doneSubs.length ? doneSubs[i].status : null));
+  const per = 10, rows = [];
+  for (let i = 0; i < cells.length; i += per) rows.push(cells.slice(i, i + per));
   const off = C.isDark ? "#1f242c" : "#e8ecf1";
   return (
-    <View style={{ gap: 4, marginTop: 14 }}>
+    <View style={{ gap: 3, marginTop: 14 }}>
       {rows.map((row, ri) => (
-        <View key={ri} style={{ flexDirection: "row", gap: 4 }}>
-          {row.map((c) => (
-            <View key={c.key} style={{ flex: 1, aspectRatio: 1, borderRadius: 4, backgroundColor: c.on ? C.green : off, borderWidth: c.isToday ? 1.5 : 0, borderColor: C.bronze }} />
-          ))}
+        <View key={ri} style={{ flexDirection: "row", gap: 3 }}>
+          {row.map((st, i) => {
+            const frozen = st === "frozen";
+            return <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 3, backgroundColor: st === "approved" ? C.bronze : frozen ? "transparent" : off, borderWidth: frozen ? 1.2 : 0, borderColor: C.red }} />;
+          })}
+          {row.length < per ? Array.from({ length: per - row.length }, (_, k) => <View key={"sp" + k} style={{ flex: 1, aspectRatio: 1 }} />) : null}
         </View>
       ))}
     </View>
@@ -1853,7 +1930,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   }
 
   async function create() {
-    if (text.trim().length < 3) return Alert.alert("Cert", t("Describe your goal first."));
+    if (!isGeo && text.trim().length < 3) return Alert.alert("Cert", t("Describe your goal first."));
     if (type === "recurring" && format === "custom" && customDays.length === 0) return Alert.alert("Cert", t("Pick at least one day."));
     if (type === "one_time" && !oneTimeDeadline) return Alert.alert("Cert", t("Pick a deadline date & time."));
     setBusy(true);
@@ -1870,9 +1947,12 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
 
       const recurring = type === "recurring";
       const ot = !recurring && oneTimeDeadline ? isoDateParts(oneTimeDeadline) : null;
+      const goalText = isGeo && !text.trim()
+        ? (geoAnchor?.place ? t("Be at {p}", { p: geoAnchor.place }) : t("Daily check-in"))
+        : text.trim();
       const { error } = await supabase.from("goals").insert({
         user_id: session.user.id,
-        text: text.trim(),
+        text: goalText,
         category: "other",
         type,
         format: recurring ? format : null,
@@ -1939,12 +2019,15 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
               <SegPill label={geoAnchor?.place || (geoPinning ? "…" : t("pick on map"))} onPress={openMap} />
             </>
           ) : null}
-          <Text style={s.sentenceText}>:</Text>
+          {isGeo ? null : <Text style={s.sentenceText}>:</Text>}
         </View>
 
-        <TextInput style={[s.input, { marginTop: 10 }]} blurOnSubmit returnKeyType="done"
-          placeholder={t("e.g. a photo with my morning coffee")} placeholderTextColor={C.faint}
-          value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+        {/* geo goals need no text — being at the place IS the goal */}
+        {isGeo ? null : (
+          <TextInput style={[s.input, { marginTop: 10 }]} blurOnSubmit returnKeyType="done"
+            placeholder={proofType === "timelapse" ? t("e.g. a video of me doing the dishes") : t("e.g. a photo with my morning coffee")} placeholderTextColor={C.faint}
+            value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+        )}
 
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 12 }}>
           {type === "recurring" ? (
@@ -2009,13 +2092,18 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
       </View>
 
       {/* one-tap starters — kill the blank-page problem */}
-      <View style={[s.chipRow, { marginTop: 12 }]}>
-        {[t("Gym 45 min"), t("Read 20 pages"), t("Morning run"), t("Meditate 10 min")].map((sug) => (
-          <TouchableOpacity key={sug} style={s.chip} onPress={() => setText(sug)}>
-            <Text style={s.chipText}>{sug}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {isGeo ? null : (
+        <>
+          <Text style={[s.label, { marginTop: 14, marginBottom: 2 }]}>{t("Ideas")}</Text>
+          <View style={s.chipRow}>
+            {[t("Gym 45 min"), t("Read 20 pages"), t("Morning run"), t("Meditate 10 min")].map((sug) => (
+              <TouchableOpacity key={sug} style={[s.chip, { backgroundColor: C.card, borderColor: C.bronze, paddingVertical: 10 }]} onPress={() => setText(sug)}>
+                <Text style={[s.chipText, { color: C.ink, fontWeight: "600" }]}>{sug}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </>
+      )}
       <Text style={[s.note, { textAlign: "left" }]}>{t("The AI judge reviews your proof before the day counts.")}</Text>
 
       {/* pill pickers */}
@@ -2253,6 +2341,7 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
   const [reject, setReject] = useState(null); // { submissionId, reason } after a rejection
   const [note, setNote] = useState("");
   const [appealBusy, setAppealBusy] = useState(false);
+  const [appealOpen, setAppealOpen] = useState(false); // appeal is its own sheet
   const [deadline, setDeadline] = useState(null); // "HH:MM" or null
   const [late, setLate] = useState(false);        // past today's deadline
   const [scheduled, setScheduled] = useState(true); // custom-days: due today?
@@ -2448,21 +2537,33 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
           <Text style={[s.note, { marginTop: 10 }]}>{isGeo ? t("Checking your location…") : isTimelapse ? t("The judge is analyzing your timelapse…") : t("The judge is analyzing your photo…")}</Text>
         </View>
       ) : reject && reject.attemptsLeft === 0 ? (
-        // Attempts used up today — now the appeal is the way out.
+        // Attempts used up today — the appeal opens as its OWN sheet.
         <>
           <View style={[s.card, { borderColor: C.err }]}>
             <Text style={[s.kicker, { color: C.err }]}>{t("Rejected — no attempts left today")}</Text>
             <Text style={s.goalText}>{reject.reason}</Text>
           </View>
-          <Text style={s.h2}>{t("Appeal once")}</Text>
-          <Text style={s.lede}>{t("Think the judge got it wrong? Explain why this should count — a reviewer takes a second, more generous look at the same photo.")}</Text>
-          <TextInput style={[s.input, { height: 90, textAlignVertical: "top" }]} multiline
-            placeholder={t("e.g. The book is open on my desk and my hand shows 4 fingers on the left.")}
-            placeholderTextColor={C.faint} value={note} onChangeText={setNote} />
           {reject.submissionId
-            ? <Btn label={appealBusy ? t("Reviewing…") : t("Submit appeal")} onPress={submitAppeal} disabled={appealBusy} />
+            ? <Btn label={t("Appeal once")} onPress={() => setAppealOpen(true)} />
             : <Text style={s.note}>{t("This attempt can't be appealed.")}</Text>}
-          <BtnGhost label={t("No, go back")} onPress={onDone} disabled={appealBusy} />
+          <BtnGhost label={t("No, go back")} onPress={onDone} />
+
+          <Modal visible={appealOpen} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAppealOpen(false)}>
+            <SafeAreaProvider>
+            <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={["top", "bottom"]}>
+              <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
+                <BackBar onBack={() => setAppealOpen(false)} />
+                <Text style={s.h2}>{t("Appeal once")}</Text>
+                <Text style={s.lede}>{t("Think the judge got it wrong? Explain why this should count — a reviewer takes a second, more generous look at the same photo.")}</Text>
+                <TextInput style={[s.input, { height: 110, textAlignVertical: "top" }]} multiline autoFocus
+                  placeholder={t("e.g. The book is open on my desk and my hand shows 4 fingers on the left.")}
+                  placeholderTextColor={C.faint} value={note} onChangeText={setNote} />
+                <Btn label={appealBusy ? t("Reviewing…") : t("Submit appeal")} onPress={submitAppeal} disabled={appealBusy} />
+                <BtnGhost label={t("Cancel")} onPress={() => setAppealOpen(false)} disabled={appealBusy} />
+              </ScrollView>
+            </SafeAreaView>
+            </SafeAreaProvider>
+          </Modal>
         </>
       ) : !scheduled ? (
         <View style={[s.card, { borderColor: C.line, alignItems: "center" }]}>
@@ -2554,7 +2655,7 @@ function ShareableCard({ cardRef, kind, days, title, rank, bg, sticker }) {
       <View ref={cardRef} collapsable={false} style={{ width: "100%", aspectRatio: 9 / 16, backgroundColor: "transparent", padding: 28, justifyContent: "space-between" }}>
         <View style={s.shareTop}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-            <Image source={LOGO} style={s.shareLogo} resizeMode="contain" />
+            <Image source={LOGO_WHITE} style={s.shareLogo} resizeMode="contain" />
             <Text style={[s.shareBrand, { color: "#f2f4f7" }, sh]}>CERT</Text>
           </View>
           <Text style={[s.shareVerified, sh]}>✓ VERIFIED</Text>
@@ -2583,13 +2684,13 @@ function ShareableCard({ cardRef, kind, days, title, rank, bg, sticker }) {
       {bg ? <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(10,13,18,0.52)" }} /> : null}
       <View style={s.shareTop}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Image source={LOGO} style={s.shareLogo} resizeMode="contain" />
+          <Image source={LOGO_WHITE} style={s.shareLogo} resizeMode="contain" />
           <Text style={[s.shareBrand, inkOnBg]}>CERT</Text>
         </View>
         <Text style={s.shareVerified}>✓ VERIFIED</Text>
       </View>
       <View style={{ alignItems: "center" }}>
-        {bg ? null : <Image source={LOGO} style={s.shareLogoBig} resizeMode="contain" />}
+        {bg ? null : <Image source={LOGO_WHITE} style={s.shareLogoBig} resizeMode="contain" />}
         <Text style={[s.shareKicker, subOnBg]}>{head}</Text>
         <Text style={s.shareDays}>{days}</Text>
         <Text style={[s.shareDaysLabel, inkOnBg]}>VERIFIED DAYS</Text>
@@ -2867,6 +2968,8 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
         <Text style={[s.note, { textAlign: "left", marginTop: 10 }]}>
           {t("freezes used")}: {st.frozenUsed}{bestDow == null ? "" : " · " + t("strongest day") + ": " + t(DOW_NAMES[bestDow])}
         </Text>
+        {/* weekly recap as a shareable card — story-ready */}
+        <BtnGhost label={t("Share my week")} onPress={() => onOpenBadge({ days: thisWeek, title: t("My week in Cert") })} />
       </View>
 
       {/* Analytics (heatmap + trophies) is a Pro feature. */}
