@@ -1787,7 +1787,7 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
   const [mapOpen, setMapOpen] = useState(false);
   const [mapInitial, setMapInitial] = useState(null); // where the map opens centered
   const [customDur, setCustomDur] = useState(false); // "Custom" length → number input
-  const [showMore, setShowMore] = useState(false);   // collapse schedule behind "More options"
+  const [sheet, setSheet] = useState(null); // which pill's picker is open: 'proof' | 'cadence' | 'duration'
   const [busy, setBusy] = useState(false);
   const toggleDay = (d) => setCustomDays((arr) => arr.includes(d) ? arr.filter((x) => x !== d) : [...arr, d].sort());
   const isGeo = proofType === "geo";
@@ -1864,110 +1864,117 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
     ? [[null, t("Ongoing")], [4, t("4 wks")], [12, t("12 wks")]]
     : [[null, t("Ongoing")], [30, t("30 d")], [100, t("100 d")]];
 
+  const proofLabel = proofType === "photo" ? t("a photo") : proofType === "timelapse" ? t("a video") : t("a check-in");
+  const cadenceLabel = format === "daily" ? t("every day") : format === "3x" ? t("3× a week") : format === "5x" ? t("5× a week") : t("my days");
+  const durLabel = duration == null && !customDur ? t("ongoing")
+    : duration == null ? "…"
+    : isWeekly ? t("for {n} weeks", { n: duration }) : t("for {n} days", { n: duration });
+  const otLabel = oneTimeDeadline
+    ? new Date(oneTimeDeadline).toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    : t("pick a date");
+  const pickCadence = (v) => { setDuration(null); setCustomDur(false); setFormat(v); setSheet(null); };
+  const pickProof = (v, locked) => { if (locked) { setSheet(null); onUpgrade && onUpgrade(); return; } setProofType(v); setSheet(null); };
+
   return (
     <ScrollView contentContainerStyle={s.wrap} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <BackBar onBack={onBack} />
       <Text style={s.h2}>{t("New goal")}</Text>
 
-      <TextInput style={[s.input, { height: 78, textAlignVertical: "top", marginTop: 14 }]} multiline blurOnSubmit returnKeyType="done"
-        placeholder={t("e.g. gym 45 min, or read 20 pages")} placeholderTextColor={C.faint}
-        value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+      <View style={{ marginTop: 14 }}>
+        <TabSwitch value={type} onChange={(v) => { setDuration(null); setCustomDur(false); setType(v); }}
+          options={[{ value: "one_time", label: t("One-time") }, { value: "recurring", label: t("Repeating") }]} />
+      </View>
+
+      {/* the goal as one sentence — the bronze pills are the choices */}
+      <View style={[s.card, { marginTop: 14, paddingVertical: 18 }]}>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+          <Text style={s.sentenceText}>{t("I'll prove it with")} </Text>
+          <SegPill label={proofLabel} onPress={() => setSheet("proof")} />
+          {isGeo ? (
+            <>
+              <Text style={s.sentenceText}> {t("at")} </Text>
+              <SegPill label={geoAnchor?.place || (geoPinning ? "…" : t("pick on map"))} onPress={openMap} />
+            </>
+          ) : null}
+          <Text style={s.sentenceText}>:</Text>
+        </View>
+
+        <TextInput style={[s.input, { marginTop: 10 }]} blurOnSubmit returnKeyType="done"
+          placeholder={t("e.g. gym 45 min, or read 20 pages")} placeholderTextColor={C.faint}
+          value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
+
+        <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", marginTop: 12 }}>
+          {type === "recurring" ? (
+            <>
+              <SegPill label={cadenceLabel} onPress={() => setSheet("cadence")} />
+              <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("any time")}
+                trigger={(open) => <SegPill label={deadline ? t("by {t}", { t: deadline }) : t("any time")} onPress={open} />} />
+              <SegPill label={durLabel} onPress={() => setSheet("duration")} />
+            </>
+          ) : (
+            <>
+              <Text style={s.sentenceText}>{t("by")} </Text>
+              <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline}
+                trigger={(open) => <SegPill label={otLabel} onPress={open} />} />
+            </>
+          )}
+        </View>
+
+        {type === "recurring" && format === "custom" ? (
+          <View style={[s.chipRow, { marginTop: 12 }]}>
+            {WEEKDAYS.map(([label, d]) => (
+              <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
+                <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ) : null}
+        {type === "recurring" && customDur ? (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 }}>
+            <TextInput style={[s.input, { flex: 1 }]} keyboardType="number-pad" placeholder="—" placeholderTextColor={C.faint} autoFocus
+              value={duration ? String(duration) : ""} onChangeText={(v) => { const n = parseInt(String(v).replace(/[^0-9]/g, ""), 10); setDuration(!n || n <= 0 ? null : n); }} />
+            <Text style={[s.note, { marginTop: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
+          </View>
+        ) : null}
+        {isGeo && geoAnchor ? (
+          <TouchableOpacity onPress={() => setGeoAnchor(null)} style={{ marginTop: 10 }}>
+            <Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Unpin")}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {isGeo && !geoAnchor ? (
+          <Text style={[s.note, { textAlign: "left", marginTop: 10 }]}>{t("Or skip — your first check-in pins it.")}</Text>
+        ) : null}
+      </View>
+
       {/* one-tap starters — kill the blank-page problem */}
-      <View style={[s.chipRow, { marginTop: 10 }]}>
+      <View style={[s.chipRow, { marginTop: 12 }]}>
         {[t("🏋️ Gym 45 min"), t("📖 Read 20 pages"), t("🏃 Morning run"), t("🧘 Meditate 10 min")].map((sug) => (
           <TouchableOpacity key={sug} style={s.chip} onPress={() => setText(sug.replace(/^\S+\s/, ""))}>
             <Text style={s.chipText}>{sug}</Text>
           </TouchableOpacity>
         ))}
       </View>
-      <Text style={[s.note, { textAlign: "left" }]}>{t("Add a time if you want — e.g. \"gym at 19:00\".")}</Text>
+      <Text style={[s.note, { textAlign: "left" }]}>{t("The AI judge reviews your proof before the day counts.")}</Text>
 
-      <Text style={[s.label, { marginTop: 16 }]}>{t("Proof")}</Text>
-      <ProofSelect value={proofType} onChange={setProofType} isPro={isPro} onUpgrade={onUpgrade} withGeo />
-      {isGeo ? (
-        <View style={[s.card, { marginTop: 10 }]}>
-          {geoAnchor ? (
-            <>
-              <Text style={s.goalText}>📍 {geoAnchor.place || `${geoAnchor.lat.toFixed(4)}, ${geoAnchor.lng.toFixed(4)}`}</Text>
-              <View style={{ flexDirection: "row", gap: 16, marginTop: 8 }}>
-                <TouchableOpacity onPress={openMap} disabled={geoPinning}><Text style={[s.note, { textAlign: "left", color: C.bronze, marginTop: 0 }]}>{t("Change on map")}</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => setGeoAnchor(null)}><Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Unpin")}</Text></TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              <BtnGhost label={geoPinning ? "…" : t("🗺 Choose on map")} onPress={openMap} disabled={geoPinning} />
-              <Text style={[s.note, { textAlign: "left" }]}>{t("Or skip — your first check-in pins it.")}</Text>
-            </>
-          )}
-        </View>
-      ) : null}
-
-      <TouchableOpacity onPress={() => setShowMore((v) => !v)} activeOpacity={0.7}
-        style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 18, paddingVertical: 6 }}>
-        <Ionicons name="options-outline" size={16} color={C.mute} />
-        <Text style={[s.label, { flex: 1, marginBottom: 0 }]}>{t("More options")}</Text>
-        <Ionicons name={showMore ? "chevron-up" : "chevron-down"} size={18} color={C.mute} />
-      </TouchableOpacity>
-      <Text style={[s.note, { textAlign: "left", marginTop: 0 }]}>{t("Defaults: repeats daily, ongoing, no deadline.")}</Text>
-
-      {showMore ? (
-      <View style={[s.card, { marginTop: 10 }]}>
-      <Text style={s.label}>{t("Type")}</Text>
-      <TabSwitch value={type} onChange={(v) => { setDuration(null); setCustomDur(false); setType(v); }}
-        options={[{ value: "recurring", label: t("Repeating") }, { value: "one_time", label: t("One-time") }]} />
-
-      {type === "recurring" ? (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("How often?")}</Text>
-          <View style={s.chipRow}>
-            {[["daily", t("Daily")], ["3x", t("3×/wk")], ["5x", t("5×/wk")], ["custom", t("Custom")]].map(([v, label]) => {
-              const on = format === v;
-              return (
-                <TouchableOpacity key={v} style={[s.chip, on && s.chipOn]} onPress={() => { setDuration(null); setCustomDur(false); setFormat(v); }}>
-                  <Text style={[s.chipText, on && { color: C.ink }]}>{label}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-          {format === "custom" ? (
-            <View style={[s.chipRow, { marginTop: 8 }]}>
-              {WEEKDAYS.map(([label, d]) => (
-                <TouchableOpacity key={d} style={[s.chip, customDays.includes(d) && s.chipOn]} onPress={() => toggleDay(d)}>
-                  <Text style={[s.chipText, customDays.includes(d) && { color: C.ink }]}>{t(label)}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          ) : null}
-          <Text style={[s.label, { marginTop: 14 }]}>{t("Length")}</Text>
-          <View style={s.chipRow}>
-            {durationOpts.map(([v, label]) => (
-              <TouchableOpacity key={label} style={[s.chip, !customDur && duration === v && s.chipOn]} onPress={() => { setCustomDur(false); setDuration(v); }}>
-                <Text style={[s.chipText, !customDur && duration === v && { color: C.ink }]}>{label}</Text>
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity style={[s.chip, customDur && s.chipOn]} onPress={() => { setCustomDur(true); setDuration(null); }}>
-              <Text style={[s.chipText, customDur && { color: C.ink }]}>{t("Other")}</Text>
-            </TouchableOpacity>
-          </View>
-          {customDur ? (
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginTop: 8 }}>
-              <TextInput style={[s.input, { flex: 1 }]} keyboardType="number-pad" placeholder="—" placeholderTextColor={C.faint}
-                value={duration ? String(duration) : ""} onChangeText={(v) => { const n = parseInt(String(v).replace(/[^0-9]/g, ""), 10); setDuration(!n || n <= 0 ? null : n); }} />
-              <Text style={[s.note, { marginTop: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
-            </View>
-          ) : null}
-          <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline (optional)")}</Text>
-          <TimeField value={deadline} onChange={setDeadline} allowClear placeholder={t("Any time")} />
-        </>
-      ) : (
-        <>
-          <Text style={[s.label, { marginTop: 14 }]}>{t("Deadline")}</Text>
-          <DateTimeField value={oneTimeDeadline} onChange={setOneTimeDeadline} placeholder={t("Pick date & time")} />
-        </>
-      )}
-      </View>
-      ) : null}
+      {/* pill pickers */}
+      <OptionSheet visible={sheet === "proof"} title={t("Proof")} onClose={() => setSheet(null)}>
+        <OptionCard icon="camera-outline" title={t("📷 Photo")} desc={t("One quick photo.")} active={proofType === "photo"} onPress={() => pickProof("photo", false)} />
+        <OptionCard icon="videocam-outline" title={t("🎥 Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={proofType === "timelapse"} onPress={() => pickProof("timelapse", !isPro)} />
+        <OptionCard icon="location-outline" title={t("📍 Location")} locked={!isPro} desc={t("Be at a place.")} active={proofType === "geo"} onPress={() => pickProof("geo", !isPro)} />
+      </OptionSheet>
+      <OptionSheet visible={sheet === "cadence"} title={t("How often?")} onClose={() => setSheet(null)}>
+        <OptionCard icon="repeat" title={t("every day")} active={format === "daily"} onPress={() => pickCadence("daily")} />
+        <OptionCard icon="calendar-outline" title={t("3× a week")} active={format === "3x"} onPress={() => pickCadence("3x")} />
+        <OptionCard icon="calendar" title={t("5× a week")} active={format === "5x"} onPress={() => pickCadence("5x")} />
+        <OptionCard icon="options-outline" title={t("my days")} desc={t("Pick weekdays")} active={format === "custom"} onPress={() => pickCadence("custom")} />
+      </OptionSheet>
+      <OptionSheet visible={sheet === "duration"} title={t("Length")} onClose={() => setSheet(null)}>
+        <OptionCard icon="infinite" title={t("ongoing")} active={!customDur && duration == null} onPress={() => { setCustomDur(false); setDuration(null); setSheet(null); }} />
+        {durationOpts.filter(([v]) => v != null).map(([v, label]) => (
+          <OptionCard key={String(v)} icon="hourglass-outline" title={label} active={!customDur && duration === v} onPress={() => { setCustomDur(false); setDuration(v); setSheet(null); }} />
+        ))}
+        <OptionCard icon="create-outline" title={t("Other")} desc={isWeekly ? t("weeks") : t("days")} active={customDur} onPress={() => { setCustomDur(true); setDuration(null); setSheet(null); }} />
+      </OptionSheet>
 
       <Btn label={busy ? t("Creating…") : t("Create")} onPress={create} disabled={busy} />
 
@@ -3453,6 +3460,30 @@ function TabSwitch({ options, value, onChange }) {
     </View>
   );
 }
+/* ---------- SENTENCE BUILDER PARTS ----------
+   Goal creation reads as one plain sentence; the changeable parts are inline
+   bronze pills that open bottom-sheet pickers. One decision per tap. */
+function SegPill({ label, onPress }) {
+  return (
+    <TouchableOpacity style={s.segPill} onPress={onPress} activeOpacity={0.75}>
+      <Text style={s.segPillText} numberOfLines={1}>{label}</Text>
+      <Ionicons name="chevron-down" size={13} color={C.bronze} />
+    </TouchableOpacity>
+  );
+}
+function OptionSheet({ visible, title, children, onClose }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity activeOpacity={1} onPress={onClose} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
+        <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ backgroundColor: C.card, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 20, paddingBottom: 34, borderTopWidth: 1, borderColor: C.line }}>
+          <Text style={[s.h2, { marginBottom: 2 }]}>{title}</Text>
+          {children}
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </Modal>
+  );
+}
+
 /* Proof-type picker as a collapsed dropdown — shows just the current choice
    until tapped, so the creation screen isn't a wall of cards. */
 function ProofSelect({ value, onChange, isPro, onUpgrade, withGeo }) {
@@ -3492,7 +3523,9 @@ function Pill({ label, active, onPress }) {
 }
 // Reusable time-of-day picker. value/onChange use "HH:MM" (24h). Native dialog
 // on Android, spinner-in-modal on iOS. allowClear shows a clear button (→ null).
-function TimeField({ value, onChange, allowClear, placeholder = "Pick a time" }) {
+// `trigger` (optional) replaces the default chip with a custom element — used by
+// the sentence builder to render the field as an inline pill.
+function TimeField({ value, onChange, allowClear, placeholder = "Pick a time", trigger }) {
   const [show, setShow] = useState(false);
   const [temp, setTemp] = useState(null);
   const base = () => { const d = new Date(); if (value) { const [h, m] = value.split(":"); d.setHours(+h, +m, 0, 0); } else { d.setHours(9, 0, 0, 0); } return d; };
@@ -3500,11 +3533,15 @@ function TimeField({ value, onChange, allowClear, placeholder = "Pick a time" })
   function open() { setTemp(base()); setShow(true); }
   function onAndroid(e, d) { setShow(false); if (e.type === "set" && d) onChange(fmt(d)); }
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6 }}>
-      <TouchableOpacity style={[s.chip, value && s.chipOn]} onPress={open}>
-        <Text style={[s.chipText, value && { color: C.ink }]}>{value || placeholder}</Text>
-      </TouchableOpacity>
-      {allowClear && value ? <TouchableOpacity onPress={() => onChange(null)}><Text style={[s.note, { marginTop: 0 }]}>clear</Text></TouchableOpacity> : null}
+    <View style={trigger ? null : { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 6 }}>
+      {trigger ? trigger(open) : (
+        <>
+          <TouchableOpacity style={[s.chip, value && s.chipOn]} onPress={open}>
+            <Text style={[s.chipText, value && { color: C.ink }]}>{value || placeholder}</Text>
+          </TouchableOpacity>
+          {allowClear && value ? <TouchableOpacity onPress={() => onChange(null)}><Text style={[s.note, { marginTop: 0 }]}>clear</Text></TouchableOpacity> : null}
+        </>
+      )}
       {show && Platform.OS === "android" ? (
         <DateTimePicker value={base()} mode="time" is24Hour display="clock" onChange={onAndroid} />
       ) : null}
@@ -3514,6 +3551,7 @@ function TimeField({ value, onChange, allowClear, placeholder = "Pick a time" })
             <View style={s.modalCard}>
               <DateTimePicker value={temp || base()} mode="time" is24Hour display="spinner" textColor={C.ink} themeVariant="dark" onChange={(e, d) => { if (d) setTemp(d); }} />
               <Btn label="Done" onPress={() => { if (temp) onChange(fmt(temp)); setShow(false); }} />
+              {trigger && allowClear && value ? <BtnGhost label={placeholder} onPress={() => { onChange(null); setShow(false); }} /> : null}
             </View>
           </View>
         </Modal>
@@ -3523,7 +3561,7 @@ function TimeField({ value, onChange, allowClear, placeholder = "Pick a time" })
 }
 // Date + time picker. value/onChange use a Date (or null). Android chains a
 // date dialog then a time dialog; iOS shows a single datetime spinner in a modal.
-function DateTimeField({ value, onChange, placeholder = "Pick date & time" }) {
+function DateTimeField({ value, onChange, placeholder = "Pick date & time", trigger }) {
   const [show, setShow] = useState(false);           // ios modal
   const [androidStep, setAndroidStep] = useState(null); // "date" | "time" | null
   const [temp, setTemp] = useState(null);
@@ -3541,10 +3579,12 @@ function DateTimeField({ value, onChange, placeholder = "Pick date & time" }) {
     }
   }
   return (
-    <View style={{ marginTop: 6 }}>
-      <TouchableOpacity style={[s.chip, value && s.chipOn]} onPress={open}>
-        <Text style={[s.chipText, value && { color: C.ink }]}>📅 {value ? fmt(value) : placeholder}</Text>
-      </TouchableOpacity>
+    <View style={trigger ? null : { marginTop: 6 }}>
+      {trigger ? trigger(open) : (
+        <TouchableOpacity style={[s.chip, value && s.chipOn]} onPress={open}>
+          <Text style={[s.chipText, value && { color: C.ink }]}>📅 {value ? fmt(value) : placeholder}</Text>
+        </TouchableOpacity>
+      )}
       {Platform.OS === "android" && androidStep ? (
         <DateTimePicker value={temp || base()} mode={androidStep} is24Hour display="default" minimumDate={new Date()} onChange={onAndroidChange} />
       ) : null}
@@ -3652,6 +3692,10 @@ function makeStyles() { return StyleSheet.create({
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
   chipOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.14)" : "rgba(166,129,43,0.16)" },
+  // sentence-builder: plain text + inline tappable pills (the only accent on the screen)
+  sentenceText: { color: C.ink, fontSize: 17, lineHeight: 38, fontWeight: "600" },
+  segPill: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1.5, borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.10)" : "rgba(166,129,43,0.10)", borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginHorizontal: 2, marginVertical: 4, maxWidth: 240 },
+  segPillText: { color: C.bronze, fontWeight: "700", fontSize: 15.5 },
   chipText: { color: C.mute, fontSize: 13 },
   freezePill: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: C.card },
   freezePillNum: { color: C.ink, fontWeight: "800", fontSize: 14 },
