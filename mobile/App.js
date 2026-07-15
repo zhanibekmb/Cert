@@ -45,30 +45,31 @@ function proofSpec(goal) {
 
 WebBrowser.maybeCompleteAuthSession();
 
-/* ---------- theme (Cert brand: bronze + red, dark default, light option) ----------
+/* ---------- theme (Cert brand v2: emerald on white, LIGHT default) ----------
+   One hue family (emerald) + cool neutral grays. Slot names kept for history:
+   `red` = PRIMARY accent (CTAs), `bronze` = secondary accent (selection /
+   verified / stamps) — both emerald shades now. `err` is the only true red
+   and is reserved for errors, rejections and destructive actions.
    C and s are module-level `let` bindings read live by every component on each
    render. Reassigning them + forcing the root to re-render repaints the whole
    tree — so a theme switch needs no per-component wiring. */
 const DARK = {
-  bg: "#070608", card: "#120f14", line: "#241f29",
-  ink: "#f4efe8", mute: "#9a948d", faint: "#6f6a63",
-  red: "#e23b2e", bronze: "#c9a227", green: "#34c759",
-  inputBg: "#0d0c11", inputLine: "#2a2731", isDark: true,
+  bg: "#0b0d10", card: "#14181e", line: "#262c36",
+  ink: "#f2f4f7", mute: "#9aa3ad", faint: "#66707c",
+  red: "#10b981", bronze: "#34d399", green: "#4ade80", err: "#f87171",
+  inputBg: "#10141a", inputLine: "#2a313c", isDark: true,
 };
 const LIGHT = {
-  // White background + warm gold accent + neutral warm grays — universal and
-  // premium, not gendered. NOTE: `red` is the primary-accent slot; in light
-  // mode it is the same gold as `bronze` (no red, no pink).
-  bg: "#ffffff", card: "#f7f4ef", line: "#e9e3d8",
-  ink: "#211f1a", mute: "#7b7568", faint: "#aaa494",
-  red: "#a6812b", bronze: "#a6812b", green: "#3a9d68",
-  inputBg: "#f5f1ea", inputLine: "#e7e1d5", isDark: false,
+  bg: "#ffffff", card: "#f6f8fa", line: "#e4e8ee",
+  ink: "#171b21", mute: "#667080", faint: "#98a1ad",
+  red: "#059669", bronze: "#047857", green: "#16a34a", err: "#dc2626",
+  inputBg: "#f2f5f8", inputLine: "#dfe4eb", isDark: false,
 };
-let C = DARK;
+let C = LIGHT; // light is the default theme
 const F = { display: "System", mono: "System" };
 
-// theme preference: 'system' | 'dark' | 'light'
-let _themePref = "system";
+// theme preference: 'system' | 'dark' | 'light' — LIGHT by default
+let _themePref = "light";
 function _systemIsLight() { try { return Appearance.getColorScheme() === "light"; } catch (_) { return false; } }
 function _resolveTheme(pref) { return pref === "light" ? "light" : pref === "dark" ? "dark" : (_systemIsLight() ? "light" : "dark"); }
 const _themeListeners = new Set();
@@ -538,7 +539,7 @@ function SetNewPassword({ onDone }) {
    makes them real → real streaks are worth bragging about → set one goal. */
 function ObFrame({ children }) {
   return (
-    <View style={{ width: "82%", alignSelf: "center", borderRadius: 30, borderWidth: 6, borderColor: C.isDark ? "#1d1922" : "#e3ddd0", backgroundColor: C.bg, padding: 14, minHeight: 270, justifyContent: "center", overflow: "hidden" }}>
+    <View style={{ width: "82%", alignSelf: "center", borderRadius: 30, borderWidth: 6, borderColor: C.isDark ? "#232a34" : "#e5e8ee", backgroundColor: C.bg, padding: 14, minHeight: 270, justifyContent: "center", overflow: "hidden" }}>
       {children}
     </View>
   );
@@ -562,7 +563,7 @@ function ObStamp({ active, size = 26 }) {
     }
   }, [active]);
   return (
-    <Animated.View style={{ position: "absolute", alignSelf: "center", top: "34%", transform: [{ rotate: "-12deg" }, { scale: v.interpolate({ inputRange: [0, 1], outputRange: [2.4, 1] }) }], opacity: v, borderWidth: 3, borderColor: C.bronze, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: "rgba(7,6,8,0.35)" }}>
+    <Animated.View style={{ position: "absolute", alignSelf: "center", top: "34%", transform: [{ rotate: "-12deg" }, { scale: v.interpolate({ inputRange: [0, 1], outputRange: [2.4, 1] }) }], opacity: v, borderWidth: 3, borderColor: C.bronze, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 6, backgroundColor: "rgba(10,13,18,0.35)" }}>
       <Text style={{ color: C.bronze, fontSize: size, fontWeight: "800", letterSpacing: 2 }}>APPROVED ✓</Text>
     </Animated.View>
   );
@@ -604,15 +605,15 @@ function Onboarding({ onDone }) {
             <ObMockRow label={t("Meditate")} dead />
             <ObMockRow label={t("Gym")} dead />
             <ObMockRow label={t("Read")} dead />
-            <View style={{ position: "absolute", alignSelf: "center", top: "42%", transform: [{ rotate: "-10deg" }], borderWidth: 2.5, borderColor: C.red, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: C.isDark ? "rgba(7,6,8,0.4)" : "rgba(255,255,255,0.6)" }}>
-              <Text style={{ color: C.red, fontSize: 20, fontWeight: "800", letterSpacing: 2 }}>{t("UNVERIFIED")}</Text>
+            <View style={{ position: "absolute", alignSelf: "center", top: "42%", transform: [{ rotate: "-10deg" }], borderWidth: 2.5, borderColor: C.err, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: C.isDark ? "rgba(10,13,18,0.4)" : "rgba(255,255,255,0.6)" }}>
+              <Text style={{ color: C.err, fontSize: 20, fontWeight: "800", letterSpacing: 2 }}>{t("UNVERIFIED")}</Text>
             </View>
           </ObFrame>
         </View>
         {/* 2 — the magic (hero): a proof photo gets stamped APPROVED */}
         <View style={{ width: W, justifyContent: "center" }}>
           <ObFrame>
-            <View style={{ borderRadius: 14, backgroundColor: C.isDark ? "#0d0c11" : "#eee9df", height: 150, alignItems: "center", justifyContent: "center" }}>
+            <View style={{ borderRadius: 14, backgroundColor: C.isDark ? "#12151a" : "#eef1f6", height: 150, alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="camera-outline" size={40} color={C.faint} />
               <Text style={[s.note, { marginTop: 8 }]}>{t("your daily photo")}</Text>
             </View>
@@ -629,7 +630,7 @@ function Onboarding({ onDone }) {
             <View style={{ borderWidth: 1.5, borderColor: C.bronze, borderRadius: 14, padding: 14, alignItems: "center" }}>
               <Text style={{ color: C.bronze, fontSize: 44, fontWeight: "800", lineHeight: 46 }}>47</Text>
               <Text style={{ color: C.ink, fontSize: 11, letterSpacing: 3, fontWeight: "700" }}>{t("VERIFIED DAYS")}</Text>
-              <Text style={{ color: C.red, fontSize: 10, letterSpacing: 2, fontWeight: "800", marginTop: 4 }}>{t("NOT FAKED")}</Text>
+              <Text style={{ color: C.bronze, fontSize: 10, letterSpacing: 2, fontWeight: "800", marginTop: 4 }}>{t("NOT FAKED")}</Text>
             </View>
             {[["🥇", "Yerdan", "8"], ["🥈", t("You"), "5"], ["🥉", "Mukhtar", "3"]].map(([m, n, d]) => (
               <View key={n} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 9, marginTop: 7 }}>
@@ -924,7 +925,7 @@ function TabBar({ tab, setTab, onCreate }) {
       {items.slice(0, 2).map(renderItem)}
       <View style={s.tabItem}>
         <TouchableOpacity style={s.tabCreate} onPress={onCreate} activeOpacity={0.85}>
-          <Ionicons name="add" size={30} color={C.isDark ? "#120606" : "#fff"} />
+          <Ionicons name="add" size={30} color={C.isDark ? "#ffffff" : "#fff"} />
         </TouchableOpacity>
       </View>
       {items.slice(2).map(renderItem)}
@@ -1459,7 +1460,7 @@ function SettingsScreen({ session, onBack }) {
 
       <BtnGhost label={t("Log out")} onPress={() => supabase.auth.signOut()} disabled={busy} />
       <TouchableOpacity onPress={deleteAccount} disabled={busy} style={{ marginTop: 10, paddingVertical: 12, alignItems: "center" }}>
-        <Text style={{ color: C.red, fontWeight: "700", fontSize: 14 }}>{busy ? "…" : t("Delete account")}</Text>
+        <Text style={{ color: C.err, fontWeight: "700", fontSize: 14 }}>{busy ? "…" : t("Delete account")}</Text>
       </TouchableOpacity>
       <Text style={[s.note, { textAlign: "center", marginTop: 16 }]}>Cert · v1.0 — {t("[ the streak you can't fake ]")}</Text>
 
@@ -1557,7 +1558,7 @@ function StreakCalendar({ subs }) {
   for (let i = 34; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); cells.push({ key: isoDateParts(d).date, on: done.has(isoDateParts(d).date), isToday: i === 0 }); }
   const rows = [];
   for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
-  const off = C.isDark ? "#1c1822" : "#ece6d9";
+  const off = C.isDark ? "#1f242c" : "#e8ecf1";
   return (
     <View style={{ gap: 4, marginTop: 14 }}>
       {rows.map((row, ri) => (
@@ -1577,7 +1578,7 @@ function MilestoneBar({ streak }) {
   if (!next) return <Text style={[s.note, { marginTop: 12 }]}>{t("Legend — past {n} days", { n: MILESTONES[MILESTONES.length - 1] })}</Text>;
   const left = next - streak;
   const pct = Math.max(0.02, Math.min(1, streak / next));
-  const track = C.isDark ? "#1c1822" : "#ece6d9";
+  const track = C.isDark ? "#1f242c" : "#e8ecf1";
   return (
     <View style={{ marginTop: 14 }}>
       <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 6 }}>
@@ -1691,12 +1692,12 @@ function Reel({ goal, onBack }) {
           <TouchableOpacity activeOpacity={0.95} onPress={() => setPlaying((p) => !p)}>
             {cur.isVideo ? (
               <VideoView player={player} nativeControls={false} contentFit="cover"
-                style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} />
+                style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#12151a", marginTop: 8 }} />
             ) : (
-              <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#0d0c11", marginTop: 8 }} resizeMode="cover" />
+              <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#12151a", marginTop: 8 }} resizeMode="cover" />
             )}
           </TouchableOpacity>
-          <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1c1822" : "#ece6d9", overflow: "hidden", marginTop: 12 }}>
+          <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1f242c" : "#e8ecf1", overflow: "hidden", marginTop: 12 }}>
             <View style={{ height: 4, width: ((idx + 1) / items.length * 100) + "%", backgroundColor: C.bronze }} />
           </View>
           <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
@@ -2053,7 +2054,7 @@ function TimelapseCapture({ onCancel, onDone }) {
         </TouchableOpacity>
         {recording ? (
           <View style={{ flexDirection: "row", alignItems: "center", gap: 7, backgroundColor: "rgba(0,0,0,.5)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 }}>
-            <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.red }} />
+            <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: C.err }} />
             <Text style={{ color: "#fff", fontFamily: "System", fontSize: 13, fontWeight: "700" }}>REC · 0:{String(elapsed).padStart(2, "0")} / 0:{String(TL_MAX_SECONDS).padStart(2, "0")}</Text>
           </View>
         ) : (
@@ -2068,16 +2069,16 @@ function TimelapseCapture({ onCancel, onDone }) {
         {preparing ? (
           <View style={{ alignItems: "center" }}>
             <ActivityIndicator color={C.bronze} />
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginTop: 10, fontSize: 13 }}>{t("Preparing your clip…")}</Text>
+            <Text style={{ color: "#c3cad4", textAlign: "center", marginTop: 10, fontSize: 13 }}>{t("Preparing your clip…")}</Text>
           </View>
         ) : recording ? (
           <>
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("{n}s left — stops automatically.", { n: remain })}</Text>
+            <Text style={{ color: "#c3cad4", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("{n}s left — stops automatically.", { n: remain })}</Text>
             <Btn label={t("Stop & send")} onPress={stop} />
           </>
         ) : (
           <>
-            <Text style={{ color: "#cfc8bf", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("Record up to {n}s of yourself actually doing it. The AI watches the whole clip.", { n: TL_MAX_SECONDS })}</Text>
+            <Text style={{ color: "#c3cad4", textAlign: "center", marginBottom: 14, fontSize: 13 }}>{t("Record up to {n}s of yourself actually doing it. The AI watches the whole clip.", { n: TL_MAX_SECONDS })}</Text>
             <Btn label={t("Start recording")} onPress={start} />
           </>
         )}
@@ -2103,20 +2104,20 @@ function ApprovalOverlay({ data, onClose, onShare }) {
   if (!data) return null;
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(5,4,6,0.94)", alignItems: "center", justifyContent: "center", padding: 28 }}>
-        <Animated.View style={{ transform: [{ rotate: "-12deg" }, { scale: stamp.interpolate({ inputRange: [0, 1], outputRange: [2.6, 1] }) }], opacity: stamp, borderWidth: 4, borderColor: "#c9a227", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10 }}>
-          <Text style={{ color: "#c9a227", fontSize: 32, fontWeight: "800", letterSpacing: 3 }}>{t("APPROVED")} ✓</Text>
+      <View style={{ flex: 1, backgroundColor: "rgba(8,10,13,0.94)", alignItems: "center", justifyContent: "center", padding: 28 }}>
+        <Animated.View style={{ transform: [{ rotate: "-12deg" }, { scale: stamp.interpolate({ inputRange: [0, 1], outputRange: [2.6, 1] }) }], opacity: stamp, borderWidth: 4, borderColor: "#10b981", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 10 }}>
+          <Text style={{ color: "#10b981", fontSize: 32, fontWeight: "800", letterSpacing: 3 }}>{t("APPROVED")} ✓</Text>
         </Animated.View>
         <Animated.View style={{ opacity: rest, alignItems: "center", marginTop: 26, width: "100%" }}>
           {typeof data.streak === "number" ? (
             <>
-              <Text style={{ color: "#f4efe8", fontSize: 58, fontWeight: "800" }}>{data.streak}</Text>
-              <Text style={{ color: "#9a948d", fontSize: 11, letterSpacing: 2, textTransform: "uppercase" }}>{data.isWeekly ? t("week streak") : t("day streak")}</Text>
+              <Text style={{ color: "#f2f4f7", fontSize: 58, fontWeight: "800" }}>{data.streak}</Text>
+              <Text style={{ color: "#98a1ad", fontSize: 11, letterSpacing: 2, textTransform: "uppercase" }}>{data.isWeekly ? t("week streak") : t("day streak")}</Text>
             </>
           ) : null}
-          {data.reason ? <Text style={{ color: "#cfc8bf", fontSize: 14, lineHeight: 20, textAlign: "center", marginTop: 14 }}>{data.reason}</Text> : null}
-          {data.completed ? <Text style={{ color: "#c9a227", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("Goal complete — Cert earned!")}</Text> : null}
-          {data.milestone ? <Text style={{ color: "#c9a227", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("You just unlocked a {n}-day verified badge.", { n: data.milestone })}</Text> : null}
+          {data.reason ? <Text style={{ color: "#c3cad4", fontSize: 14, lineHeight: 20, textAlign: "center", marginTop: 14 }}>{data.reason}</Text> : null}
+          {data.completed ? <Text style={{ color: "#10b981", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("Goal complete — Cert earned!")}</Text> : null}
+          {data.milestone ? <Text style={{ color: "#10b981", fontWeight: "800", marginTop: 10, textAlign: "center" }}>{t("You just unlocked a {n}-day verified badge.", { n: data.milestone })}</Text> : null}
           <View style={{ width: "100%", maxWidth: 320, marginTop: 22 }}>
             {data.milestone ? <Btn label={t("Share badge")} onPress={onShare} /> : null}
             <BtnGhost label={t("Continue")} onPress={onClose} />
@@ -2296,29 +2297,29 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
         ) : null}
       </View>
       {isGeo ? (
-        <View style={[s.card, { borderColor: C.red }]}>
-          <Text style={[s.kicker, { color: C.red }]}>{t("How geo check-in works")}</Text>
+        <View style={[s.card, { borderColor: C.bronze }]}>
+          <Text style={[s.kicker, { color: C.bronze }]}>{t("How geo check-in works")}</Text>
           <Text style={s.note}>{t("Your GPS position is checked against the goal's place. Fake-GPS apps are detected and rejected.")}</Text>
         </View>
       ) : isTimelapse ? (
-        <View style={[s.card, { borderColor: C.red }]}>
-          <Text style={[s.kicker, { color: C.red }]}>{t("Why a timelapse")}</Text>
+        <View style={[s.card, { borderColor: C.bronze }]}>
+          <Text style={[s.kicker, { color: C.bronze }]}>{t("Why a timelapse")}</Text>
           <Text style={s.note}>{t("Record a short clip of your session — the AI watches the whole video, so it sees the activity actually happen. A propped photo or a pre-made clip won't pass.")}</Text>
         </View>
       ) : (
-        <View style={[s.card, { borderColor: C.red }]}>
-          <Text style={[s.kicker, { color: C.red }]}>{t("Today's anti-cheat check")}</Text>
+        <View style={[s.card, { borderColor: C.bronze }]}>
+          <Text style={[s.kicker, { color: C.bronze }]}>{t("Today's anti-cheat check")}</Text>
           {checkState === "ok"
             ? <Text style={s.goalText}>{activeLang() === "ru" ? (todaysCheck?.ru || todaysCheck?.en) : (todaysCheck?.en || todaysCheck?.ru)}</Text>
             : checkState === "loading"
-              ? <ActivityIndicator color={C.red} style={{ marginTop: 8, alignSelf: "flex-start" }} />
-              : <TouchableOpacity onPress={loadCheck}><Text style={[s.goalText, { color: C.red }]}>{t("Couldn't load — tap to retry")}</Text></TouchableOpacity>}
+              ? <ActivityIndicator color={C.bronze} style={{ marginTop: 8, alignSelf: "flex-start" }} />
+              : <TouchableOpacity onPress={loadCheck}><Text style={[s.goalText, { color: C.err }]}>{t("Couldn't load — tap to retry")}</Text></TouchableOpacity>}
           <Text style={s.note}>{t("Changes every day so an old photo can't be reused. Include it in the same shot.")}</Text>
         </View>
       )}
       {windowStart || deadline ? (
-        <View style={[s.card, { borderColor: late || early ? C.red : C.green, paddingVertical: 12 }]}>
-          <Text style={[s.kicker, { color: late || early ? C.red : C.green }]}>
+        <View style={[s.card, { borderColor: late || early ? C.err : C.green, paddingVertical: 12 }]}>
+          <Text style={[s.kicker, { color: late || early ? C.err : C.green }]}>
             {early ? t("Window opens at {t} — too early", { t: windowStart })
               : late ? t("Past today's deadline ({d})", { d: deadline })
               : windowStart && deadline ? t("Window: {a}–{b} today", { a: windowStart, b: deadline })
@@ -2336,8 +2337,8 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
       ) : reject && reject.attemptsLeft === 0 ? (
         // Attempts used up today — now the appeal is the way out.
         <>
-          <View style={[s.card, { borderColor: C.red }]}>
-            <Text style={[s.kicker, { color: C.red }]}>{t("Rejected — no attempts left today")}</Text>
+          <View style={[s.card, { borderColor: C.err }]}>
+            <Text style={[s.kicker, { color: C.err }]}>{t("Rejected — no attempts left today")}</Text>
             <Text style={s.goalText}>{reject.reason}</Text>
           </View>
           <Text style={s.h2}>{t("Appeal once")}</Text>
@@ -2357,8 +2358,8 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
           <BtnGhost label={t("Back")} onPress={onBack} />
         </View>
       ) : late ? (
-        <View style={[s.card, { borderColor: C.red, alignItems: "center" }]}>
-          <Text style={[s.kicker, { color: C.red }]}>{t("Deadline passed")}</Text>
+        <View style={[s.card, { borderColor: C.err, alignItems: "center" }]}>
+          <Text style={[s.kicker, { color: C.err }]}>{t("Deadline passed")}</Text>
           <Text style={s.note}>{t("You missed today's {d} cutoff. Come back tomorrow before then.", { d: deadline })}</Text>
           <BtnGhost label={t("Back")} onPress={onBack} />
         </View>
@@ -2372,8 +2373,8 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
         // First attempt, or a reject with attempts still left → let them retry.
         <>
           {reject ? (
-            <View style={[s.card, { borderColor: C.red }]}>
-              <Text style={[s.kicker, { color: C.red }]}>{t("Rejected — try again")}</Text>
+            <View style={[s.card, { borderColor: C.err }]}>
+              <Text style={[s.kicker, { color: C.err }]}>{t("Rejected — try again")}</Text>
               <Text style={s.goalText}>{reject.reason}</Text>
               {typeof reject.attemptsLeft === "number"
                 ? <Text style={s.note}>{isGeo ? t("{n} attempts left today.", { n: reject.attemptsLeft }) : t("{n} attempts left today, then you can appeal.", { n: reject.attemptsLeft })}</Text>
@@ -2402,7 +2403,7 @@ function Submit({ goal, onDone, onBack, onViewBadge }) {
    on screen and captured via react-native-view-shot, so what you see is what
    gets shared. */
 const PLACE_PALETTE = {
-  1: { bg: "#c9a227", fg: "#1a1405", sub: "#5a4a12", label: "1ST PLACE", medal: "🥇" },
+  1: { bg: "#10b981", fg: "#052e1f", sub: "#065f46", label: "1ST PLACE", medal: "🥇" },
   2: { bg: "#b8bcc4", fg: "#16181c", sub: "#474b52", label: "2ND PLACE", medal: "🥈" },
   3: { bg: "#b5793f", fg: "#1a0f05", sub: "#3f2710", label: "3RD PLACE", medal: "🥉" },
 };
@@ -2441,19 +2442,19 @@ function ShareableCard({ cardRef, kind, days, title, rank, bg, sticker }) {
         <View style={s.shareTop}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
             <Image source={LOGO} style={s.shareLogo} resizeMode="contain" />
-            <Text style={[s.shareBrand, { color: "#f4efe8" }, sh]}>CERT</Text>
+            <Text style={[s.shareBrand, { color: "#f2f4f7" }, sh]}>CERT</Text>
           </View>
           <Text style={[s.shareVerified, sh]}>✓ VERIFIED</Text>
         </View>
         <View style={{ alignItems: "center" }}>
-          <Text style={[s.shareKicker, { color: "#e9e4dc" }, sh]}>{head}</Text>
+          <Text style={[s.shareKicker, { color: "#e8ecf1" }, sh]}>{head}</Text>
           <Text style={[s.shareDays, sh]}>{days}</Text>
-          <Text style={[s.shareDaysLabel, { color: "#f4efe8" }, sh]}>VERIFIED DAYS</Text>
+          <Text style={[s.shareDaysLabel, { color: "#f2f4f7" }, sh]}>VERIFIED DAYS</Text>
           <Text style={[s.shareNotFaked, sh]}>NOT FAKED</Text>
         </View>
         <View>
-          <Text style={[s.shareGoal, { color: "#f4efe8" }, sh]} numberOfLines={3}>{title}</Text>
-          <Text style={[s.shareTagline, { color: "#e9e4dc" }, sh]}>The streak you can't fake.</Text>
+          <Text style={[s.shareGoal, { color: "#f2f4f7" }, sh]} numberOfLines={3}>{title}</Text>
+          <Text style={[s.shareTagline, { color: "#e8ecf1" }, sh]}>The streak you can't fake.</Text>
         </View>
       </View>
     );
@@ -2461,12 +2462,12 @@ function ShareableCard({ cardRef, kind, days, title, rank, bg, sticker }) {
   // Strava-style: your photo underneath, the cert on top. A dark scrim keeps
   // the type readable, and text is forced to light ink over a photo (the
   // theme's ink may be dark in light mode).
-  const inkOnBg = bg ? { color: "#f4efe8" } : null;
-  const subOnBg = bg ? { color: "#cfc8bf" } : null;
+  const inkOnBg = bg ? { color: "#f2f4f7" } : null;
+  const subOnBg = bg ? { color: "#c3cad4" } : null;
   return (
     <View ref={cardRef} collapsable={false} style={[s.shareCard, bg && { overflow: "hidden", borderColor: "rgba(244,239,232,0.4)" }]}>
       {bg ? <Image source={{ uri: bg }} style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }} resizeMode="cover" /> : null}
-      {bg ? <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(7,6,8,0.52)" }} /> : null}
+      {bg ? <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, backgroundColor: "rgba(10,13,18,0.52)" }} /> : null}
       <View style={s.shareTop}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
           <Image source={LOGO} style={s.shareLogo} resizeMode="contain" />
@@ -2544,7 +2545,7 @@ function ShareScreen({ kind, days, title, subtitle, rank, onBack }) {
   return (
     <ScrollView contentContainerStyle={s.wrap}>
       <BackBar onBack={onBack} />
-      <View style={{ paddingHorizontal: 16, marginTop: 8, borderRadius: 22, backgroundColor: isSticker ? (C.isDark ? "#17131c" : "#eee3d6") : "transparent", paddingVertical: isSticker ? 12 : 0 }}>
+      <View style={{ paddingHorizontal: 16, marginTop: 8, borderRadius: 22, backgroundColor: isSticker ? (C.isDark ? "#12151a" : "#e8ecf1") : "transparent", paddingVertical: isSticker ? 12 : 0 }}>
         <ShareableCard cardRef={cardRef} kind={kind} days={days} title={title} rank={rank} bg={usePhoto ? bg : null} sticker={isSticker} />
       </View>
 
@@ -2607,9 +2608,9 @@ function Heatmap({ byDay }) {
   const weeks = [];
   for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
   const cellColor = (st) => (st === "approved" ? C.bronze
-    : st === "rejected" ? (C.isDark ? "rgba(226,59,46,0.5)" : "rgba(180,120,70,0.5)")
-    : st === "missed" ? (C.isDark ? "#3a2326" : "#e6ddc9")
-    : (C.isDark ? "#1c1922" : "#f1ece0"));
+    : st === "rejected" ? (C.isDark ? "rgba(220,38,38,0.5)" : "rgba(220,38,38,0.5)")
+    : st === "missed" ? (C.isDark ? "#2a3140" : "#dde3ec")
+    : (C.isDark ? "#161b22" : "#eef1f6"));
   return (
     <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 10 }}>
       {weeks.map((wk, wi) => (
@@ -2624,7 +2625,11 @@ function Heatmap({ byDay }) {
 function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefresh }) {
   const st = computeStats(goals, subs);
   const windowVerified = lastNDays(84).filter((d) => st.byDay[d] === "approved").length;
-  const thisWeek = lastNDays(7).filter((d) => st.byDay[d] === "approved").length;
+  const week = lastNDays(7); // oldest → today
+  const thisWeek = week.filter((d) => st.byDay[d] === "approved").length;
+  const dayDot = (d) => (st.byDay[d] === "approved" ? C.bronze
+    : st.byDay[d] === "rejected" || st.byDay[d] === "missed" ? "rgba(220,38,38,0.45)"
+    : (C.isDark ? "#1f242c" : "#e8ecf1"));
   return (
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       refreshControl={<RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
@@ -2637,20 +2642,35 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
         <View style={s.statBox}><Text style={s.statNum} numberOfLines={1} adjustsFontSizeToFit>{st.curStreak}</Text><Text style={s.statLabel}>{t("current")}</Text></View>
       </View>
 
+      {/* This week at a glance — 7 day dots, today rightmost */}
+      <View style={[s.card, { marginTop: 12 }]}>
+        <View style={s.rowBetween}>
+          <Text style={s.kicker}>{t("This week")}</Text>
+          <Text style={[s.kicker, { color: C.bronze }]}>{thisWeek}/7</Text>
+        </View>
+        <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
+          {week.map((d) => (
+            <View key={d} style={{ flex: 1, height: 26, borderRadius: 8, backgroundColor: dayDot(d), alignItems: "center", justifyContent: "center" }}>
+              {st.byDay[d] === "approved" ? <Ionicons name="checkmark" size={14} color="#ffffff" /> : null}
+            </View>
+          ))}
+        </View>
+        {st.approvalRate !== null ? <Text style={[s.note, { textAlign: "left", marginTop: 10 }]}>{t("Approval rate")}: {st.approvalRate}%</Text> : null}
+      </View>
+
       {/* Analytics (heatmap + trophies) is a Pro feature. */}
       {isPro ? (
         <>
           <View style={s.card}>
             <View style={s.rowBetween}>
               <Text style={s.kicker}>{t("Last 12 weeks")}</Text>
-              <Text style={s.note}>{windowVerified} {t("verified")} · {thisWeek}/7{st.approvalRate === null ? "" : " · " + st.approvalRate + "%"}</Text>
+              <Text style={s.note}>{windowVerified} {t("verified")}</Text>
             </View>
             <Heatmap byDay={st.byDay} />
             <View style={{ flexDirection: "row", gap: 14, marginTop: 14, flexWrap: "wrap" }}>
               <Legend color={C.bronze} label={t("verified")} />
-              <Legend color={C.isDark ? "rgba(226,59,46,0.5)" : "rgba(180,120,70,0.5)"} label={t("rejected")} />
-              <Legend color="#3a2326" label={t("missed")} />
-              <Legend color="#1c1922" label={t("none")} />
+              <Legend color="rgba(220,38,38,0.5)" label={t("rejected")} />
+              <Legend color={C.isDark ? "#2a3140" : "#dde3ec"} label={t("missed")} />
             </View>
           </View>
 
@@ -2682,7 +2702,7 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
               ].map((row, r) => (
                 <View key={r} style={{ flexDirection: "row", gap: 4, marginTop: r === 0 ? 0 : 4 }}>
                   {row.map((v, i) => (
-                    <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 3, backgroundColor: v ? C.bronze : (C.isDark ? "#1c1922" : "#f1ece0") }} />
+                    <View key={i} style={{ flex: 1, aspectRatio: 1, borderRadius: 3, backgroundColor: v ? C.bronze : (C.isDark ? "#161b22" : "#eef1f6") }} />
                   ))}
                 </View>
               ))}
@@ -2741,7 +2761,7 @@ const WHEEL_DARES = [
   "Do 10 jumping jacks counting in another language. 🌍",
   "Send the group your goofiest camera-roll photo. 📸",
 ];
-const WHEEL_COLORS = ["#e23b2e", "#1c1822", "#c9a227", "#241f29"];
+const WHEEL_COLORS = ["#059669", "#27303c", "#10b981", "#1d242e"];
 // Custom (friend-written) dares often don't end with an emoji — fall back to 🎯
 // instead of printing a word fragment on the slice.
 const dareEmoji = (d) => {
@@ -3199,8 +3219,8 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
             <Text style={s.note}>{board.myGoal.status === "completed" ? t("You finished this challenge goal.") : board.weekly ? t("This week: {a}/{b}. Come back another day.", { a: board.weekly.thisWeek, b: board.weekly.quota }) : t("Come back tomorrow to keep your lead.")}</Text>
           </View>
         ) : board.rejectedToday ? (
-          <View style={[s.card, { borderColor: C.red, alignItems: "center" }]}>
-            <Text style={[s.kicker, { color: C.red }]}>{t("Declined by friends")}</Text>
+          <View style={[s.card, { borderColor: C.err, alignItems: "center" }]}>
+            <Text style={[s.kicker, { color: C.err }]}>{t("Declined by friends")}</Text>
             <Text style={s.note}>{t("Your proof didn't pass today. One attempt per day — come back tomorrow.")}</Text>
           </View>
         ) : (
@@ -3220,17 +3240,17 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
       {!board.ended && board.isHost ? <BtnGhost label={t("End challenge now (host)")} onPress={endNow} /> : null}
 
       {board.ended ? (
-        <View style={[s.card, { borderColor: C.red, marginTop: 18 }]}>
+        <View style={[s.card, { borderColor: C.err, marginTop: 18 }]}>
           {board.dare ? (
             <>
-              <Text style={[s.kicker, { color: C.red }]}>{t("Wheel of fortune")}</Text>
+              <Text style={[s.kicker, { color: C.err }]}>{t("Wheel of fortune")}</Text>
               <Text style={s.goalText}>{t("{name} must:", { name: board.loser ? board.loser.name : t("Last place") })}</Text>
               <Text style={[s.h2, { color: C.bronze }]}>{board.dare}</Text>
               <BtnGhost label={t("Replay the spin")} onPress={openResultWheel} />
             </>
           ) : board.canSpin ? (
             <>
-              <Text style={[s.kicker, { color: C.red }]}>{t("You came last")}</Text>
+              <Text style={[s.kicker, { color: C.err }]}>{t("You came last")}</Text>
               <Text style={s.lede}>{t("Spin the wheel of fortune and accept your dare.")}</Text>
               <Btn label={t("Spin the wheel")} onPress={openSpinWheel} />
             </>
@@ -3262,7 +3282,7 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
           </View>
           {revealed ? (
             <View style={s.wheelResult}>
-              <Text style={[s.kicker, { color: C.red, textAlign: "center" }]}>{wheelPreview ? t("Could be…") : t("The dare")}</Text>
+              <Text style={[s.kicker, { color: C.err, textAlign: "center" }]}>{wheelPreview ? t("Could be…") : t("The dare")}</Text>
               <Text style={s.wheelDare}>{revealed}</Text>
             </View>
           ) : null}
@@ -3352,8 +3372,8 @@ function SwipeReview({ onBack }) {
           <View style={{ position: "relative", justifyContent: "center" }}>
             {/* swipe affordance: arrows hint which way to drag */}
             <View pointerEvents="none" style={[s.swipeHint, { left: 2 }]}>
-              <Ionicons name="arrow-back-circle" size={30} color={C.red} />
-              <Text style={[s.swipeHintT, { color: C.red }]}>{t("Decline")}</Text>
+              <Ionicons name="arrow-back-circle" size={30} color={C.err} />
+              <Text style={[s.swipeHintT, { color: C.err }]}>{t("Decline")}</Text>
             </View>
             <View pointerEvents="none" style={[s.swipeHint, { right: 2 }]}>
               <Ionicons name="arrow-forward-circle" size={30} color={C.green} />
@@ -3361,7 +3381,7 @@ function SwipeReview({ onBack }) {
             </View>
             <Animated.View {...panResponder.panHandlers} style={[s.swipeCard, { transform: [{ translateX: pan.x }, { translateY: pan.y }, { rotate }] }]}>
               <Animated.View style={[s.swipeStamp, { borderColor: C.green, left: 16, opacity: okOpacity }]}><Text style={[s.swipeStampT, { color: C.green }]}>APPROVE</Text></Animated.View>
-              <Animated.View style={[s.swipeStamp, { borderColor: C.red, right: 16, opacity: noOpacity }]}><Text style={[s.swipeStampT, { color: C.red }]}>DECLINE</Text></Animated.View>
+              <Animated.View style={[s.swipeStamp, { borderColor: C.err, right: 16, opacity: noOpacity }]}><Text style={[s.swipeStampT, { color: C.err }]}>DECLINE</Text></Animated.View>
               {current.photoUrl
                 ? <Image source={{ uri: current.photoUrl }} style={s.swipePhoto} resizeMode="cover" />
                 : <View style={[s.swipePhoto, { alignItems: "center", justifyContent: "center" }]}><Text style={s.note}>{t("no photo")}</Text></View>}
@@ -3623,21 +3643,21 @@ function makeStyles() { return StyleSheet.create({
   note: { color: C.faint, fontSize: 12, marginTop: 12, textAlign: "center" },
   // Dark theme: solid red button. Light theme: a light cream button with a gold
   // border + dark-gold text (per request — a light button, not a filled block).
-  btn: { backgroundColor: C.isDark ? C.red : "#f3ecda", borderWidth: C.isDark ? 0 : 1, borderColor: C.isDark ? "transparent" : "#e4d8b8", borderRadius: 10, padding: 16, marginTop: 16, alignItems: "center" },
-  btnText: { color: C.isDark ? "#120606" : "#5c4a1c", fontWeight: "800", fontSize: 15, letterSpacing: 1 },
+  btn: { backgroundColor: C.red, borderRadius: 10, padding: 16, marginTop: 16, alignItems: "center" },
+  btnText: { color: "#ffffff", fontWeight: "800", fontSize: 15, letterSpacing: 1 },
   btnGhost: { borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 16, marginTop: 10, alignItems: "center" },
   btnGhostText: { color: C.ink, fontWeight: "700", fontSize: 14 },
   googleBtn: { backgroundColor: "#fff", borderRadius: 10, padding: 15, marginTop: 8, flexDirection: "row", alignItems: "center", justifyContent: "center" },
   googleText: { color: "#1f1f1f", fontWeight: "700", fontSize: 15 },
   orText: { color: C.faint, fontSize: 12, textAlign: "center", marginVertical: 14 },
-  infoBanner: { color: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(166,129,43,0.10)", borderWidth: 1, borderColor: C.isDark ? "rgba(201,162,39,0.35)" : "rgba(166,129,43,0.35)", borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 18 },
+  infoBanner: { color: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.08)" : "rgba(5,150,105,0.10)", borderWidth: 1, borderColor: C.isDark ? "rgba(16,185,129,0.35)" : "rgba(5,150,105,0.35)", borderRadius: 10, padding: 12, fontSize: 13, lineHeight: 18 },
   switchAuth: { color: C.bronze, fontSize: 14, fontWeight: "600", textAlign: "center", marginTop: 20 },
   skipBtn: { borderWidth: 1, borderColor: C.bronze, borderRadius: 10, padding: 13, marginTop: 22, alignItems: "center" },
   skipText: { color: C.bronze, fontWeight: "700", fontSize: 14 },
   pill: { flex: 1, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingVertical: 12, alignItems: "center" },
   // Selection is ALWAYS bronze (red is reserved for CTAs/destructive) — mixed
   // red/gold selected states in the wizards read as random coloring.
-  pillOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.12)" : "rgba(166,129,43,0.14)" },
+  pillOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.12)" : "rgba(5,150,105,0.14)" },
   pillText: { color: C.mute, fontSize: 13 },
   streakNum: { color: C.bronze, fontSize: 56, fontWeight: "800", textAlign: "center" },
   goalText: { color: C.ink, fontSize: 15, lineHeight: 22, marginTop: 8 },
@@ -3645,18 +3665,18 @@ function makeStyles() { return StyleSheet.create({
   modalWrap: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", justifyContent: "flex-end" },
   modalCard: { backgroundColor: C.card, borderTopLeftRadius: 18, borderTopRightRadius: 18, padding: 20, borderTopWidth: 1, borderColor: C.line },
   swipeCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 18, padding: 16, marginTop: 18 },
-  swipePhoto: { width: "100%", height: 360, borderRadius: 12, backgroundColor: "#0d0c11" },
+  swipePhoto: { width: "100%", height: 360, borderRadius: 12, backgroundColor: "#12151a" },
   swipeStamp: { position: "absolute", top: 28, zIndex: 2, borderWidth: 3, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4, transform: [{ rotate: "-12deg" }] },
   swipeStampT: { fontSize: 22, fontWeight: "800", letterSpacing: 2 },
   historyHead: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 22, marginBottom: 4, paddingVertical: 4 },
   swipeHint: { position: "absolute", zIndex: 0, alignItems: "center", gap: 2 },
   swipeHintT: { fontSize: 10, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase" },
-  wheelBackdrop: { flex: 1, backgroundColor: "rgba(5,4,6,0.95)", alignItems: "center", justifyContent: "center", padding: 24 },
+  wheelBackdrop: { flex: 1, backgroundColor: "rgba(8,10,13,0.95)", alignItems: "center", justifyContent: "center", padding: 24 },
   wheelTitle: { color: C.ink, fontSize: 24, fontWeight: "800" },
-  wheelSub: { color: C.red, fontSize: 12, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginTop: 6, marginBottom: 16, textAlign: "center" },
+  wheelSub: { color: C.err, fontSize: 12, fontWeight: "700", letterSpacing: 1, textTransform: "uppercase", marginTop: 6, marginBottom: 16, textAlign: "center" },
   wheelStage: { alignItems: "center", justifyContent: "center", paddingTop: 18 },
   wheelPointer: { position: "absolute", top: 0, zIndex: 5, width: 0, height: 0, borderLeftWidth: 13, borderRightWidth: 13, borderTopWidth: 24, borderLeftColor: "transparent", borderRightColor: "transparent", borderTopColor: C.ink },
-  wheelResult: { marginTop: 20, borderWidth: 1, borderColor: C.red, borderRadius: 12, padding: 16, backgroundColor: C.card, maxWidth: 320 },
+  wheelResult: { marginTop: 20, borderWidth: 1, borderColor: C.err, borderRadius: 12, padding: 16, backgroundColor: C.card, maxWidth: 320 },
   wheelDare: { color: C.bronze, fontSize: 18, fontWeight: "800", textAlign: "center", lineHeight: 24, marginTop: 6 },
   backBar: { flexDirection: "row", alignItems: "center", gap: 2, marginBottom: 10, alignSelf: "flex-start", paddingVertical: 4, paddingRight: 8 },
   backText: { color: C.ink, fontSize: 15, fontWeight: "600" },
@@ -3684,17 +3704,17 @@ function makeStyles() { return StyleSheet.create({
   lbRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 14, marginTop: 8 },
   lbRank: { fontSize: 22, fontWeight: "800", minWidth: 34, textAlign: "center", color: C.ink },
   lbName: { color: C.ink, fontSize: 15, fontWeight: "700" },
-  lbLast: { color: C.red, fontSize: 11, fontWeight: "800", letterSpacing: 1 },
+  lbLast: { color: C.err, fontSize: 11, fontWeight: "800", letterSpacing: 1 },
   tabBar: { flexDirection: "row", borderTopWidth: 1, borderColor: C.line, backgroundColor: C.card, paddingTop: 7 },
   tabItem: { flex: 1, alignItems: "center", gap: 3 },
   tabCreate: { width: 52, height: 52, borderRadius: 26, backgroundColor: C.bronze, alignItems: "center", justifyContent: "center", marginTop: -22, borderWidth: 3, borderColor: C.card, shadowColor: "#000", shadowOpacity: 0.25, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 5 },
   tabLabel: { fontSize: 10.5, color: C.faint, fontWeight: "700", letterSpacing: 0.3 },
   chipRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 6 },
   chip: { borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 9 },
-  chipOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.14)" : "rgba(166,129,43,0.16)" },
+  chipOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.14)" : "rgba(5,150,105,0.16)" },
   // sentence-builder: plain text + inline tappable pills (the only accent on the screen)
   sentenceText: { color: C.ink, fontSize: 17, lineHeight: 38, fontWeight: "600" },
-  segPill: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1.5, borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.10)" : "rgba(166,129,43,0.10)", borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginHorizontal: 2, marginVertical: 4, maxWidth: 240 },
+  segPill: { flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1.5, borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.10)" : "rgba(5,150,105,0.10)", borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5, marginHorizontal: 2, marginVertical: 4, maxWidth: 240 },
   segPillText: { color: C.bronze, fontWeight: "700", fontSize: 15.5 },
   chipText: { color: C.mute, fontSize: 13 },
   freezePill: { flexDirection: "row", alignItems: "center", gap: 5, borderWidth: 1, borderColor: C.line, borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6, backgroundColor: C.card },
@@ -3706,26 +3726,26 @@ function makeStyles() { return StyleSheet.create({
   tabSwitchItem: { flex: 1, paddingVertical: 10, borderRadius: 9, alignItems: "center" },
   tabSwitchItemOn: { backgroundColor: C.bronze },
   tabSwitchText: { color: C.mute, fontWeight: "800", fontSize: 14, letterSpacing: 0.3 },
-  tabSwitchTextOn: { color: "#1a1200" },
+  tabSwitchTextOn: { color: "#ffffff" },
   dropdown: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.inputBg, borderWidth: 1, borderColor: C.inputLine, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, marginTop: 8 },
   dropdownText: { flex: 1, color: C.ink, fontSize: 15, fontWeight: "700" },
   optCard: { backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
-  optCardOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(154,122,28,0.08)" },
+  optCardOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.08)" : "rgba(154,122,28,0.08)" },
   optIcon: { width: 40, height: 40, borderRadius: 12, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", backgroundColor: C.bg },
   buyCard: { backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 14, padding: 16, marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12 },
   buyCardOn: { borderColor: C.bronze },
   buyTitle: { color: C.ink, fontSize: 16, fontWeight: "800" },
   buyPrice: { color: C.bronze, fontSize: 16, fontWeight: "800" },
-  buyBadge: { color: "#120606", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, overflow: "hidden" },
+  buyBadge: { color: "#ffffff", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 1, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, overflow: "hidden" },
   pwHero: { alignItems: "center", marginTop: 6, marginBottom: 4 },
   pwMark: { width: 64, height: 64, borderRadius: 20, borderWidth: 1, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card },
-  pwGlow: { width: 118, height: 118, borderRadius: 59, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#c9a227", shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
-  pwStamp: { transform: [{ rotate: "-8deg" }], borderWidth: 3.5, borderColor: C.bronze, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 9, marginTop: 14, shadowColor: "#c9a227", shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
+  pwGlow: { width: 118, height: 118, borderRadius: 59, borderWidth: 2, borderColor: C.bronze, alignItems: "center", justifyContent: "center", backgroundColor: C.card, shadowColor: "#10b981", shadowOpacity: 0.55, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, elevation: 8 },
+  pwStamp: { transform: [{ rotate: "-8deg" }], borderWidth: 3.5, borderColor: C.bronze, borderRadius: 14, paddingHorizontal: 20, paddingVertical: 9, marginTop: 14, shadowColor: "#10b981", shadowOpacity: 0.5, shadowRadius: 18, shadowOffset: { width: 0, height: 0 }, elevation: 6 },
   pwStampT: { color: C.bronze, fontSize: 28, fontWeight: "800", letterSpacing: 3 },
   proChip: { borderWidth: 2, borderColor: C.bronze, borderRadius: 7, paddingHorizontal: 7, paddingVertical: 2, transform: [{ rotate: "-6deg" }] },
   proChipT: { color: C.bronze, fontSize: 11, fontWeight: "800", letterSpacing: 1 },
   planLine: { flexDirection: "row", alignItems: "center", backgroundColor: C.card, borderWidth: 1.5, borderColor: C.line, borderRadius: 14, padding: 14, marginTop: 10 },
-  planLineOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.08)" : "rgba(166,129,43,0.08)" },
+  planLineOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.08)" : "rgba(5,150,105,0.08)" },
   planLinePrice: { color: C.ink, fontSize: 17, fontWeight: "800", marginLeft: 8 },
   finePrint: { color: C.faint, fontSize: 10.5, lineHeight: 15, textAlign: "center", marginTop: 10, opacity: 0.85 },
   finePrintLink: { color: C.mute, fontSize: 12, textDecorationLine: "underline" },
@@ -3733,18 +3753,18 @@ function makeStyles() { return StyleSheet.create({
   pwSub: { color: C.mute, fontSize: 14, textAlign: "center", marginTop: 6, lineHeight: 20, paddingHorizontal: 10 },
   planRow: { flexDirection: "row", gap: 10, marginTop: 14 },
   plan: { flex: 1, borderWidth: 1.5, borderColor: C.line, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 12, alignItems: "center", backgroundColor: C.card },
-  planOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(201,162,39,0.10)" : "rgba(154,122,28,0.10)" },
+  planOn: { borderColor: C.bronze, backgroundColor: C.isDark ? "rgba(16,185,129,0.10)" : "rgba(154,122,28,0.10)" },
   planName: { color: C.mute, fontSize: 12, fontWeight: "800", letterSpacing: 1, textTransform: "uppercase" },
   planPrice: { color: C.ink, fontSize: 22, fontWeight: "800", marginTop: 8 },
   planPer: { color: C.faint, fontSize: 12, marginTop: 3 },
-  planSave: { color: "#120606", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 0.5, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, overflow: "hidden", marginTop: 10 },
+  planSave: { color: "#ffffff", backgroundColor: C.bronze, fontSize: 10, fontWeight: "800", letterSpacing: 0.5, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, overflow: "hidden", marginTop: 10 },
   restore: { color: C.mute, fontSize: 13, fontWeight: "700", textAlign: "center", marginTop: 14, paddingVertical: 6 },
   shareBrand: { color: C.ink, fontSize: 22, fontWeight: "800", letterSpacing: 5 },
   shareVerified: { color: C.bronze, fontSize: 12, fontWeight: "800", letterSpacing: 1, borderWidth: 1, borderColor: C.bronze, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   shareKicker: { color: C.mute, fontSize: 13, letterSpacing: 3, fontWeight: "700", marginBottom: 4 },
   shareDays: { color: C.bronze, fontSize: 120, fontWeight: "800", lineHeight: 124 },
   shareDaysLabel: { color: C.ink, fontSize: 15, letterSpacing: 4, fontWeight: "700" },
-  shareNotFaked: { color: C.red, fontSize: 14, letterSpacing: 3, fontWeight: "800", marginTop: 14 },
+  shareNotFaked: { color: C.bronze, fontSize: 14, letterSpacing: 3, fontWeight: "800", marginTop: 14 },
   shareGoal: { color: C.ink, fontSize: 22, fontWeight: "800", lineHeight: 28, marginBottom: 12 },
   shareTagline: { color: C.faint, fontSize: 13, lineHeight: 18 },
 }); }

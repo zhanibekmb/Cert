@@ -5,14 +5,14 @@
     "scheme": "cert",
     "version": "1.1.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "userInterfaceStyle": "light",
     "newArchEnabled": false,
-    "backgroundColor": "#070608",
+    "backgroundColor": "#ffffff",
     "icon": "./assets/app-icon.png",
     "splash": {
       "image": "./assets/gladiator-logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#070608"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,

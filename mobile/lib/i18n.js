@@ -80,6 +80,8 @@ const RU = {
   "Completed": "Завершённые",
   // --- stats ---
   "Your stats": "Твоя статистика",
+  "This week": "Эта неделя",
+  "Approval rate": "Процент одобрения",
   "verified days": "дней засчитано",
   "best streak": "лучшая серия",
   "current": "сейчас",
