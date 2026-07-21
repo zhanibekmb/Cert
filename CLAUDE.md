@@ -75,6 +75,19 @@ Key routing rules:
 - Resume context → invoke /context-restore
 - Author a backlog-ready spec/issue → invoke /spec
 
+## Recent work (2026-07-21) — onboarding + UX pass
+Branch work (mobile `App.js`, `lib/i18n.js`, Edge Functions). All new user-facing copy is RU+EN via `t()`.
+- **Onboarding rebuilt (hands-on)**: `Onboarding` is now ONE what/why screen (was 5 slides). The real goal wizard auto-opens **post-auth in `Main`** as the tutorial — armed by `cert_first_goal_pending` (set on first `SIGNED_IN` next to `cert_funnel_done`), consumed once after `load()` if the account has 0 goals. During first-run (`NewGoal` prop `firstRun`) the proof is pre-set to `photo` and Pro chips are hidden (avoids paywall mid-tutorial). New funnel events: `first_goal_created`, `first_proof_submitted` (col `funnel_events.event` is free text).
+- **Progress = grid journal** (`Reel`): the old auto-player is a tap-to-open grid + lightbox. Lightbox supports **horizontal swipe** (PanResponder on the outer container) and **selective export** (tap the circle to pick tiles → "Export N selected" / "Export all"). Hidden for `geo` goals (no photo).
+- **Goal creation**: geo goals now show a description field; idea starters are photo-**provable** only (gym / run / pushups / cooked meal) as icon cards — no "read 20 pages".
+- **Home GoalCard compacted**: streak on one line + inline `MilestoneMini` bar; merged goal/schedule lines; smaller `StreakCalendar` (`compact`); rejected-today shows a red plate + quiet "Appeal or retry" (no prominent submit CTA).
+- **Stats split**: overview tab (streak, counters, week strip) + separate `AnalyticsScreen` (heatmap + trophy shelf, Pro) via `screen === "analytics"`. Week is **Monday-aligned** (`mondayWeek()`) with weekday labels, not a rolling 7-day window.
+- **Challenges**: hero banner on `ChallengeDetail` (indigo, flame watermark, stat pills, tap-code-to-share); list + history cards redesigned; **board load optimized** — one parallel `Promise.all` batch (goals/avatars/subs/tz) + derive today/week/pending from the fetched subs instead of ~9 sequential queries; final-rank persist parallelized.
+- **Paywall redesigned**: indigo hero + benefit icon-rows (replaced the Free/Pro table). No emoji/stickers anywhere (product rule: **do not use emoji/sticker glyphs in UI**, use Ionicons).
+- **AI judge**: `judge` + `appeal` now send `thinkingConfig.thinkingBudget: 0` + `maxOutputTokens: 256` (latency). **Appeal denials email** `zhanibek@certapp.pro` (via Resend) — needs `RESEND_API_KEY` set on the `appeal` function; missing key just skips silently. Video proof `TL_MAX_SECONDS` = **30** (was 15).
+- **Fixes**: paywall fine-print links wrap; referral code cached module-level (`_refCache`, no reload flash); post-approval judge `reason` text removed on the approval overlay (kept on reject/appeal).
+- **DEPLOY REQUIRED** for the Edge Function changes: `judge`, `appeal`, `challenge` (see Commands). Client changes ride the next EAS build.
+
 ## Gotchas
 - **Expo Go ≠ build**: RevenueCat is no-op in Expo Go (Preview Mode) and push/New-Arch behave differently. Test payments/push in a real build, not Expo Go.
 - **`newArchEnabled: false`** in `app.json` is intentional (3rd-party lib compatibility); Expo Go warns — ignore, it's not a store blocker.
