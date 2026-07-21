@@ -67,7 +67,7 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
   .pro-tag{font-size:11px;font-weight:900;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;letter-spacing:.04em;}
   /* phone */
-  .phone{width:320px;border:12px solid #0e1116;border-radius:48px;background:#fff;box-shadow:0 40px 90px rgba(14,17,22,.20);overflow:hidden;flex:none;}
+  .phone{width:356px;border:13px solid #0e1116;border-radius:52px;background:#fff;box-shadow:0 44px 100px rgba(14,17,22,.22);overflow:hidden;flex:none;}
   .phone.real{line-height:0;background:#0e1116;position:relative;}
   .phone.real .shot{width:100%;display:block;}
   /* clean status bar overlay (hides the Safari bar in the screenshot) + camera island */
@@ -114,7 +114,7 @@
   .pill{border:1.5px solid var(--line);background:#fff;color:var(--mute);border-radius:999px;padding:10px 18px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;transition:all .15s;}
   .pill:hover{border-color:var(--accent);color:var(--accent);}
   .pill.active{background:var(--ink);color:#fff;border-color:var(--ink);}
-  .how-grid{display:grid;grid-template-columns:1fr 340px;gap:56px;margin-top:36px;align-items:stretch;}
+  .how-grid{display:grid;grid-template-columns:1fr 376px;gap:56px;margin-top:36px;align-items:stretch;}
   .how-left{display:flex;flex-direction:column;justify-content:space-between;}
   .step{display:flex;gap:16px;opacity:.45;transition:opacity .3s;}
   .step.on{opacity:1;}
@@ -204,9 +204,11 @@
 <!-- HOW IT WORKS (interactive; pills drive the animated create screen) -->
 <section id="how" style="padding:78px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap">
-    <span class="kicker" data-k="howKicker"></span>
-    <h2 style="margin-top:14px;max-width:620px;" data-k="howH"></h2>
-    <div class="pills" id="howPills"></div>
+    <div style="text-align:center;">
+      <span class="kicker" data-k="howKicker"></span>
+      <h2 style="margin:14px auto 0;max-width:820px;font-size:clamp(38px,5.6vw,66px);" data-k="howH"></h2>
+    </div>
+    <div class="pills" id="howPills" style="justify-content:center;"></div>
     <div class="how-grid">
       <div class="how-left">
         <div class="steps" id="howSteps"></div>
@@ -372,7 +374,7 @@ const T = {
     navHow:"How it works", navFeatures:"Features", navPricing:"Pricing",
     storeSmall:"Download on the", soonSmall:"Coming soon to", soonB:"Google Play", heroFree:"Free to start · iPhone",
     heroH1a:"The streak", heroH1b:"you can't fake.",
-    heroSub:"Set <b style='color:var(--accent)'>one goal</b>. Send <b style='color:var(--accent)'>live proof</b> every day — a photo, a short video, or a location check-in. An <b style='color:var(--accent)'>AI judge</b> decides if your day counts.",
+    heroSub:"Pick <b style='color:var(--accent)'>one habit</b>. Prove it every day with a <b style='color:var(--accent)'>real photo</b> — and an <b style='color:var(--accent)'>AI judge</b> decides if it counts. No checkbox to lie to.",
     chipLive:"Live camera only", chipAI:"AI-verified", chipFriends:"Challenges with friends",
     howKicker:"How it works", howH:"Choose how you'll prove it. The judge does the rest.",
     flexKicker:"Built to keep you honest", flexH:"Strict where it counts. Fair where it should be.",
@@ -436,7 +438,7 @@ const T = {
     navHow:"Как работает", navFeatures:"Возможности", navPricing:"Цены",
     storeSmall:"Скачать в", soonSmall:"Скоро в", soonB:"Google Play", heroFree:"Бесплатный старт · iPhone",
     heroH1a:"Серия, которую", heroH1b:"не подделать.",
-    heroSub:"Поставь <b style='color:var(--accent)'>одну цель</b>. Каждый день присылай <b style='color:var(--accent)'>живое доказательство</b> — фото, короткое видео или гео-отметку. <b style='color:var(--accent)'>ИИ-судья</b> решает, засчитан ли день.",
+    heroSub:"Выбери <b style='color:var(--accent)'>одну привычку</b>. Каждый день доказывай её <b style='color:var(--accent)'>живым фото</b> — а <b style='color:var(--accent)'>ИИ-судья</b> решит, засчитано ли. Галочке больше не соврёшь.",
     chipLive:"Только живая камера", chipAI:"Проверка ИИ", chipFriends:"Челленджи с друзьями",
     howKicker:"Как работает", howH:"Выбери, чем докажешь. Остальное — за судьёй.",
     flexKicker:"Чтобы держать честно", flexH:"Строг там, где важно. Справедлив там, где нужно.",
