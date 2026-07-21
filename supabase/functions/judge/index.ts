@@ -182,6 +182,7 @@ function consecutiveWeeks(approvedDays: string[], quota: number, currentWeek: st
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+  try {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "bad_body" }, 400); }
@@ -294,22 +295,27 @@ Deno.serve(async (req) => {
         : { approved: false, reason: ru ? `Ты в ${fmtDist(km)} от места цели. Приди туда и отметься снова.` : `You're ${fmtDist(km)} away from the goal's place. Get there and check in again.`, confidence: 0.9 };
     }
   } else if (isVideo) {
-    let videoData = video;
-    if (hasVideoPath) {
-      // client uploaded the clip to storage — fetch it here, keep the body small
-      if (!String(videoPath).startsWith(`${user.id}/`)) return json({ error: "bad_path" }, 400);
-      const { data: blob, error: dlErr } = await svc.storage.from("proofs").download(videoPath);
-      if (dlErr || !blob) return json({ error: true, busy: true, reason: "Could not read the uploaded video — please try again." });
-      videoData = `data:video/mp4;base64,${encodeBase64(new Uint8Array(await blob.arrayBuffer()))}`;
+    // Everything here (storage download, base64, Gemini) is wrapped so a failure
+    // returns a graceful "try again" (200) instead of crashing to a non-2xx.
+    try {
+      let videoData = video;
+      if (hasVideoPath) {
+        if (!String(videoPath).startsWith(`${user.id}/`)) return json({ error: "bad_path" }, 400);
+        const { data: blob, error: dlErr } = await svc.storage.from("proofs").download(videoPath);
+        if (dlErr || !blob) return json({ error: true, busy: true, reason: "Could not read the uploaded video — please try again." });
+        videoData = `data:video/mp4;base64,${encodeBase64(new Uint8Array(await blob.arrayBuffer()))}`;
+      }
+      verdict = await judgeVideo({ video: videoData, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang });
+    } catch (e) {
+      console.error("judgeVideo failed:", e instanceof Error ? e.message : String(e));
+      return json({ error: true, busy: true, reason: "The judge couldn't read this clip — please try again." });
     }
-    try { verdict = await judgeVideo({ video: videoData, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
-    catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   } else if (isTimelapse) {
     try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }
-    catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
+    catch (e) { console.error("judgeTimelapse failed:", e instanceof Error ? e.message : String(e)); return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   } else {
     try { verdict = await judgePhoto({ photo, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, dailyReq: daily.en, reasonLang }); }
-    catch (_e) { return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
+    catch (e) { console.error("judgePhoto failed:", e instanceof Error ? e.message : String(e)); return json({ error: true, busy: true, reason: "The judge is busy right now — please try again in a moment." }); }
   }
 
   // Store the proof. A video is one clip; a legacy timelapse is many frames
@@ -400,4 +406,10 @@ Deno.serve(async (req) => {
   // geo rejects aren't appealable (no photo for the appeal reviewer to re-judge)
   const submissionId = isGeo && !verdict.approved ? null : sub?.id;
   return json({ verdict, goal: updatedGoal, completed: newStatus === "completed", dailyReq: daily, submissionId, attemptsLeft: attemptsLeftAfter, milestone, weekly, geoSuspect });
+
+  } catch (e) {
+    // Safety net: never let an uncaught error surface as a bare non-2xx crash.
+    console.error("judge crashed:", e instanceof Error ? (e.stack || e.message) : String(e));
+    return json({ error: true, busy: true, reason: "Something went wrong judging this — please try again." });
+  }
 });

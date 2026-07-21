@@ -802,6 +802,9 @@ const RU = {
   "Timelapse and GPS check-ins, not just photos": "Таймлапс и GPS-чек-ины, не только фото",
   "Heatmap, trends and shareable badges": "Теплокарта, тренды и бейджи для шеринга",
   "Protect your streak on an off day": "Защити стрик в пропущенный день",
+
+  // --- trophy shelf ---
+  "DAYS": "ДНЕЙ",
 };
 
 export function t(str, vars) {

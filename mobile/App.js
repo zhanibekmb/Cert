@@ -3164,9 +3164,16 @@ function AnalyticsScreen({ goals, subs, onOpenBadge, onBack }) {
       ) : (
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
           {st.badges.map((b) => (
-            <TouchableOpacity key={b.key} style={s.trophy} onPress={() => onOpenBadge(b)}>
-              <Text style={s.trophyDays}>{b.days}</Text>
-              <Text style={s.trophyLabel} numberOfLines={1}>{b.title}</Text>
+            <TouchableOpacity key={b.key} style={{ width: "31%", alignItems: "center" }} activeOpacity={0.85} onPress={() => onOpenBadge(b)}>
+              <View style={{ width: "100%", aspectRatio: 0.84, borderRadius: 16, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, alignItems: "center", justifyContent: "center", paddingVertical: 12, overflow: "hidden" }}>
+                <Ionicons name="ribbon" size={80} color={C.isDark ? "rgba(99,102,241,0.10)" : "rgba(79,70,229,0.07)"} style={{ position: "absolute", bottom: -14 }} />
+                <View style={{ width: 50, height: 50, borderRadius: 25, backgroundColor: C.red, alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="shield-checkmark" size={25} color="#fff" />
+                </View>
+                <Text style={{ color: C.ink, fontSize: 22, fontWeight: "900", marginTop: 8 }}>{b.days}</Text>
+                <Text style={{ color: C.mute, fontSize: 9, letterSpacing: 1.5, fontWeight: "800" }}>{t("DAYS")}</Text>
+              </View>
+              <Text style={{ color: C.mute, fontSize: 11, marginTop: 6, textAlign: "center" }} numberOfLines={1}>{b.title}</Text>
             </TouchableOpacity>
           ))}
         </View>
