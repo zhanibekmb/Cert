@@ -12,75 +12,83 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
   :root{
     --accent:#4f46e5; --accent-deep:#4338ca; --accent-soft:#eef2ff;
-    --ink:#171b21; --mute:#667080; --faint:#98a1ad;
-    --bg:#ffffff; --card:#f6f8fa; --line:#e4e8ee;
-    --dark:#1e1b4e; --dark-ink:#eef2ff; --dark-mute:#a5b4fc;
+    --ink:#0f1115; --mute:#5b6472; --faint:#9aa3b0;
+    --bg:#ffffff; --card:#f7f8fb; --line:#e7eaf0;
+    --dark:#14122e; --dark2:#1e1b4e; --dark-ink:#f2f0ff; --dark-mute:#b7bdf7;
     --err:#dc2626; --ok:#16a34a;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;background:var(--bg);}
-  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);overflow-x:hidden;}
+  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
   ::selection{background:var(--accent);color:#fff;}
   a{color:inherit;}
-  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
-  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 24px;font:inherit;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:transform .15s,box-shadow .15s;}
-  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,70,229,.28);}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:15px 26px;font:inherit;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(79,70,229,.30);}
   .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);}
   .btn.ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
-  .kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
-  h1,h2{margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.06;}
-  h1{font-size:clamp(38px,6vw,68px);}
-  h2{font-size:clamp(28px,4.2vw,44px);}
-  .sub{font-size:18px;line-height:1.6;color:var(--mute);}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;}
-  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:13.5px;font-weight:600;color:var(--mute);background:#fff;}
-  .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:15px;background:var(--accent);color:#fff;font-weight:800;font-size:14px;flex:none;}
+  .btn.light{background:#fff;color:var(--accent-deep);}
+  .kicker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
+  h1,h2,h3{margin:0;font-weight:900;letter-spacing:-.025em;line-height:1.03;}
+  h1{font-size:clamp(42px,6.6vw,76px);}
+  h2{font-size:clamp(30px,4.6vw,50px);}
+  .lead{font-size:clamp(18px,2vw,21px);line-height:1.55;color:var(--mute);}
+  .sub{font-size:17px;line-height:1.6;color:var(--mute);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:28px;}
+  .chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--mute);background:#fff;}
+  .chip svg{width:15px;height:15px;color:var(--accent);flex:none;}
+  .icon-box{width:48px;height:48px;border-radius:13px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);}
+  .icon-box svg{width:23px;height:23px;}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:17px;background:var(--accent);color:#fff;font-weight:800;font-size:15px;flex:none;}
   .navlink{text-decoration:none;font-size:14px;font-weight:600;color:var(--mute);}
   .navlink:hover{color:var(--accent);}
   .lang-btn{background:none;border:none;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer;border-radius:7px;}
   .lang-btn.active{background:var(--accent);color:#fff;}
-  .faq-q{width:100%;text-align:left;background:none;border:none;padding:18px 0;font:inherit;font-size:16.5px;font-weight:700;color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;}
+  .faq-q{width:100%;text-align:left;background:none;border:none;padding:20px 0;font:inherit;font-size:17px;font-weight:700;color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;}
   .faq-q:hover{color:var(--accent);}
-  .faq-a{display:none;padding:0 0 18px;color:var(--mute);font-size:15px;line-height:1.65;}
+  .faq-a{display:none;padding:0 0 20px;color:var(--mute);font-size:15.5px;line-height:1.65;}
   .faq-item{border-bottom:1px solid var(--line);}
   .faq-item.open .faq-a{display:block;}
   .faq-item.open .faq-x{transform:rotate(45deg);}
-  .faq-x{transition:transform .15s;color:var(--accent);font-size:20px;font-weight:700;flex:none;}
-  @keyframes rise{0%{opacity:0;transform:translateY(26px);}100%{opacity:1;transform:translateY(0);}}
-  .rise{animation:rise .7s ease both;}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-  @media(max-width:840px){.grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}.hero-flex{flex-direction:column;}}
-  @media(max-width:560px){.navlink.hide-sm{display:none;}}
-  /* phone mockup, pure CSS */
-  .phone{width:290px;border:10px solid #12151a;border-radius:42px;background:#fff;box-shadow:0 30px 70px rgba(23,27,33,.18);overflow:hidden;flex:none;}
-  .phone-notch{height:26px;display:flex;justify-content:center;align-items:flex-start;}
-  .phone-notch i{width:110px;height:22px;background:#12151a;border-radius:0 0 14px 14px;}
-  .pcell{width:17px;height:17px;border-radius:4px;background:#e8ecf1;}
+  .faq-x{transition:transform .15s;color:var(--accent);font-size:22px;font-weight:700;flex:none;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  .eyebrow-row{display:flex;align-items:center;gap:10px;color:var(--faint);font-size:13px;font-weight:600;}
+  /* phone frame — holds a CSS mock now; drop a real screenshot <img class="shot"> in to replace */
+  .phone{width:300px;border:11px solid #0f1115;border-radius:46px;background:#fff;box-shadow:0 40px 90px rgba(15,17,21,.20);overflow:hidden;flex:none;}
+  .phone.big{width:340px;}
+  .phone-notch{height:28px;display:flex;justify-content:center;align-items:flex-start;background:#fff;}
+  .phone-notch i{width:120px;height:24px;background:#0f1115;border-radius:0 0 16px 16px;}
+  .phone .shot{width:100%;display:block;}
+  .pcell{width:18px;height:18px;border-radius:5px;background:#e8ecf1;}
   .pcell.on{background:var(--accent);}
-  .pcell.fr{background:transparent;border:1.6px solid var(--accent);}
+  .pcell.fr{background:transparent;border:1.7px solid var(--accent);}
+  .stat{font-weight:900;font-size:clamp(30px,4vw,42px);letter-spacing:-.03em;}
+  @media(max-width:900px){.grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}.hero-flex{flex-direction:column;text-align:center;}.hero-flex .chips{justify-content:center;}.hero-cta{justify-content:center;}}
+  @media(max-width:560px){.navlink.hide-sm{display:none;}}
 </style>
 </head>
 <body>
 
 <!-- ===== NAV ===== -->
-<header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);">
-  <div class="wrap" style="display:flex;align-items:center;gap:22px;height:64px;">
+<header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);">
+  <div class="wrap" style="display:flex;align-items:center;gap:22px;height:66px;">
     <a href="#top" style="display:flex;align-items:center;gap:9px;text-decoration:none;">
-      <img src="assets/logo-mark.png" alt="" style="width:30px;height:30px;">
-      <span style="font-weight:800;font-size:18px;letter-spacing:.06em;">CERT</span>
+      <img src="assets/logo-mark.png" alt="Cert" style="width:30px;height:30px;">
+      <span style="font-weight:900;font-size:19px;letter-spacing:.04em;">CERT</span>
     </a>
-    <nav style="display:flex;gap:20px;margin-left:auto;align-items:center;">
+    <nav style="display:flex;gap:22px;margin-left:auto;align-items:center;">
       <a class="navlink hide-sm" href="#how" data-k="navHow"></a>
+      <a class="navlink hide-sm" href="#proof" data-k="navProof"></a>
       <a class="navlink hide-sm" href="#faq">FAQ</a>
       <a class="navlink hide-sm" href="pricing.html" data-k="navPricing"></a>
-      <a class="btn" style="padding:9px 16px;font-size:14px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+      <a class="btn" style="padding:10px 17px;font-size:14px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
         <svg width="15" height="17" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
         App Store
       </a>
@@ -93,45 +101,49 @@
 </header>
 
 <!-- ===== HERO ===== -->
-<section id="top" style="padding:84px 0 72px;">
-  <div class="wrap hero-flex" style="display:flex;align-items:center;gap:56px;">
-    <div class="rise" style="flex:1;min-width:0;">
+<section id="top" style="padding:80px 0 64px;">
+  <div class="wrap hero-flex" style="display:flex;align-items:center;gap:60px;">
+    <div style="flex:1;min-width:0;">
       <span class="kicker" data-k="heroKicker"></span>
-      <h1 style="margin-top:14px;"><span data-k="heroH1a"></span><br><span style="color:var(--accent);" data-k="heroH1b"></span></h1>
-      <p class="sub" style="margin:22px 0 30px;max-width:480px;" data-k="heroSub"></p>
-      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+      <h1 style="margin-top:16px;"><span data-k="heroH1a"></span> <span style="color:var(--accent);" data-k="heroH1b"></span></h1>
+      <p class="lead" style="margin:24px 0 32px;max-width:500px;" data-k="heroSub"></p>
+      <div class="hero-cta" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
         <a class="btn" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
           <svg width="17" height="19" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
           <span data-k="heroCta"></span>
         </a>
         <span style="font-size:13.5px;color:var(--faint);font-weight:600;" data-k="heroFree"></span>
       </div>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:30px;">
-        <span class="chip">📷 <span data-k="chipLive"></span></span>
-        <span class="chip">🤖 <span data-k="chipAI"></span></span>
-        <span class="chip">👥 <span data-k="chipFriends"></span></span>
+      <div class="chips" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:32px;">
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.2"/><path d="M8 7l1.4-2.2h5.2L16 7"/></svg><span data-k="chipLive"></span></span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg><span data-k="chipAI"></span></span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17 19a5.5 5.5 0 0 0-3-4.9"/></svg><span data-k="chipFriends"></span></span>
       </div>
     </div>
 
-    <!-- CSS phone mockup: a goal card mid-streak -->
-    <div class="phone rise" style="animation-delay:.15s;">
+    <!-- HERO PHONE — CSS mock of the home goal card. To use a real screenshot,
+         replace the whole <div style="padding…"> block below with:
+         <img class="shot" src="assets/landing/screen-home.png" alt=""> -->
+    <div class="phone">
       <div class="phone-notch"><i></i></div>
       <div style="padding:18px 18px 26px;">
-        <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;" data-k="mockToday"></div>
-        <div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:10px;">
+        <div style="font-size:11px;font-weight:800;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;" data-k="mockToday"></div>
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:10px;">
           <div style="display:flex;align-items:center;gap:8px;">
-            <span style="font-size:22px;">🔥</span>
-            <span style="font-size:30px;font-weight:800;">23</span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2c1 3-1.5 4-1.5 7a4.5 4.5 0 0 0 9 0c0-2-1-3.5-1-3.5 2 1.5 3.5 4 3.5 7a8 8 0 1 1-16 0c0-4.5 4-6.5 6-10.5z"/></svg>
+            <span style="font-size:30px;font-weight:900;">23</span>
             <span style="font-size:12px;color:var(--mute);font-weight:600;" data-k="mockDays"></span>
           </div>
           <div style="font-weight:700;margin-top:8px;font-size:15px;" data-k="mockGoal"></div>
           <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;">
             <i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell fr"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell"></i><i class="pcell"></i>
           </div>
-          <div style="margin-top:14px;background:var(--accent);border-radius:10px;color:#fff;text-align:center;font-weight:700;font-size:13.5px;padding:11px;" data-k="mockBtn"></div>
+          <div style="margin-top:14px;background:var(--accent);border-radius:11px;color:#fff;text-align:center;font-weight:700;font-size:13.5px;padding:12px;" data-k="mockBtn"></div>
         </div>
-        <div style="display:flex;align-items:center;gap:8px;background:var(--accent-soft);border:1px solid #dfe3ff;border-radius:12px;padding:11px 13px;margin-top:12px;">
-          <span style="display:inline-flex;width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">✓</span>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--accent-soft);border:1px solid #dfe3ff;border-radius:13px;padding:12px 13px;margin-top:12px;">
+          <span style="display:inline-flex;width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;align-items:center;justify-content:center;">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><path d="M5 12l4 4 10-10"/></svg>
+          </span>
           <span style="font-size:12.5px;font-weight:600;color:var(--accent-deep);" data-k="mockVerdict"></span>
         </div>
       </div>
@@ -139,144 +151,177 @@
   </div>
 </section>
 
+<!-- ===== DEMO / VIDEO BAND ===== -->
+<section style="padding:20px 0 76px;">
+  <div class="wrap" style="text-align:center;">
+    <span class="kicker" data-k="demoKicker"></span>
+    <h2 style="margin:14px auto 0;max-width:760px;" data-k="demoH"></h2>
+    <p class="sub" style="margin:16px auto 0;max-width:560px;" data-k="demoT"></p>
+    <!-- HERO DEMO VIDEO — the money moment: record a proof → the AI "APPROVED"
+         stamp fires. Replace the .phone block below with:
+         <video class="shot" autoplay muted loop playsinline poster="assets/landing/demo-poster.jpg">
+           <source src="assets/landing/demo-approve.mp4" type="video/mp4"></video> -->
+    <div style="display:flex;justify-content:center;margin-top:38px;">
+      <div class="phone big">
+        <div class="phone-notch"><i></i></div>
+        <div style="padding:0;background:#0f1115;position:relative;">
+          <div style="aspect-ratio:9/17;background:linear-gradient(160deg,#1e1b4e,#4f46e5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;">
+            <div style="transform:rotate(-8deg);border:4px solid #fff;border-radius:16px;padding:16px 28px;box-shadow:0 0 50px rgba(255,255,255,.25);">
+              <div style="color:#fff;font-size:30px;font-weight:900;letter-spacing:.1em;">APPROVED ✓</div>
+            </div>
+            <div style="color:#c7cbff;font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;" data-k="demoTag"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ===== HOW IT WORKS ===== -->
-<section id="how" style="padding:76px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+<section id="how" style="padding:80px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap">
-    <span class="kicker" data-k="howKicker"></span>
-    <h2 style="margin-top:12px;" data-k="howH"></h2>
-    <div class="grid3" style="margin-top:36px;">
+    <div style="text-align:center;">
+      <span class="kicker" data-k="howKicker"></span>
+      <h2 style="margin:14px auto 0;max-width:640px;" data-k="howH"></h2>
+    </div>
+    <div class="grid3" style="margin-top:44px;">
       <div class="card" style="background:#fff;">
         <span class="num">1</span>
-        <h3 style="margin:14px 0 8px;font-size:19px;" data-k="how1H"></h3>
+        <h3 style="margin:16px 0 8px;font-size:20px;" data-k="how1H"></h3>
         <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="how1T"></p>
+        <!-- optional: <img class="shot" style="border-radius:14px;margin-top:16px;border:1px solid var(--line);" src="assets/landing/screen-create.png"> -->
       </div>
       <div class="card" style="background:#fff;">
         <span class="num">2</span>
-        <h3 style="margin:14px 0 8px;font-size:19px;" data-k="how2H"></h3>
+        <h3 style="margin:16px 0 8px;font-size:20px;" data-k="how2H"></h3>
         <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="how2T"></p>
+        <!-- optional: <img class="shot" ... src="assets/landing/screen-submit.png"> -->
       </div>
       <div class="card" style="background:#fff;">
         <span class="num">3</span>
-        <h3 style="margin:14px 0 8px;font-size:19px;" data-k="how3H"></h3>
+        <h3 style="margin:16px 0 8px;font-size:20px;" data-k="how3H"></h3>
         <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="how3T"></p>
+        <!-- optional: <img class="shot" ... src="assets/landing/screen-approved.png"> -->
       </div>
     </div>
   </div>
 </section>
 
 <!-- ===== PROOF METHODS ===== -->
-<section style="padding:76px 0;">
+<section id="proof" style="padding:82px 0;">
   <div class="wrap">
     <span class="kicker" data-k="proofKicker"></span>
-    <h2 style="margin-top:12px;" data-k="proofH"></h2>
+    <h2 style="margin-top:14px;" data-k="proofH"></h2>
     <p class="sub" style="margin:16px 0 0;max-width:560px;" data-k="proofSub"></p>
-    <div class="grid3" style="margin-top:36px;">
+    <div class="grid3" style="margin-top:40px;">
       <div class="card">
-        <div style="font-size:30px;">📷</div>
-        <h3 style="margin:12px 0 6px;font-size:19px;" data-k="pm1H"></h3>
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.4"/><path d="M8 7l1.4-2.2h5.2L16 7"/></svg></div>
+        <h3 style="margin:16px 0 6px;font-size:20px;" data-k="pm1H"></h3>
         <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="pm1T"></p>
       </div>
       <div class="card">
-        <div style="font-size:30px;">🎥</div>
-        <h3 style="margin:12px 0 6px;font-size:19px;"><span data-k="pm2H"></span> <span style="font-size:11px;font-weight:800;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;">PRO</span></h3>
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10l5-3v10l-5-3z"/></svg></div>
+        <h3 style="margin:16px 0 6px;font-size:20px;"><span data-k="pm2H"></span> <span class="pro-tag">PRO</span></h3>
         <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="pm2T"></p>
       </div>
       <div class="card">
-        <div style="font-size:30px;">📍</div>
-        <h3 style="margin:12px 0 6px;font-size:19px;"><span data-k="pm3H"></span> <span style="font-size:11px;font-weight:800;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;">PRO</span></h3>
+        <div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c5-5 7-8.2 7-11a7 7 0 1 0-14 0c0 2.8 2 6 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></div>
+        <h3 style="margin:16px 0 6px;font-size:20px;"><span data-k="pm3H"></span> <span class="pro-tag">PRO</span></h3>
         <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="pm3T"></p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ===== THE JUDGE (dark band) ===== -->
-<section style="padding:80px 0;background:var(--dark);">
+<!-- ===== THE JUDGE (deep band) ===== -->
+<section style="padding:84px 0;background:linear-gradient(160deg,var(--dark),var(--dark2));">
   <div class="wrap grid2" style="align-items:center;">
     <div>
       <span class="kicker" style="color:var(--dark-mute);" data-k="judgeKicker"></span>
-      <h2 style="color:var(--dark-ink);margin-top:12px;" data-k="judgeH"></h2>
-      <p style="color:var(--dark-mute);font-size:16.5px;line-height:1.65;margin:18px 0 0;" data-k="judgeT"></p>
-      <ul style="margin:20px 0 0;padding:0;list-style:none;color:var(--dark-ink);font-size:15px;line-height:2.1;font-weight:600;">
-        <li>✓ <span data-k="judgeL1"></span></li>
-        <li>✓ <span data-k="judgeL2"></span></li>
-        <li>✓ <span data-k="judgeL3"></span></li>
+      <h2 style="color:var(--dark-ink);margin-top:14px;" data-k="judgeH"></h2>
+      <p style="color:var(--dark-mute);font-size:17px;line-height:1.65;margin:20px 0 0;" data-k="judgeT"></p>
+      <ul style="margin:22px 0 0;padding:0;list-style:none;color:var(--dark-ink);font-size:15.5px;line-height:2.15;font-weight:600;">
+        <li style="display:flex;gap:10px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dark-mute)" stroke-width="2.5" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL1"></span></li>
+        <li style="display:flex;gap:10px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dark-mute)" stroke-width="2.5" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL2"></span></li>
+        <li style="display:flex;gap:10px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dark-mute)" stroke-width="2.5" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL3"></span></li>
       </ul>
     </div>
     <div style="display:flex;justify-content:center;">
-      <div style="transform:rotate(-7deg);border:4px solid var(--dark-mute);border-radius:18px;padding:22px 34px;box-shadow:0 0 60px rgba(165,180,252,.25);">
-        <div style="color:#fff;font-size:34px;font-weight:800;letter-spacing:.12em;">APPROVED ✓</div>
-        <div style="color:var(--dark-mute);font-size:13px;font-weight:600;text-align:center;margin-top:6px;" data-k="judgeStampSub"></div>
+      <div style="transform:rotate(-7deg);border:4px solid var(--dark-mute);border-radius:18px;padding:24px 38px;box-shadow:0 0 70px rgba(183,189,247,.30);">
+        <div style="color:#fff;font-size:36px;font-weight:900;letter-spacing:.1em;">APPROVED ✓</div>
+        <div style="color:var(--dark-mute);font-size:13px;font-weight:700;text-align:center;margin-top:8px;letter-spacing:.08em;text-transform:uppercase;" data-k="judgeStampSub"></div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ===== CHALLENGES ===== -->
-<section style="padding:76px 0;">
+<section style="padding:82px 0;">
   <div class="wrap grid2" style="align-items:center;">
     <div>
       <span class="kicker" data-k="chKicker"></span>
-      <h2 style="margin-top:12px;" data-k="chH"></h2>
-      <p class="sub" style="margin:18px 0 0;" data-k="chT"></p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;">
-        <span class="chip">🏆 <span data-k="chChip1"></span></span>
-        <span class="chip">🎡 <span data-k="chChip2"></span></span>
-        <span class="chip">❄️ <span data-k="chChip3"></span></span>
+      <h2 style="margin-top:14px;" data-k="chH"></h2>
+      <p class="sub" style="margin:20px 0 0;" data-k="chT"></p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;">
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8v3a4 4 0 0 1-8 0z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3M9 15h6M10 20h4M12 12v3"/></svg><span data-k="chChip1"></span></span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M6 6l12 12M18 6L6 18"/></svg><span data-k="chChip2"></span></span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 7l16 10M20 7L4 17M12 4l3 2-3 2-3-2zM12 20l3-2-3-2-3 2z"/></svg><span data-k="chChip3"></span></span>
       </div>
     </div>
-    <div class="card" style="max-width:380px;justify-self:center;width:100%;">
-      <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);" data-k="lbTitle"></div>
-      <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1.5px solid var(--accent);border-radius:12px;padding:12px;margin-top:12px;">
-        <span class="num" style="width:26px;height:26px;font-size:12px;">1</span>
-        <b style="flex:1;">Aruzhan</b><span style="color:var(--accent);font-weight:800;">12</span>
+    <!-- CHALLENGES — CSS leaderboard mock. Swap for a real screenshot:
+         <img class="shot" style="border-radius:20px;border:1px solid var(--line);" src="assets/landing/screen-leaderboard.png"> -->
+    <div class="card" style="max-width:400px;justify-self:center;width:100%;">
+      <div style="font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);" data-k="lbTitle"></div>
+      <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid var(--accent);border-radius:13px;padding:13px;margin-top:14px;">
+        <span class="num" style="width:28px;height:28px;font-size:13px;">1</span>
+        <b style="flex:1;">Aruzhan</b><span style="color:var(--accent);font-weight:900;font-size:17px;">12</span>
       </div>
-      <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;">
-        <span class="num" style="width:26px;height:26px;font-size:12px;background:var(--card);color:var(--mute);">2</span>
-        <b style="flex:1;">Dias</b><span style="color:var(--mute);font-weight:800;">10</span>
+      <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px;margin-top:9px;">
+        <span class="num" style="width:28px;height:28px;font-size:13px;background:var(--card);color:var(--mute);">2</span>
+        <b style="flex:1;">Dias</b><span style="color:var(--mute);font-weight:900;font-size:17px;">10</span>
       </div>
-      <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;">
-        <span class="num" style="width:26px;height:26px;font-size:12px;background:var(--card);color:var(--mute);">3</span>
-        <b style="flex:1;">Timur</b><span style="color:var(--err);font-weight:800;font-size:12px;" data-k="lbLast"></span>
+      <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px;margin-top:9px;">
+        <span class="num" style="width:28px;height:28px;font-size:13px;background:var(--card);color:var(--mute);">3</span>
+        <b style="flex:1;">Timur</b><span style="color:var(--err);font-weight:800;font-size:12px;letter-spacing:.06em;" data-k="lbLast"></span>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ===== PRICING TEASER ===== -->
-<section style="padding:76px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+<section style="padding:82px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap" style="text-align:center;">
     <span class="kicker" data-k="priceKicker"></span>
-    <h2 style="margin-top:12px;" data-k="priceH"></h2>
-    <div class="grid2" style="max-width:720px;margin:34px auto 0;text-align:left;">
+    <h2 style="margin-top:14px;" data-k="priceH"></h2>
+    <div class="grid2" style="max-width:760px;margin:38px auto 0;text-align:left;">
       <div class="card" style="background:#fff;">
-        <h3 style="margin:0;font-size:20px;">Free</h3>
-        <p style="color:var(--mute);font-size:14.5px;line-height:2;margin:12px 0 0;" data-k="freeList"></p>
+        <h3 style="margin:0;font-size:22px;">Free</h3>
+        <p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="freeList"></p>
       </div>
-      <div class="card" style="background:#fff;border:2px solid var(--accent);">
-        <h3 style="margin:0;font-size:20px;color:var(--accent);">Cert Pro</h3>
-        <p style="color:var(--mute);font-size:14.5px;line-height:2;margin:12px 0 0;" data-k="proList"></p>
+      <div class="card" style="background:#fff;border:2px solid var(--accent);position:relative;">
+        <h3 style="margin:0;font-size:22px;color:var(--accent);">Cert Pro</h3>
+        <p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="proList"></p>
       </div>
     </div>
-    <a class="btn ghost" style="margin-top:28px;" href="pricing.html" data-k="priceMore"></a>
+    <a class="btn ghost" style="margin-top:30px;" href="pricing.html" data-k="priceMore"></a>
   </div>
 </section>
 
 <!-- ===== FAQ ===== -->
-<section id="faq" style="padding:76px 0;">
-  <div class="wrap" style="max-width:760px;">
+<section id="faq" style="padding:82px 0;">
+  <div class="wrap" style="max-width:780px;">
     <h2 data-k="faqH"></h2>
-    <div id="faqList" style="margin-top:22px;"></div>
+    <div id="faqList" style="margin-top:24px;"></div>
   </div>
 </section>
 
 <!-- ===== FINAL CTA ===== -->
-<section style="padding:90px 0;background:var(--dark);text-align:center;">
+<section style="padding:96px 0;background:linear-gradient(160deg,var(--dark),var(--dark2));text-align:center;">
   <div class="wrap">
-    <img src="assets/logo-mark.png" alt="" style="width:54px;height:54px;filter:brightness(0) invert(1);">
-    <h2 style="color:var(--dark-ink);margin-top:18px;" data-k="ctaH"></h2>
-    <p style="color:var(--dark-mute);font-size:17px;margin:16px 0 30px;" data-k="ctaT"></p>
-    <a class="btn" style="background:#fff;color:var(--accent-deep);" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+    <img src="assets/logo-mark.png" alt="Cert" style="width:56px;height:56px;filter:brightness(0) invert(1);">
+    <h2 style="color:var(--dark-ink);margin-top:20px;" data-k="ctaH"></h2>
+    <p style="color:var(--dark-mute);font-size:18px;margin:16px 0 32px;" data-k="ctaT"></p>
+    <a class="btn light" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
       <svg width="17" height="19" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
       <span data-k="heroCta"></span>
     </a>
@@ -284,9 +329,9 @@
 </section>
 
 <!-- ===== FOOTER ===== -->
-<footer style="padding:36px 0;border-top:1px solid var(--line);">
+<footer style="padding:38px 0;border-top:1px solid var(--line);">
   <div class="wrap" style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:13.5px;color:var(--faint);">
-    <span style="display:flex;align-items:center;gap:7px;font-weight:700;color:var(--mute);"><img src="assets/logo-mark.png" alt="" style="width:20px;height:20px;">CERT</span>
+    <span style="display:flex;align-items:center;gap:8px;font-weight:800;color:var(--mute);"><img src="assets/logo-mark.png" alt="" style="width:20px;height:20px;">CERT</span>
     <span style="margin-left:auto;display:flex;gap:18px;flex-wrap:wrap;">
       <a class="navlink" href="pricing.html" data-k="navPricing"></a>
       <a class="navlink" href="privacy.html" data-k="ftPrivacy"></a>
@@ -298,40 +343,46 @@
   </div>
 </footer>
 
+<style>.pro-tag{font-size:11px;font-weight:900;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;letter-spacing:.04em;}</style>
+
 <script>
 // ---------- i18n ----------
 const T = {
   en: {
-    navHow: "How it works", navPricing: "Pricing",
-    heroKicker: "HABIT TRACKER WITH AN AI JUDGE",
+    navHow: "How it works", navProof: "Proof", navPricing: "Pricing",
+    heroKicker: "The habit tracker with an AI judge",
     heroH1a: "The streak", heroH1b: "you can't fake.",
     heroSub: "Set one goal. Send live proof every day — a photo, a short video, or a location check-in. An AI judge looks at it and decides if your day counts.",
     heroCta: "Get Cert free", heroFree: "Free to start · iPhone",
     chipLive: "Live camera only", chipAI: "AI-verified", chipFriends: "Challenges with friends",
-    mockToday: "Today", mockDays: "days", mockGoal: "A photo with my morning coffee",
+    mockToday: "Today", mockDays: "day streak", mockGoal: "A photo with my morning coffee",
     mockBtn: "Submit today's proof", mockVerdict: "Approved by the AI judge",
-    howKicker: "HOW IT WORKS", howH: "Three steps a day. That's the whole loop.",
+    demoKicker: "See it in action",
+    demoH: "Snap it. The judge decides. Your streak grows.",
+    demoT: "No checkboxes to lie to. Real proof, reviewed in seconds.",
+    demoTag: "reviewed in seconds",
+    howKicker: "How it works", howH: "Three steps a day. That's the whole loop.",
     how1H: "Set one goal", how1T: "Write it proof-first: “a photo with my running shoes on”. One sentence, one screen.",
     how2H: "Send live proof daily", how2T: "The camera opens right in the app — no gallery, no old photos, no way to reuse yesterday.",
-    how3H: "The judge decides", how3T: "Approved — your streak grows. Missed a day — it resets to zero. That's exactly why it means something.",
-    proofKicker: "PROOF METHODS", proofH: "Prove it your way.",
+    how3H: "The judge decides", how3T: "Approved — your streak grows. Miss a day — it resets to zero. That's exactly why it means something.",
+    proofKicker: "Proof methods", proofH: "Prove it your way.",
     proofSub: "Different goals need different evidence. Pick the method when you create the goal.",
     pm1H: "Photo", pm1T: "One live photo of the goal happening. The judge is generous to honest attempts — bad lighting is fine, fakes are not.",
     pm2H: "Video", pm2T: "Record a short clip in the app. The judge watches the whole thing — a propped-up photo won't pass.",
     pm3H: "Location", pm3T: "Pin your gym, pool or library on the map. Being there is the proof. Fake-GPS apps get rejected.",
-    judgeKicker: "THE AI JUDGE", judgeH: "Generous to honest attempts. Merciless to fakes.",
+    judgeKicker: "The AI judge", judgeH: "Generous to honest attempts. Merciless to fakes.",
     judgeT: "Every submission is reviewed in seconds. The judge doesn't care about perfect framing — it cares whether the goal actually happened.",
     judgeL1: "Rejects screenshots, stock images and stale photos",
     judgeL2: "Explains every rejection in plain words",
     judgeL3: "One appeal per day if you think it got it wrong",
     judgeStampSub: "reviewed in seconds",
-    chKicker: "CHALLENGES", chH: "Bring your friends. Last place pays.",
+    chKicker: "Challenges", chH: "Bring your friends. Last place pays.",
     chT: "Start a shared goal with your group. Everyone sends proof, everyone sees the leaderboard. Whoever finishes last spins a wheel of penalties — written by your own friends.",
     chChip1: "Shared leaderboard", chChip2: "Penalty wheel", chChip3: "Streak freezes",
     lbTitle: "Morning run club", lbLast: "LAST PLACE",
-    priceKicker: "PRICING", priceH: "Free to start. Pro when you're serious.",
-    freeList: "✓ 1 active goal<br>✓ Photo proof<br>✓ Challenges with friends<br>✓ Streak freezes",
-    proList: "✓ Unlimited goals<br>✓ Video & location proof<br>✓ 6-month analytics & trophies<br>✓ Monthly freezes included",
+    priceKicker: "Pricing", priceH: "Free to start. Pro when you're serious.",
+    freeList: "1 active goal<br>Photo proof<br>Challenges with friends<br>Streak freezes",
+    proList: "Unlimited goals<br>Video & location proof<br>6-month analytics & trophies<br>Monthly freezes included",
     priceMore: "See full pricing",
     faqH: "Questions, answered.",
     ctaH: "Start a streak that means something.",
@@ -346,36 +397,40 @@ const T = {
     ]
   },
   ru: {
-    navHow: "Как работает", navPricing: "Цены",
-    heroKicker: "ТРЕКЕР ПРИВЫЧЕК С ИИ-СУДЬЁЙ",
+    navHow: "Как работает", navProof: "Доказательства", navPricing: "Цены",
+    heroKicker: "Трекер привычек с ИИ-судьёй",
     heroH1a: "Серия, которую", heroH1b: "не подделать.",
     heroSub: "Поставь одну цель. Каждый день присылай живое доказательство — фото, короткое видео или отметку по геолокации. ИИ-судья смотрит и решает, засчитан ли день.",
-    heroCta: "Скачать Cert бесплатно", heroFree: "Бесплатный старт · iPhone",
+    heroCta: "Скачать бесплатно", heroFree: "Бесплатный старт · iPhone",
     chipLive: "Только живая камера", chipAI: "Проверка ИИ", chipFriends: "Челленджи с друзьями",
-    mockToday: "Сегодня", mockDays: "дня", mockGoal: "Фото с утренним кофе",
+    mockToday: "Сегодня", mockDays: "дней подряд", mockGoal: "Фото с утренним кофе",
     mockBtn: "Отправить доказательство", mockVerdict: "Одобрено ИИ-судьёй",
-    howKicker: "КАК РАБОТАЕТ", howH: "Три шага в день. Вот и весь цикл.",
+    demoKicker: "Как это выглядит",
+    demoH: "Снял. Судья решил. Серия выросла.",
+    demoT: "Никаких галочек, которым можно соврать. Настоящий пруф, проверка за секунды.",
+    demoTag: "проверка за секунды",
+    howKicker: "Как работает", howH: "Три шага в день. Вот и весь цикл.",
     how1H: "Поставь одну цель", how1T: "Пиши её через доказательство: «фото в кроссовках на пробежке». Одно предложение, один экран.",
     how2H: "Присылай живое доказательство", how2T: "Камера открывается прямо в приложении — без галереи, без старых фото, вчерашний снимок не прокатит.",
     how3H: "Судья решает", how3T: "Одобрено — серия растёт. Пропустил день — сбрасывается в ноль. Именно поэтому она чего-то стоит.",
-    proofKicker: "ВИДЫ ДОКАЗАТЕЛЬСТВ", proofH: "Доказывай как удобно.",
+    proofKicker: "Виды доказательств", proofH: "Доказывай как удобно.",
     proofSub: "Разным целям — разные доказательства. Способ выбираешь при создании цели.",
     pm1H: "Фото", pm1T: "Одно живое фото происходящего. Судья добр к честным попыткам — плохой свет простит, подделку нет.",
     pm2H: "Видео", pm2T: "Запиши короткий ролик в приложении. Судья смотрит его целиком — подставленное фото не пройдёт.",
     pm3H: "Место", pm3T: "Закрепи на карте зал, бассейн или библиотеку. Доказательство — быть там. Fake-GPS отклоняется.",
-    judgeKicker: "ИИ-СУДЬЯ", judgeH: "Добр к честным. Беспощаден к подделкам.",
+    judgeKicker: "ИИ-судья", judgeH: "Добр к честным. Беспощаден к подделкам.",
     judgeT: "Каждое доказательство проверяется за секунды. Судье не важна идеальная картинка — важно, что цель реально выполнялась.",
     judgeL1: "Отклоняет скриншоты, картинки из интернета и старые фото",
     judgeL2: "Объясняет каждый отказ простыми словами",
     judgeL3: "Одна апелляция в день, если судья ошибся",
     judgeStampSub: "проверка за секунды",
-    chKicker: "ЧЕЛЛЕНДЖИ", chH: "Зови друзей. Последний платит.",
+    chKicker: "Челленджи", chH: "Зови друзей. Последний платит.",
     chT: "Создай общую цель с компанией. Все присылают доказательства, все видят таблицу лидеров. Кто финиширует последним — крутит колесо наказаний, которые придумали сами друзья.",
     chChip1: "Общая таблица", chChip2: "Колесо наказаний", chChip3: "Заморозки серии",
     lbTitle: "Клуб утренней пробежки", lbLast: "ПОСЛЕДНИЙ",
-    priceKicker: "ЦЕНЫ", priceH: "Начни бесплатно. Pro — когда серьёзно.",
-    freeList: "✓ 1 активная цель<br>✓ Фото-доказательство<br>✓ Челленджи с друзьями<br>✓ Заморозки серии",
-    proList: "✓ Безлимит целей<br>✓ Видео и гео-доказательства<br>✓ Аналитика за 6 месяцев и трофеи<br>✓ Ежемесячные заморозки",
+    priceKicker: "Цены", priceH: "Начни бесплатно. Pro — когда серьёзно.",
+    freeList: "1 активная цель<br>Фото-доказательство<br>Челленджи с друзьями<br>Заморозки серии",
+    proList: "Безлимит целей<br>Видео и гео-доказательства<br>Аналитика за 6 месяцев и трофеи<br>Ежемесячные заморозки",
     priceMore: "Полные цены",
     faqH: "Вопросы и ответы.",
     ctaH: "Начни серию, которая чего-то стоит.",
