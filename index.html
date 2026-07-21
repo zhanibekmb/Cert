@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" href="assets/logo-mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
     --accent:#4f46e5; --accent-deep:#4338ca; --accent-soft:#eef2ff;
@@ -23,7 +23,7 @@
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;background:var(--bg);}
-  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+  body{font-family:'Hanken Grotesk',-apple-system,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
   ::selection{background:var(--accent);color:#fff;}
   a{color:inherit;}
   .wrap{max-width:1140px;margin:0 auto;padding:0 24px;}
@@ -70,9 +70,12 @@
   .phone{width:320px;border:12px solid #0e1116;border-radius:48px;background:#fff;box-shadow:0 40px 90px rgba(14,17,22,.20);overflow:hidden;flex:none;}
   .phone.real{line-height:0;background:#0e1116;}
   .phone.real .shot{width:100%;display:block;}
-  .pnotch{height:30px;display:flex;justify-content:center;align-items:center;background:#fff;padding-top:8px;}
-  .pnotch i{width:110px;height:22px;background:#0e1116;border-radius:14px;}
-  .pscreen{padding:14px 14px 20px;background:#fff;}
+  /* realistic status bar: time · dynamic island · wifi/battery */
+  .pbar{position:relative;display:flex;align-items:center;justify-content:space-between;padding:11px 22px 3px;background:#fff;}
+  .pbar .ptime{font-size:14px;font-weight:800;color:#0e1116;letter-spacing:-.01em;}
+  .pbar .isl{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:78px;height:22px;background:#0e1116;border-radius:14px;}
+  .pbar .st{display:flex;align-items:center;gap:5px;}
+  .pscreen{padding:12px 14px 18px;background:#fff;height:556px;overflow:hidden;}
   /* create-screen mock (animated) */
   .cs-title{font-size:22px;font-weight:900;margin:2px 0 12px;}
   .cs-toggle{display:flex;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;gap:4px;}
@@ -87,11 +90,15 @@
   .cs-deadline{display:flex;align-items:center;gap:10px;margin-top:13px;}
   .cs-deadline .lbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;}
   .cs-dl{border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;}
-  .cs-map{margin-top:11px;height:96px;border-radius:12px;background:linear-gradient(135deg,#e8ecf6,#dfe4f5);position:relative;overflow:hidden;}
-  .cs-map .pin{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50% 50% 50% 0;background:var(--err);rotate:-45deg;}
+  .cs-map{margin-top:12px;height:122px;border-radius:12px;position:relative;overflow:hidden;
+    background:repeating-linear-gradient(90deg,transparent 0 26px,rgba(120,130,160,.16) 26px 28px),
+      repeating-linear-gradient(0deg,transparent 0 24px,rgba(120,130,160,.16) 24px 26px),
+      linear-gradient(135deg,#eef1f8,#e3e8f3);}
+  .cs-map .pin{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-45deg);width:16px;height:16px;border-radius:50% 50% 50% 0;background:var(--err);box-shadow:0 4px 10px rgba(0,0,0,.18);}
+  .cs-map .cs-place{position:absolute;left:8px;bottom:8px;background:#fff;color:var(--accent);font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
   .cs-ideas-h{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin:14px 0 8px;}
-  .cs-ideas{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-  .cs-idea{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:9px;font-size:12.5px;font-weight:700;}
+  .cs-ideas{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .cs-idea{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:13px;font-weight:700;}
   .cs-idea .ic{width:24px;height:24px;border-radius:7px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
   .cs-idea .ic svg{width:14px;height:14px;}
   .cs-create{margin-top:14px;background:var(--accent);color:#fff;border-radius:12px;text-align:center;font-weight:800;font-size:15px;padding:13px;}
@@ -135,16 +142,20 @@
 
 <!-- NAV -->
 <header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);">
-  <div class="wrap" style="display:flex;align-items:center;gap:22px;height:66px;">
-    <a href="#top" style="display:flex;align-items:center;gap:9px;text-decoration:none;">
-      <img src="assets/logo-mark.png" alt="Cert" style="width:30px;height:30px;">
-      <span style="font-weight:900;font-size:19px;letter-spacing:.04em;">CERT</span>
-    </a>
-    <nav style="display:flex;gap:22px;margin-left:auto;align-items:center;">
+  <div class="wrap" style="display:flex;align-items:center;height:66px;">
+    <div style="flex:1;">
+      <a href="#top" style="display:inline-flex;align-items:center;gap:9px;text-decoration:none;">
+        <img src="assets/logo-mark.png" alt="Cert" style="width:30px;height:30px;">
+        <span style="font-weight:900;font-size:19px;letter-spacing:.04em;">CERT</span>
+      </a>
+    </div>
+    <nav style="display:flex;gap:28px;align-items:center;">
       <a class="navlink hide-sm" href="#how" data-k="navHow"></a>
       <a class="navlink hide-sm" href="#flex" data-k="navFeatures"></a>
       <a class="navlink hide-sm" href="#faq">FAQ</a>
       <a class="navlink hide-sm" href="#pricing" data-k="navPricing"></a>
+    </nav>
+    <div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:14px;">
       <a class="store" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
         <svg width="18" height="20" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
         <span><small data-k="storeSmall"></small><b>App Store</b></span>
@@ -153,7 +164,7 @@
         <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
         <button id="lang-ru" class="lang-btn" onclick="setLang('ru')">RU</button>
       </div>
-    </nav>
+    </div>
   </div>
 </header>
 
@@ -180,7 +191,7 @@
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17 19a5.5 5.5 0 0 0-3-4.9"/></svg><span data-k="chipFriends"></span></span>
       </div>
     </div>
-    <div class="phone"><div class="pnotch"><i></i></div><div class="pscreen" id="heroScreen"></div></div>
+    <div class="phone"><div class="pbar"><span class="ptime">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><div class="pscreen" id="heroScreen"></div></div>
   </div>
 </section>
 
@@ -192,7 +203,7 @@
     <div class="pills" id="howPills"></div>
     <div class="how-grid">
       <div class="steps" id="howSteps"></div>
-      <div class="how-phone"><div class="phone"><div class="pnotch"><i></i></div><div class="pscreen" id="howScreen"></div></div></div>
+      <div class="how-phone"><div class="phone"><div class="pbar"><span class="ptime">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><div class="pscreen" id="howScreen"></div></div></div>
     </div>
   </div>
 </section>
@@ -301,7 +312,6 @@
       </div>
     </div>
     <a class="btn" style="margin-top:30px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" data-k="priceCta"></a>
-    <div style="margin-top:12px;"><a class="navlink" href="pricing.html" data-k="priceMore"></a></div>
   </div>
 </section>
 
@@ -330,7 +340,7 @@
   <div class="wrap" style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:13.5px;color:var(--faint);">
     <span style="display:flex;align-items:center;gap:8px;font-weight:800;color:var(--mute);"><img src="assets/logo-mark.png" alt="" style="width:20px;height:20px;">CERT</span>
     <span style="margin-left:auto;display:flex;gap:18px;flex-wrap:wrap;">
-      <a class="navlink" href="pricing.html" data-k="navPricing"></a>
+      <a class="navlink" href="#pricing" data-k="navPricing"></a>
       <a class="navlink" href="privacy.html" data-k="ftPrivacy"></a>
       <a class="navlink" href="terms.html" data-k="ftTerms"></a>
       <a class="navlink" href="delete-account.html" data-k="ftDelete"></a>
@@ -481,20 +491,23 @@ const IDEA_ICONS=[
 // ---- animated CREATE screen ----
 const PT=["photo","video","geo"];
 function createScreen(pt, typed, flash){
-  const d=T[lang], p=d.proofs[pt];
+  const d=T[lang], p=d.proofs[pt], geo=pt==="geo";
   const chev='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg>';
   const pill='<span class="cs-pill'+(flash?' flash':'')+'">'+p.pill+chev+'</span>';
-  const say = pt==="geo"
+  const say = geo
     ? '<div class="cs-say">'+d.csSay+' '+pill+' '+(lang==="ru"?"в":"at")+'</div><div style="margin-top:8px;"><span class="cs-pill">'+p.place+chev+'</span></div>'
     : '<div class="cs-say">'+d.csSay+' '+pill+' :</div>';
   const input='<div class="cs-input">'+(typed?'<span>'+typed+'</span>':'<span class="ph">'+(lang==="ru"?"напр. ":"e.g. ")+p.goal+'</span>')+'<span class="caret"></span></div>';
-  const map = pt==="geo" ? '<div class="cs-map"><div class="pin"></div></div>' : '';
+  const deadline='<div class="cs-deadline"><span class="lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl">'+p.dl+chev+'</span></div>';
+  const map = geo ? '<div class="cs-map"><div class="pin"></div><span class="cs-place">'+p.place+'</span></div>' : '';
   const ideas = d.ideas.map((t,i)=>'<div class="cs-idea"><span class="ic">'+IDEA_ICONS[i]+'</span>'+t+'</div>').join('');
+  // geo: map lives in the card, no "ideas" grid — matches the real screen and
+  // keeps the phone the SAME height as photo/video variants.
+  const ideasBlock = geo ? '' : '<div class="cs-ideas-h">'+d.csIdeasH+'</div><div class="cs-ideas">'+ideas+'</div>';
   return '<div class="cs-title">'+d.csTitle+'</div>'
     +'<div class="cs-toggle"><span class="on">'+d.csOne+'</span><span>'+d.csRep+'</span></div>'
-    +'<div class="cs-card">'+say+input+map
-      +'<div class="cs-deadline"><span class="lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl">'+p.dl+chev+'</span></div></div>'
-    +'<div class="cs-ideas-h">'+d.csIdeasH+'</div><div class="cs-ideas">'+ideas+'</div>'
+    +'<div class="cs-card">'+say+input+deadline+map+'</div>'
+    +ideasBlock
     +'<div class="cs-create">'+d.csCreate+'</div>';
 }
 
