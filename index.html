@@ -3,801 +3,415 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CERT — The Streak You Can't Fake</title>
-<meta name="description" content="The mobile app for iOS & Android: one goal, a daily photo, an honest AI judge that can't be fooled. Go solo or challenge friends. Build a streak you can't fake. Free to start.">
-<meta property="og:title" content="CERT — The Streak You Can't Fake">
-<meta property="og:description" content="The iOS & Android app: one goal, a daily photo, an honest AI judge. Go solo or challenge friends. Build a streak you can't fake. Free to start.">
+<title>Cert — The Streak You Can't Fake</title>
+<meta name="description" content="Set one goal. Send live proof every day — a photo, a video, or a location check-in. An AI judge decides if it counts. Free on the App Store.">
+<meta property="og:title" content="Cert — The Streak You Can't Fake">
+<meta property="og:description" content="One goal. Live proof every day. An AI judge decides if it counts. Free on the App Store.">
 <meta property="og:type" content="website">
+<link rel="icon" type="image/png" href="assets/logo-mark.png">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Tektur:wght@500;700;800&family=JetBrains+Mono:wght@400;500;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;background:#070608;}
-  body{overflow-x:hidden;font-family:'JetBrains Mono',monospace;}
-  ::selection{background:#e23b2e;color:#0a0a0b;}
-  @keyframes rise{0%{opacity:0;transform:translateY(34px);}100%{opacity:1;transform:translateY(0);}}
-  @keyframes bob{0%,100%{transform:translateY(0);opacity:.65;}50%{transform:translateY(7px);opacity:1;}}
-  @keyframes flick{0%,100%{opacity:.85;}50%{opacity:1;}}
-  .btn-cta{transition:filter .15s,transform .15s;}
-  .btn-cta:hover{filter:brightness(1.08);transform:translateY(-1px);}
-  .field-input:focus{border-color:#e23b2e!important;box-shadow:0 0 0 3px rgba(226,59,46,.15);}
-  .faq-btn:hover{color:#e23b2e!important;}
-  .topnav-link:hover{color:#f4efe8!important;}
-  @media(max-width:560px){.topnav-link[data-k="navPricing"]{display:none;}}
-  .bet-yes:hover{background:#e23b2e!important;color:#120606!important;}
-  .bet-no:hover{border-color:#cbc5bd!important;}
-  .lang-btn{background:none;border:none;padding:5px 9px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#7d7770;cursor:pointer;}
-  .lang-btn.active{background:#e23b2e;color:#120606;}
-  /* store buttons (top-right) — signal "mobile app" instantly */
-  .store-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border:1px solid #2a2530;border-radius:9px;background:rgba(12,10,16,.55);text-decoration:none;color:#e9e4dc;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;transition:border-color .15s,background .15s,transform .15s;}
-  .store-pill:hover{border-color:#e23b2e;background:rgba(226,59,46,.12);transform:translateY(-1px);}
-  .store-pill svg{flex:none;display:block;}
-  .feat-ico{display:inline-flex;align-items:center;justify-content:center;width:46px;height:46px;border:1px solid #3a2a2a;border-radius:12px;background:rgba(226,59,46,.08);}
-  @media(max-width:600px){.store-pill span{display:none;}.store-pill{padding:7px 9px;}}
-  /* footer */
-  .ft-h{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#6f6a63;margin-bottom:16px;}
-  .ft-l{display:block;font-family:'JetBrains Mono',monospace;font-size:13px;color:#9a948d;text-decoration:none;margin-bottom:11px;transition:color .15s;}
-  .ft-l:hover{color:#e23b2e;}
-  /* scroll reveal */
-  .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s cubic-bezier(.2,.7,.2,1),transform .7s cubic-bezier(.2,.7,.2,1);}
-  .reveal.in{opacity:1;transform:none;}
-  /* how-it-works cards */
-  .step-card{transition:transform .25s ease,border-color .25s ease,box-shadow .25s ease;}
-  .step-card:hover{transform:translateY(-8px);border-color:#e23b2e!important;box-shadow:0 18px 44px -18px rgba(226,59,46,.55);}
-  .step-card:hover .step-num{transform:scale(1.12);text-shadow:0 0 24px rgba(226,59,46,.7);}
-  .step-num{display:inline-block;transition:transform .25s ease,text-shadow .25s ease;}
-  /* cta glow pulse */
-  @keyframes glowpulse{0%,100%{box-shadow:0 0 0 0 rgba(226,59,46,0);}50%{box-shadow:0 0 32px 4px rgba(226,59,46,.45);}}
-  .cta-pulse{animation:glowpulse 2.6s ease-in-out infinite;}
-  /* shame red glow breathe */
-  @keyframes breathe{0%,100%{text-shadow:0 3px 0 #000,0 0 28px rgba(226,59,46,.2);}50%{text-shadow:0 3px 0 #000,0 0 54px rgba(226,59,46,.5);}}
-  .breathe{animation:breathe 3.4s ease-in-out infinite;}
-  /* hero two-column + phone mockup */
-  .hero-row{display:flex;align-items:center;justify-content:center;gap:60px;max-width:1120px;width:100%;}
-  .hero-copy{max-width:560px;text-align:left;flex:1 1 440px;}
-  .hero-copy p{margin-left:0!important;}
-  @keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
-  .phone-float{animation:float 5.5s ease-in-out infinite;flex:none;}
-  @media(max-width:880px){
-    .hero-row{flex-direction:column;gap:44px;}
-    .hero-copy{text-align:center;max-width:600px;flex-basis:auto;}
-    .hero-copy p{margin-left:auto!important;margin-right:auto!important;}
-    .hero-copy .day-strip{align-items:center;}
+  :root{
+    --accent:#4f46e5; --accent-deep:#4338ca; --accent-soft:#eef2ff;
+    --ink:#171b21; --mute:#667080; --faint:#98a1ad;
+    --bg:#ffffff; --card:#f6f8fa; --line:#e4e8ee;
+    --dark:#1e1b4e; --dark-ink:#eef2ff; --dark-mute:#a5b4fc;
+    --err:#dc2626; --ok:#16a34a;
   }
-  @media(max-width:360px){.phone-float{transform:scale(.92);}}
-  @media (prefers-reduced-motion:reduce){.reveal{opacity:1!important;transform:none!important;}.cta-pulse,.breathe,.phone-float{animation:none!important;}}
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  html,body{margin:0;padding:0;background:var(--bg);}
+  body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);overflow-x:hidden;}
+  ::selection{background:var(--accent);color:#fff;}
+  a{color:inherit;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 24px;font:inherit;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(79,70,229,.28);}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
+  .kicker{font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);}
+  h1,h2{margin:0;font-weight:800;letter-spacing:-.02em;line-height:1.06;}
+  h1{font-size:clamp(38px,6vw,68px);}
+  h2{font-size:clamp(28px,4.2vw,44px);}
+  .sub{font-size:18px;line-height:1.6;color:var(--mute);}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:26px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:8px 15px;font-size:13.5px;font-weight:600;color:var(--mute);background:#fff;}
+  .num{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:15px;background:var(--accent);color:#fff;font-weight:800;font-size:14px;flex:none;}
+  .navlink{text-decoration:none;font-size:14px;font-weight:600;color:var(--mute);}
+  .navlink:hover{color:var(--accent);}
+  .lang-btn{background:none;border:none;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer;border-radius:7px;}
+  .lang-btn.active{background:var(--accent);color:#fff;}
+  .faq-q{width:100%;text-align:left;background:none;border:none;padding:18px 0;font:inherit;font-size:16.5px;font-weight:700;color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;}
+  .faq-q:hover{color:var(--accent);}
+  .faq-a{display:none;padding:0 0 18px;color:var(--mute);font-size:15px;line-height:1.65;}
+  .faq-item{border-bottom:1px solid var(--line);}
+  .faq-item.open .faq-a{display:block;}
+  .faq-item.open .faq-x{transform:rotate(45deg);}
+  .faq-x{transition:transform .15s;color:var(--accent);font-size:20px;font-weight:700;flex:none;}
+  @keyframes rise{0%{opacity:0;transform:translateY(26px);}100%{opacity:1;transform:translateY(0);}}
+  .rise{animation:rise .7s ease both;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media(max-width:840px){.grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}.hero-flex{flex-direction:column;}}
+  @media(max-width:560px){.navlink.hide-sm{display:none;}}
+  /* phone mockup, pure CSS */
+  .phone{width:290px;border:10px solid #12151a;border-radius:42px;background:#fff;box-shadow:0 30px 70px rgba(23,27,33,.18);overflow:hidden;flex:none;}
+  .phone-notch{height:26px;display:flex;justify-content:center;align-items:flex-start;}
+  .phone-notch i{width:110px;height:22px;background:#12151a;border-radius:0 0 14px 14px;}
+  .pcell{width:17px;height:17px;border-radius:4px;background:#e8ecf1;}
+  .pcell.on{background:var(--accent);}
+  .pcell.fr{background:transparent;border:1.6px solid var(--accent);}
 </style>
 </head>
 <body>
 
-<!-- arena canvas -->
-<canvas id="arena" style="position:fixed;inset:0;width:100%;height:100%;display:block;z-index:0;"></canvas>
-<div style="position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 120% 80% at 50% 42%, transparent 38%, rgba(0,0,0,.6) 100%);"></div>
-
-<!-- top bar -->
-<div style="position:fixed;top:0;left:0;right:0;z-index:6;display:flex;justify-content:space-between;align-items:center;padding:16px 26px;pointer-events:none;">
-  <a href="#top" style="display:flex;align-items:center;gap:11px;text-decoration:none;pointer-events:auto;">
-    <img src="assets/logo-mark.png" alt="" style="height:38px;width:38px;filter:drop-shadow(0 2px 4px #000);">
-    <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:20px;letter-spacing:.16em;color:#f4efe8;text-shadow:0 2px 6px #000;">CERT</span>
-  </a>
-  <div style="display:flex;align-items:center;gap:14px;pointer-events:auto;">
-    <a href="pricing.html" class="topnav-link" data-k="navPricing" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9a948d;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
-    <a href="#waitlist" class="topnav-link" data-k="navApp" style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#e23b2e;text-decoration:none;text-shadow:0 2px 6px #000;"></a>
-    <a href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" class="store-pill" title="Download on the App Store" aria-label="App Store">
-      <svg width="14" height="16" viewBox="0 0 24 24" fill="#f4efe8" aria-hidden="true"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.47 7.84 1.31 10.41.87 1.26 1.9 2.67 3.26 2.62 1.31-.05 1.8-.85 3.39-.85 1.58 0 2.03.85 3.41.82 1.41-.02 2.3-1.28 3.16-2.55.99-1.46 1.4-2.88 1.42-2.95-.03-.01-2.72-1.04-2.75-4.13M14.6 4.59c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.58 3.03-1.45"/></svg>
-      <span>iOS</span>
+<!-- ===== NAV ===== -->
+<header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.86);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);">
+  <div class="wrap" style="display:flex;align-items:center;gap:22px;height:64px;">
+    <a href="#top" style="display:flex;align-items:center;gap:9px;text-decoration:none;">
+      <img src="assets/logo-mark.png" alt="" style="width:30px;height:30px;">
+      <span style="font-weight:800;font-size:18px;letter-spacing:.06em;">CERT</span>
     </a>
-    <div style="display:flex;border:1px solid #2a2530;">
-      <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
-      <button id="lang-ru" class="lang-btn" onclick="setLang('ru')">RU</button>
+    <nav style="display:flex;gap:20px;margin-left:auto;align-items:center;">
+      <a class="navlink hide-sm" href="#how" data-k="navHow"></a>
+      <a class="navlink hide-sm" href="#faq">FAQ</a>
+      <a class="navlink hide-sm" href="pricing.html" data-k="navPricing"></a>
+      <a class="btn" style="padding:9px 16px;font-size:14px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+        <svg width="15" height="17" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
+        App Store
+      </a>
+      <div style="display:flex;gap:2px;">
+        <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
+        <button id="lang-ru" class="lang-btn" onclick="setLang('ru')">RU</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<!-- ===== HERO ===== -->
+<section id="top" style="padding:84px 0 72px;">
+  <div class="wrap hero-flex" style="display:flex;align-items:center;gap:56px;">
+    <div class="rise" style="flex:1;min-width:0;">
+      <span class="kicker" data-k="heroKicker"></span>
+      <h1 style="margin-top:14px;"><span data-k="heroH1a"></span><br><span style="color:var(--accent);" data-k="heroH1b"></span></h1>
+      <p class="sub" style="margin:22px 0 30px;max-width:480px;" data-k="heroSub"></p>
+      <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <a class="btn" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+          <svg width="17" height="19" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
+          <span data-k="heroCta"></span>
+        </a>
+        <span style="font-size:13.5px;color:var(--faint);font-weight:600;" data-k="heroFree"></span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:30px;">
+        <span class="chip">📷 <span data-k="chipLive"></span></span>
+        <span class="chip">🤖 <span data-k="chipAI"></span></span>
+        <span class="chip">👥 <span data-k="chipFriends"></span></span>
+      </div>
+    </div>
+
+    <!-- CSS phone mockup: a goal card mid-streak -->
+    <div class="phone rise" style="animation-delay:.15s;">
+      <div class="phone-notch"><i></i></div>
+      <div style="padding:18px 18px 26px;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--faint);text-transform:uppercase;" data-k="mockToday"></div>
+        <div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:10px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span style="font-size:22px;">🔥</span>
+            <span style="font-size:30px;font-weight:800;">23</span>
+            <span style="font-size:12px;color:var(--mute);font-weight:600;" data-k="mockDays"></span>
+          </div>
+          <div style="font-weight:700;margin-top:8px;font-size:15px;" data-k="mockGoal"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;">
+            <i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell fr"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell on"></i><i class="pcell"></i><i class="pcell"></i>
+          </div>
+          <div style="margin-top:14px;background:var(--accent);border-radius:10px;color:#fff;text-align:center;font-weight:700;font-size:13.5px;padding:11px;" data-k="mockBtn"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;background:var(--accent-soft);border:1px solid #dfe3ff;border-radius:12px;padding:11px 13px;margin-top:12px;">
+          <span style="display:inline-flex;width:20px;height:20px;border-radius:10px;background:var(--accent);color:#fff;align-items:center;justify-content:center;font-size:11px;font-weight:800;">✓</span>
+          <span style="font-size:12.5px;font-weight:600;color:var(--accent-deep);" data-k="mockVerdict"></span>
+        </div>
+      </div>
     </div>
   </div>
-</div>
+</section>
 
-<main style="position:relative;z-index:2;">
-
-  <!-- HERO -->
-  <section id="top" style="position:relative;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:104px 24px 72px;">
-    <div class="hero-row" style="animation:rise 1s ease-out both;">
-      <div class="hero-copy">
-        <h1 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,7vw,88px);line-height:.93;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 44px rgba(0,0,0,.85);"><span data-k="heroBig1"></span><br><span data-k="heroBig2"></span></h1>
-        <div style="margin-top:18px;display:flex;flex-wrap:wrap;gap:10px;" class="store-badges">
-          <a href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;border:1px solid #2a2530;border-radius:10px;background:rgba(12,10,16,.6);padding:9px 15px;text-decoration:none;color:#f4efe8;">
-            <svg width="18" height="20" viewBox="0 0 24 24" fill="#f4efe8" aria-hidden="true"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.47 7.84 1.31 10.41.87 1.26 1.9 2.67 3.26 2.62 1.31-.05 1.8-.85 3.39-.85 1.58 0 2.03.85 3.41.82 1.41-.02 2.3-1.28 3.16-2.55.99-1.46 1.4-2.88 1.42-2.95-.03-.01-2.72-1.04-2.75-4.13M14.6 4.59c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.58 3.03-1.45"/></svg>
-            <span style="display:flex;flex-direction:column;line-height:1.1;"><span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#9a948d;">Download on the</span><span style="font-family:'Tektur',sans-serif;font-weight:700;font-size:15px;letter-spacing:.01em;">App Store</span></span>
-          </a>
-        </div>
-        <p style="margin:24px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="heroSub"></p>
-        <a href="#waitlist" class="btn-cta cta-pulse" style="display:inline-block;margin-top:30px;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px 36px;text-decoration:none;" data-k="heroCta"></a>
+<!-- ===== HOW IT WORKS ===== -->
+<section id="how" style="padding:76px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap">
+    <span class="kicker" data-k="howKicker"></span>
+    <h2 style="margin-top:12px;" data-k="howH"></h2>
+    <div class="grid3" style="margin-top:36px;">
+      <div class="card" style="background:#fff;">
+        <span class="num">1</span>
+        <h3 style="margin:14px 0 8px;font-size:19px;" data-k="how1H"></h3>
+        <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="how1T"></p>
       </div>
-
-      <!-- PHONE MOCKUP — mirrors the real app home screen -->
-      <div class="phone-float">
-        <div style="position:relative;width:288px;height:592px;border-radius:44px;background:#0c0a10;padding:11px;box-shadow:0 44px 100px -34px rgba(226,59,46,.42),0 0 0 2px #1a1620,0 0 0 9px #050406,0 0 0 10px #1c1822;">
-          <!-- notch -->
-          <div style="position:absolute;top:13px;left:50%;transform:translateX(-50%);width:118px;height:22px;background:#050406;border-radius:0 0 14px 14px;z-index:4;"></div>
-          <!-- screen -->
-          <div style="position:relative;width:100%;height:100%;border-radius:33px;overflow:hidden;background:linear-gradient(180deg,#0b0a0e,#070608);display:flex;flex-direction:column;">
-            <div style="position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(255,255,255,.05),transparent 16%);z-index:3;"></div>
-            <!-- status bar -->
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 24px 6px;">
-              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:#f4efe8;">9:41</span>
-              <div style="display:flex;align-items:center;gap:7px;">
-                <svg width="17" height="11" viewBox="0 0 17 11" fill="#f4efe8"><rect x="0" y="7" width="3" height="4" rx="1"/><rect x="4.7" y="5" width="3" height="6" rx="1"/><rect x="9.3" y="2.5" width="3" height="8.5" rx="1"/><rect x="14" y="0" width="3" height="11" rx="1"/></svg>
-                <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="#f4efe8" stroke-width="1.4" stroke-linecap="round"><path d="M2 4.1a9 9 0 0 1 12 0"/><path d="M4.4 6.6a5.5 5.5 0 0 1 7.2 0"/></svg>
-                <svg width="24" height="12" viewBox="0 0 24 12"><rect x="0.5" y="0.5" width="20" height="11" rx="3" fill="none" stroke="#f4efe8" stroke-opacity=".45"/><rect x="2" y="2" width="15" height="8" rx="1.5" fill="#f4efe8"/><rect x="21.6" y="4" width="1.8" height="4" rx="1" fill="#f4efe8" fill-opacity=".5"/></svg>
-              </div>
-            </div>
-            <!-- app header -->
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 18px 14px;border-bottom:1px solid #16131b;">
-              <div style="display:flex;align-items:center;gap:8px;">
-                <img src="assets/logo-mark.png" alt="" style="height:24px;width:24px;">
-                <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:15px;letter-spacing:.16em;color:#f4efe8;">CERT</span>
-              </div>
-              <div style="width:27px;height:27px;border-radius:50%;border:1px solid #2a2530;background:linear-gradient(140deg,#2a2230,#15121a);display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:12px;color:#cbc5bd;">Z</div>
-            </div>
-            <!-- body -->
-            <div style="flex:1;padding:15px 15px 0;position:relative;">
-              <!-- streak card -->
-              <div style="border:1px solid #241f29;border-radius:16px;padding:16px;background:linear-gradient(165deg,#15121a,#100e13);box-shadow:0 14px 32px -18px rgba(0,0,0,.85);">
-                <div style="display:flex;align-items:flex-start;justify-content:space-between;">
-                  <div>
-                    <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:54px;line-height:.8;color:#e23b2e;text-shadow:0 0 28px rgba(226,59,46,.45);">14</div>
-                    <div style="margin-top:9px;font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:#6f6a63;">day streak</div>
-                  </div>
-                  <div style="display:inline-flex;align-items:center;gap:5px;border:1px solid #2a2530;border-radius:999px;padding:5px 10px;">
-                    <svg width="10" height="13" viewBox="0 0 16 20" fill="#e23b2e"><path d="M8 0c.5 3 3 4 3 8a3 3 0 0 1-6 0c0-1 .5-1.5.5-2.5C3.5 7 2 9 2 12a6 6 0 0 0 12 0C14 6 9 5 8 0z"/></svg>
-                    <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;color:#cbc5bd;">BEST 21</span>
-                  </div>
-                </div>
-                <div style="margin-top:12px;font-family:'Tektur',sans-serif;font-weight:700;font-size:16px;color:#f4efe8;">Gym — every day</div>
-                <div style="position:relative;margin-top:11px;height:114px;border-radius:12px;overflow:hidden;border:1px solid #241f29;background:radial-gradient(120% 90% at 28% 18%,rgba(226,59,46,.20),transparent 58%),radial-gradient(110% 100% at 82% 92%,rgba(201,162,39,.14),transparent 60%),linear-gradient(158deg,#1c1722,#0c0a10);display:flex;align-items:center;justify-content:center;">
-                  <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="#f4efe8" stroke-opacity=".2" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9v6M5 7.5v9M19 7.5v9M22 9v6M7 12h10"/></svg>
-                  <div style="position:absolute;top:9px;left:10px;font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.1em;color:#e9e4dc;background:rgba(0,0,0,.5);padding:3px 7px;border-radius:5px;">TODAY · 18:32</div>
-                  <div style="position:absolute;bottom:9px;left:10px;display:inline-flex;align-items:center;gap:5px;background:rgba(52,199,89,.18);border:1px solid #1f3b25;border-radius:6px;padding:4px 8px;">
-                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#34c759" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
-                    <span style="font-family:'JetBrains Mono',monospace;font-size:8px;letter-spacing:.08em;color:#34c759;">VERIFIED BY AI</span>
-                  </div>
-                </div>
-                <div style="margin-top:12px;background:linear-gradient(180deg,#ef4a3d,#e23b2e);border-radius:10px;text-align:center;padding:12px;font-family:'Tektur',sans-serif;font-weight:800;font-size:12.5px;letter-spacing:.07em;color:#120606;box-shadow:0 8px 20px -8px rgba(226,59,46,.6);">SUBMIT TODAY'S PROOF</div>
-              </div>
-              <!-- friends challenge card -->
-              <div style="margin-top:13px;border:1px solid #241f29;border-radius:16px;padding:15px;background:linear-gradient(165deg,#15121a,#100e13);">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px;">
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#6f6a63;">Challenge · 4 friends</span>
-                  <span style="display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:8.5px;letter-spacing:.14em;color:#e23b2e;"><span style="width:6px;height:6px;border-radius:50%;background:#e23b2e;box-shadow:0 0 6px #e23b2e;"></span>LIVE</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
-                  <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #c9a227;background:#1a1620;display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:11px;color:#f4efe8;">Y</div>
-                  <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;color:#f4efe8;">You</span>
-                  <span style="display:inline-flex;align-items:center;gap:4px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;color:#c9a227;">14<svg width="9" height="11" viewBox="0 0 16 20" fill="#e23b2e"><path d="M8 0c.5 3 3 4 3 8a3 3 0 0 1-6 0c0-1 .5-1.5.5-2.5C3.5 7 2 9 2 12a6 6 0 0 0 12 0C14 6 9 5 8 0z"/></svg></span>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
-                  <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #b8bcc4;background:#1a1620;display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:11px;color:#cbc5bd;">A</div>
-                  <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbc5bd;">Alex</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#9a948d;">12</span>
-                </div>
-                <div style="display:flex;align-items:center;gap:10px;padding:5px 0;">
-                  <div style="width:24px;height:24px;border-radius:50%;border:1.5px solid #b5793f;background:#1a1620;display:flex;align-items:center;justify-content:center;font-family:'Tektur',sans-serif;font-weight:700;font-size:11px;color:#cbc5bd;">S</div>
-                  <span style="flex:1;font-family:'JetBrains Mono',monospace;font-size:12px;color:#cbc5bd;">Sam</span>
-                  <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#9a948d;">9</span>
-                </div>
-              </div>
-              <!-- bottom fade -->
-              <div style="position:absolute;left:0;right:0;bottom:0;height:48px;background:linear-gradient(180deg,rgba(7,6,8,0),#070608);pointer-events:none;"></div>
-            </div>
-            <div style="position:absolute;bottom:9px;left:50%;transform:translateX(-50%);width:108px;height:5px;border-radius:3px;background:#3a3540;z-index:4;"></div>
-          </div>
-        </div>
+      <div class="card" style="background:#fff;">
+        <span class="num">2</span>
+        <h3 style="margin:14px 0 8px;font-size:19px;" data-k="how2H"></h3>
+        <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="how2T"></p>
+      </div>
+      <div class="card" style="background:#fff;">
+        <span class="num">3</span>
+        <h3 style="margin:14px 0 8px;font-size:19px;" data-k="how3H"></h3>
+        <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="how3T"></p>
       </div>
     </div>
-    <div style="position:absolute;bottom:24px;left:0;right:0;text-align:center;">
-      <div style="font-family:'Press Start 2P',monospace;font-size:9px;letter-spacing:.16em;color:#cfc8bf;text-shadow:0 2px 8px #000;animation:flick 2.4s ease-in-out infinite;" data-k="scrollHint"></div>
-      <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:18px;color:#e23b2e;animation:bob 1.8s ease-in-out infinite;text-shadow:0 2px 8px #000;">▼</div>
-    </div>
-  </section>
+  </div>
+</section>
 
-  <!-- HOW IT WORKS -->
-  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:108px 24px;background:linear-gradient(180deg,rgba(7,6,8,.55),rgba(7,6,8,.6));">
-    <div style="width:100%;max-width:1120px;">
-      <div class="reveal" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:10px;" data-k="hiwKicker"></div>
-      <div class="reveal" data-delay="60" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:#e23b2e;margin-bottom:54px;" data-k="hiwAlt"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:stretch;">
-        <div class="step-card reveal" data-delay="0" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
-          <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">01</div>
-          <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s1t"></div>
-          <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s1d"></p>
-        </div>
-        <div class="step-card reveal" data-delay="130" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
-          <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">02</div>
-          <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s2t"></div>
-          <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s2d"></p>
-        </div>
-        <div class="step-card reveal" data-delay="260" style="flex:1 1 300px;max-width:360px;padding:42px 36px;border:1px solid #3a1c1a;background:rgba(20,9,8,.6);">
-          <div class="step-num" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:58px;color:#e23b2e;line-height:1;">03</div>
-          <div style="margin-top:20px;font-family:'Tektur',sans-serif;font-weight:700;font-size:26px;letter-spacing:.05em;text-transform:uppercase;color:#f4efe8;" data-k="s3t"></div>
-          <p style="margin:0;font-family:'JetBrains Mono',monospace;font-size:16px;line-height:1.7;color:#9a948d;" data-k="s3d"></p>
-        </div>
+<!-- ===== PROOF METHODS ===== -->
+<section style="padding:76px 0;">
+  <div class="wrap">
+    <span class="kicker" data-k="proofKicker"></span>
+    <h2 style="margin-top:12px;" data-k="proofH"></h2>
+    <p class="sub" style="margin:16px 0 0;max-width:560px;" data-k="proofSub"></p>
+    <div class="grid3" style="margin-top:36px;">
+      <div class="card">
+        <div style="font-size:30px;">📷</div>
+        <h3 style="margin:12px 0 6px;font-size:19px;" data-k="pm1H"></h3>
+        <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="pm1T"></p>
+      </div>
+      <div class="card">
+        <div style="font-size:30px;">🎥</div>
+        <h3 style="margin:12px 0 6px;font-size:19px;"><span data-k="pm2H"></span> <span style="font-size:11px;font-weight:800;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;">PRO</span></h3>
+        <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="pm2T"></p>
+      </div>
+      <div class="card">
+        <div style="font-size:30px;">📍</div>
+        <h3 style="margin:12px 0 6px;font-size:19px;"><span data-k="pm3H"></span> <span style="font-size:11px;font-weight:800;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;">PRO</span></h3>
+        <p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="pm3T"></p>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- STATS -->
-  <section style="padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.58),rgba(7,6,8,.6));border-top:1px solid #1c1822;border-bottom:1px solid #1c1822;">
-    <div style="max-width:920px;margin:0 auto;display:flex;flex-wrap:wrap;gap:32px;justify-content:space-around;text-align:center;">
-      <div class="reveal" data-delay="0" style="flex:1 1 200px;">
-        <div data-count="100" style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,6vw,64px);color:#e23b2e;line-height:1;text-shadow:0 3px 0 #000;">0</div>
-        <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9a948d;" data-k="stat1l"></div>
-      </div>
-      <div class="reveal" data-delay="130" style="flex:1 1 200px;">
-        <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,6vw,64px);color:#e23b2e;line-height:1;text-shadow:0 3px 0 #000;">0</div>
-        <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9a948d;" data-k="stat2l"></div>
-      </div>
-      <div class="reveal" data-delay="260" style="flex:1 1 200px;">
-        <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(40px,6vw,64px);color:#e23b2e;line-height:1;text-shadow:0 3px 0 #000;">24/7</div>
-        <div style="margin-top:12px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#9a948d;" data-k="stat3l"></div>
-      </div>
+<!-- ===== THE JUDGE (dark band) ===== -->
+<section style="padding:80px 0;background:var(--dark);">
+  <div class="wrap grid2" style="align-items:center;">
+    <div>
+      <span class="kicker" style="color:var(--dark-mute);" data-k="judgeKicker"></span>
+      <h2 style="color:var(--dark-ink);margin-top:12px;" data-k="judgeH"></h2>
+      <p style="color:var(--dark-mute);font-size:16.5px;line-height:1.65;margin:18px 0 0;" data-k="judgeT"></p>
+      <ul style="margin:20px 0 0;padding:0;list-style:none;color:var(--dark-ink);font-size:15px;line-height:2.1;font-weight:600;">
+        <li>✓ <span data-k="judgeL1"></span></li>
+        <li>✓ <span data-k="judgeL2"></span></li>
+        <li>✓ <span data-k="judgeL3"></span></li>
+      </ul>
     </div>
-  </section>
-
-  <!-- WALL OF SHAME -->
-  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.6),rgba(20,8,8,.72));">
-    <div style="max-width:760px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
-      <h2 class="breathe" style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(34px,6.4vw,72px);line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000,0 0 40px rgba(226,59,46,.25);" data-k="shameH"></h2>
-      <p style="margin:30px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:17px;line-height:1.75;color:#c2bcb4;text-shadow:0 2px 10px #000;"><span data-k="shameBody"></span><span style="color:#e23b2e;" data-k="shameAccent"></span></p>
-    </div>
-  </section>
-
-  <!-- AI JUDGE -->
-  <section style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px;background:linear-gradient(180deg,rgba(7,6,8,.66),rgba(7,6,8,.7));">
-    <div style="max-width:760px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 40%;">
-      <h2 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(32px,6vw,68px);line-height:1.02;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000;"><span data-k="judgeH1"></span><br><span data-k="judgeH2"></span></h2>
-      <p style="margin:30px auto 0;max-width:560px;font-family:'JetBrains Mono',monospace;font-size:17px;line-height:1.75;color:#b8b2ab;text-shadow:0 2px 10px #000;" data-k="judgeBody"></p>
-    </div>
-  </section>
-
-  <!-- FEATURES -->
-  <section style="padding:96px 24px;background:linear-gradient(180deg,rgba(20,8,8,.42),rgba(7,6,8,.7));">
-    <div style="width:100%;max-width:1000px;margin:0 auto;">
-      <div class="reveal" style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:40px;" data-k="featKicker"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:18px;justify-content:center;">
-        <div class="reveal" data-delay="0" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
-          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4.5v1.5A2.5 2.5 0 0 0 7 10M17 6h2.5v1.5A2.5 2.5 0 0 1 17 10"/><path d="M12 14v3M9.5 21h5M10 17.5h4V21h-4z"/></svg></div>
-          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat1t"></div>
-          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat1d"></p>
-        </div>
-        <div class="reveal" data-delay="90" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
-          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9.5h18M3 14.5h18M8 5v14M16 5v14"/></svg></div>
-          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat2t"></div>
-          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat2d"></p>
-        </div>
-        <div class="reveal" data-delay="180" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #241f29;background:rgba(11,10,15,.6);">
-          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21.5C12 21.5 19 15.5 19 9.5A7 7 0 0 0 5 9.5C5 15.5 12 21.5 12 21.5Z"/><path d="M8.8 9.6l2.2 2.2 4-4.2"/></svg></div>
-          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat3t"></div>
-          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat3d"></p>
-        </div>
-        <div class="reveal" data-delay="270" style="flex:1 1 220px;max-width:240px;padding:28px 24px;border:1px solid #3a1c1a;background:rgba(20,9,8,.6);">
-          <div class="feat-ico"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#e23b2e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v17M6.5 20.5h11M4 7.5h16M12 4.2l-8 3.3M12 4.2l8 3.3"/><path d="M4 7.5l-2.2 4.6a2.6 2.6 0 0 0 4.4 0L4 7.5zM20 7.5l-2.2 4.6a2.6 2.6 0 0 0 4.4 0L20 7.5z"/></svg></div>
-          <div style="margin-top:14px;font-family:'Tektur',sans-serif;font-weight:700;font-size:19px;text-transform:uppercase;color:#f4efe8;" data-k="feat4t"></div>
-          <p style="margin:8px 0 0;font-family:'JetBrains Mono',monospace;font-size:14px;line-height:1.6;color:#9a948d;" data-k="feat4d"></p>
-        </div>
-      </div>
-      <div style="text-align:center;margin-top:22px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;color:#6f6a63;" data-k="featNote"></div>
-    </div>
-  </section>
-
-  <!-- FAQ -->
-  <section style="padding:80px 24px;background:linear-gradient(180deg,rgba(7,6,8,.7),rgba(7,6,8,.74));">
-    <div style="max-width:760px;margin:0 auto;">
-      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:6px;" data-k="faqKicker"></div>
-      <div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:#e23b2e;margin-bottom:36px;" data-k="faqAlt"></div>
-      <div id="faqList" style="border-top:1px solid #241f29;"></div>
-    </div>
-  </section>
-
-  <!-- CTA / WAITLIST -->
-  <section id="waitlist" style="display:flex;flex-direction:column;justify-content:center;align-items:center;padding:84px 24px 80px;background:linear-gradient(180deg,rgba(7,6,8,.72),rgba(5,4,6,.92));">
-    <div style="width:100%;max-width:560px;text-align:center;animation:rise both .9s ease-out;animation-timeline:view();animation-range:entry 0% cover 36%;">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.35em;text-transform:uppercase;color:#8a847c;margin-bottom:14px;" data-k="ctaKicker"></div>
-      <h2 style="margin:0;font-family:'Tektur',sans-serif;font-weight:800;font-size:clamp(34px,6.6vw,72px);line-height:1;letter-spacing:-.01em;text-transform:uppercase;color:#f4efe8;text-shadow:0 3px 0 #000;"><span data-k="ctaH1"></span><br><span data-k="ctaH2"></span></h2>
-      <div id="seatsLine" style="margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:13px;letter-spacing:.18em;text-transform:uppercase;color:#e23b2e;"></div>
-      <p style="margin:22px auto 30px;max-width:440px;font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1.7;color:#9a948d;" data-k="ctaSub"></p>
-
-      <div style="border:1px solid #2a2530;background:rgba(10,9,13,.78);padding:26px;text-align:left;">
-
-        <!-- step: email -->
-        <div id="step-email">
-          <form id="form-email">
-            <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7d7770;margin-bottom:10px;" data-k="emailLabel"></label>
-            <input id="in-email" class="field-input" type="email" data-kph="emailPh" style="width:100%;background:#0d0c11;border:1px solid #2a2731;color:#f2ede6;font-family:'JetBrains Mono',monospace;font-size:16px;padding:15px 16px;outline:none;letter-spacing:.02em;">
-            <button type="submit" class="btn-cta" style="margin-top:14px;width:100%;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px;border:none;cursor:pointer;" data-k="btnQueue"></button>
-          </form>
-          <div id="err-email" style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#e23b2e;display:none;"></div>
-        </div>
-
-        <!-- step: challenge -->
-        <div id="step-challenge" style="display:none;">
-          <form id="form-challenge">
-            <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7d7770;margin-bottom:10px;" data-k="challengeLabel"></label>
-            <textarea id="in-challenge" class="field-input" rows="3" data-kph="challengePh" style="width:100%;resize:vertical;background:#0d0c11;border:1px solid #2a2731;color:#f2ede6;font-family:'JetBrains Mono',monospace;font-size:15px;line-height:1.5;padding:14px 16px;outline:none;"></textarea>
-            <button type="submit" class="btn-cta" style="margin-top:14px;width:100%;background:#e23b2e;color:#120606;font-family:'Tektur',sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:15px;padding:16px;border:none;cursor:pointer;" data-k="btnNext"></button>
-          </form>
-          <div id="err-challenge" style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#e23b2e;display:none;"></div>
-        </div>
-
-        <!-- step: bet -->
-        <div id="step-bet" style="display:none;">
-          <label style="display:block;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:#7d7770;margin-bottom:14px;" data-k="betLabel"></label>
-          <div style="display:flex;gap:12px;">
-            <button class="bet-yes" onclick="bet('yes')" style="flex:1;background:transparent;color:#f2ede6;font-family:'Tektur',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:15px;padding:15px;border:1px solid #e23b2e;cursor:pointer;" data-k="betYes"></button>
-            <button class="bet-no" onclick="bet('no')" style="flex:1;background:transparent;color:#cbc5bd;font-family:'Tektur',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:15px;padding:15px;border:1px solid #3a3540;cursor:pointer;" data-k="betNo"></button>
-          </div>
-          <button onclick="bet('skip')" style="margin-top:14px;width:100%;background:none;border:none;color:#6f6a63;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.1em;cursor:pointer;text-decoration:underline;text-underline-offset:3px;" data-k="skip"></button>
-        </div>
-
-        <!-- step: done -->
-        <div id="step-done" style="display:none;">
-          <div style="text-align:center;padding:6px 0;">
-            <div style="font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.08em;color:#e23b2e;margin-bottom:18px;">✶ ✶ ✶</div>
-            <div style="font-family:'Tektur',sans-serif;font-weight:800;font-size:30px;text-transform:uppercase;letter-spacing:.04em;color:#f4efe8;line-height:1.05;" data-k="doneTitle"></div>
-            <div style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.28em;text-transform:uppercase;color:#e23b2e;" data-k="doneAlt"></div>
-            <div style="margin:22px auto 0;display:inline-block;border:1px solid #2a2530;padding:12px 22px;font-family:'JetBrains Mono',monospace;font-size:14px;color:#cbc5bd;"><span data-k="queueLabel"></span>&nbsp;&nbsp;<span id="pos" style="color:#f4efe8;font-weight:700;"></span></div>
-            <p style="margin:22px auto 0;max-width:380px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#8a847c;" data-k="doneBody"></p>
-          </div>
-        </div>
-
+    <div style="display:flex;justify-content:center;">
+      <div style="transform:rotate(-7deg);border:4px solid var(--dark-mute);border-radius:18px;padding:22px 34px;box-shadow:0 0 60px rgba(165,180,252,.25);">
+        <div style="color:#fff;font-size:34px;font-weight:800;letter-spacing:.12em;">APPROVED ✓</div>
+        <div style="color:var(--dark-mute);font-size:13px;font-weight:600;text-align:center;margin-top:6px;" data-k="judgeStampSub"></div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
-  <footer style="background:#050406;border-top:1px solid #1a1620;padding:64px 24px 34px;">
-    <div style="max-width:1080px;margin:0 auto;display:flex;flex-wrap:wrap;gap:48px 64px;justify-content:space-between;">
-      <!-- brand -->
-      <div style="max-width:300px;">
-        <a href="#top" style="display:flex;align-items:center;gap:10px;text-decoration:none;margin-bottom:16px;">
-          <img src="assets/logo-mark.png" alt="" style="height:32px;width:32px;">
-          <span style="font-family:'Tektur',sans-serif;font-weight:800;font-size:18px;letter-spacing:.16em;color:#f4efe8;">CERT</span>
-        </a>
-        <p data-k="ftTagline" style="margin:0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.7;color:#7d7770;"></p>
-        <div style="display:flex;gap:10px;margin-top:18px;">
-          <a href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" class="store-pill" title="Download on the App Store" aria-label="App Store">
-            <svg width="14" height="16" viewBox="0 0 24 24" fill="#f4efe8" aria-hidden="true"><path d="M17.05 12.04c-.03-2.6 2.12-3.85 2.22-3.91-1.21-1.77-3.1-2.01-3.77-2.04-1.6-.16-3.13.94-3.94.94-.81 0-2.07-.92-3.4-.9-1.75.03-3.37 1.02-4.27 2.59-1.82 3.16-.47 7.84 1.31 10.41.87 1.26 1.9 2.67 3.26 2.62 1.31-.05 1.8-.85 3.39-.85 1.58 0 2.03.85 3.41.82 1.41-.02 2.3-1.28 3.16-2.55.99-1.46 1.4-2.88 1.42-2.95-.03-.01-2.72-1.04-2.75-4.13M14.6 4.59c.72-.87 1.2-2.08 1.07-3.29-1.03.04-2.28.69-3.02 1.56-.66.77-1.24 2-1.08 3.18 1.15.09 2.32-.58 3.03-1.45"/></svg>
-            <span>iOS</span>
-          </a>
-        </div>
-      </div>
-      <!-- link columns -->
-      <div style="display:flex;gap:56px;flex-wrap:wrap;">
-        <div>
-          <div class="ft-h" data-k="ftProduct"></div>
-          <a class="ft-l" href="#top" data-k="navHome"></a>
-          <a class="ft-l" href="pricing.html" data-k="navPricing"></a>
-          <a class="ft-l" href="#waitlist" data-k="navApp"></a>
-        </div>
-        <div>
-          <div class="ft-h" data-k="ftLegal"></div>
-          <a class="ft-l" href="privacy.html" data-k="ftPrivacy"></a>
-          <a class="ft-l" href="terms.html" data-k="ftTerms"></a>
-        </div>
-        <div>
-          <div class="ft-h" data-k="ftConnect"></div>
-          <a class="ft-l" href="mailto:janibek190906@gmail.com">janibek190906@gmail.com</a>
-          <a class="ft-l" href="https://instagram.com/cert_app" target="_blank" rel="noopener">@cert_app</a>
-        </div>
+<!-- ===== CHALLENGES ===== -->
+<section style="padding:76px 0;">
+  <div class="wrap grid2" style="align-items:center;">
+    <div>
+      <span class="kicker" data-k="chKicker"></span>
+      <h2 style="margin-top:12px;" data-k="chH"></h2>
+      <p class="sub" style="margin:18px 0 0;" data-k="chT"></p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:22px;">
+        <span class="chip">🏆 <span data-k="chChip1"></span></span>
+        <span class="chip">🎡 <span data-k="chChip2"></span></span>
+        <span class="chip">❄️ <span data-k="chChip3"></span></span>
       </div>
     </div>
-    <div style="max-width:1080px;margin:40px auto 0;padding-top:24px;border-top:1px solid #1a1620;display:flex;flex-wrap:wrap;gap:10px 24px;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#5a554f;">
-      <span>© 2026 CERT — <span data-k="ftRights"></span></span>
-      <span data-k="ftMade"></span>
+    <div class="card" style="max-width:380px;justify-self:center;width:100%;">
+      <div style="font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);" data-k="lbTitle"></div>
+      <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1.5px solid var(--accent);border-radius:12px;padding:12px;margin-top:12px;">
+        <span class="num" style="width:26px;height:26px;font-size:12px;">1</span>
+        <b style="flex:1;">Aruzhan</b><span style="color:var(--accent);font-weight:800;">12</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;">
+        <span class="num" style="width:26px;height:26px;font-size:12px;background:var(--card);color:var(--mute);">2</span>
+        <b style="flex:1;">Dias</b><span style="color:var(--mute);font-weight:800;">10</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:8px;">
+        <span class="num" style="width:26px;height:26px;font-size:12px;background:var(--card);color:var(--mute);">3</span>
+        <b style="flex:1;">Timur</b><span style="color:var(--err);font-weight:800;font-size:12px;" data-k="lbLast"></span>
+      </div>
     </div>
-  </footer>
+  </div>
+</section>
 
-</main>
+<!-- ===== PRICING TEASER ===== -->
+<section style="padding:76px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+  <div class="wrap" style="text-align:center;">
+    <span class="kicker" data-k="priceKicker"></span>
+    <h2 style="margin-top:12px;" data-k="priceH"></h2>
+    <div class="grid2" style="max-width:720px;margin:34px auto 0;text-align:left;">
+      <div class="card" style="background:#fff;">
+        <h3 style="margin:0;font-size:20px;">Free</h3>
+        <p style="color:var(--mute);font-size:14.5px;line-height:2;margin:12px 0 0;" data-k="freeList"></p>
+      </div>
+      <div class="card" style="background:#fff;border:2px solid var(--accent);">
+        <h3 style="margin:0;font-size:20px;color:var(--accent);">Cert Pro</h3>
+        <p style="color:var(--mute);font-size:14.5px;line-height:2;margin:12px 0 0;" data-k="proList"></p>
+      </div>
+    </div>
+    <a class="btn ghost" style="margin-top:28px;" href="pricing.html" data-k="priceMore"></a>
+  </div>
+</section>
 
-<script src="scripts/geo-price.js"></script>
+<!-- ===== FAQ ===== -->
+<section id="faq" style="padding:76px 0;">
+  <div class="wrap" style="max-width:760px;">
+    <h2 data-k="faqH"></h2>
+    <div id="faqList" style="margin-top:22px;"></div>
+  </div>
+</section>
+
+<!-- ===== FINAL CTA ===== -->
+<section style="padding:90px 0;background:var(--dark);text-align:center;">
+  <div class="wrap">
+    <img src="assets/logo-mark.png" alt="" style="width:54px;height:54px;filter:brightness(0) invert(1);">
+    <h2 style="color:var(--dark-ink);margin-top:18px;" data-k="ctaH"></h2>
+    <p style="color:var(--dark-mute);font-size:17px;margin:16px 0 30px;" data-k="ctaT"></p>
+    <a class="btn" style="background:#fff;color:var(--accent-deep);" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+      <svg width="17" height="19" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
+      <span data-k="heroCta"></span>
+    </a>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer style="padding:36px 0;border-top:1px solid var(--line);">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:13.5px;color:var(--faint);">
+    <span style="display:flex;align-items:center;gap:7px;font-weight:700;color:var(--mute);"><img src="assets/logo-mark.png" alt="" style="width:20px;height:20px;">CERT</span>
+    <span style="margin-left:auto;display:flex;gap:18px;flex-wrap:wrap;">
+      <a class="navlink" href="pricing.html" data-k="navPricing"></a>
+      <a class="navlink" href="privacy.html" data-k="ftPrivacy"></a>
+      <a class="navlink" href="terms.html" data-k="ftTerms"></a>
+      <a class="navlink" href="delete-account.html" data-k="ftDelete"></a>
+      <a class="navlink" href="mailto:janibek190906@gmail.com" data-k="ftSupport"></a>
+    </span>
+    <span style="width:100%;text-align:right;">© 2026 Cert</span>
+  </div>
+</footer>
+
 <script>
-/* =====================================================================
-   WAITLIST INTEGRATION — stores the email in Supabase (table: waitlist) and
-   reserves 7 days of Pro at launch. Anon key is public by design; the table
-   is insert-only for anon (emails can't be read back).
-   ===================================================================== */
-const SUPA_URL = "https://hiydsiiuzpneykbjddsr.supabase.co";
-const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhpeWRzaWl1enBuZXlrYmpkZHNyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyOTcwOTUsImV4cCI6MjA5Nzg3MzA5NX0.x1-PnDgiyn8wohw4nymhiSuBUe1v2byFQhoUC0fmFiE";
-
-/* ---- content dictionary (ported from Arena.dc.html) ---- */
-const dict = {
+// ---------- i18n ----------
+const T = {
   en: {
-    day1:"Day 1 — anyone can start.", day2:"Day 4 — most quit.", day3:"Day 30 — your streak is real.",
-    heroBig1:"Prove it", heroBig2:"every day", heroAlt:"докажи каждый день",
-    heroSub:"Set a goal, prove it daily with a photo, and an AI judge you can't fool keeps you honest. Go solo or challenge friends. iOS & Android — free to start.",
-    hiwKicker:"How to play", hiwAlt:"three steps",
-    s1t:"Set a goal", s1alt:"одна цель", s1d:"Pick one daily goal — go solo, or start a challenge and invite friends with a code.",
-    s2t:"Prove it daily", s2alt:"докажи", s2d:"Snap a photo in the app. The AI judge approves or rejects in seconds — no checkboxes, no faking.",
-    s3t:"Win the streak", s3alt:"стрик", s3d:"Verified days stack up. In a challenge the leaderboard is live — last place spins the wheel of fortune.",
-    shameH:"Can't be faked", shameAlt:"стрик, который не подделать", shameBody:"Other apps let you tap a checkbox. Here every single day is verified by an impartial judge. ", shameAccent:"That's what makes your streak mean something.",
-    judgeH1:"The judge is code,", judgeH2:"not you", judgeAlt:"судит код, не ты",
-    judgeBody:"You can't argue with it, bribe it, or talk yourself into a pass. It looks at the photo and your goal, and decides. That's the whole point.",
-    ctaKicker:"Waitlist · iOS & Android · 7 days of Pro free", ctaH1:"Get the", ctaH2:"app", ctaSub:"Leave your email — we'll send you the iOS & Android app at launch and reserve 7 days of Cert Pro free.",
-    emailLabel:"Your email — get the app + 7 days of Pro free", emailPh:"you@email.com", btnQueue:"Reserve 7 days free →",
-    challengeLabel:"What goal will you start with?", challengePh:"e.g. gym daily / read 20 min a day", btnNext:"Done →",
-    betLabel:"", betYes:"", betNo:"", skip:"",
-    doneTitle:"You're in", doneAlt:"7 days of Pro reserved", queueLabel:"early access", doneBody:"We'll send you the iOS & Android app the moment it's live, with 7 days of Cert Pro free reserved for your email. Go solo or bring friends.",
-    errEmail:"That email looks off.", errChallenge:"Name your goal — even a rough one.",
-    heroCta:"Join the waitlist →", scrollHint:"scroll to begin", navPricing:"Pricing", navApp:"Waitlist", navHome:"Home",
-    ftTagline:"The streak you can't fake. Prove your goals every day — solo or against friends.",
-    ftProduct:"Product", ftLegal:"Legal", ftConnect:"Connect",
-    ftPrivacy:"Privacy Policy", ftTerms:"Terms of Service",
-    ftRights:"All rights reserved.", ftMade:"Built for people who finish what they start.",
-    stat1l:"% impartial judge", stat2l:"money on the line", stat3l:"AI judge on duty",
-    featKicker:"What's inside",
-    feat1t:"Friend challenges", feat1d:"Compete on one goal. Live leaderboard — last place spins the wheel of fortune.",
-    feat2t:"Timelapse", feat2d:"Your daily proof photos auto-stitch into a shareable progress video.",
-    feat3t:"Geo-verified", feat3d:"Proofs can be confirmed at the place they happened. Harder to fake.",
-    feat4t:"AI judge", feat4d:"Every photo checked against your goal. No checkboxes, no bargaining.",
-    featNote:"Timelapse & geo-verified proofs — rolling out to Pro.",
-    faqKicker:"Questions", faqAlt:"before you start",
-    faq:[
-      {q:"Is it really free?", a:"Yes. One goal, a daily photo, and the AI judge are free forever. Pro adds more goals, unlimited checks, and streak freezes."},
-      {q:"How does the AI judge work?", a:"You submit a daily photo. The model checks it against the goal you wrote, in your own words, and returns approved or rejected in seconds. If it gets one wrong, you can appeal once."},
-      {q:"Why can't I just fake my streak?", a:"Because you don't mark your own checkbox — an impartial judge does. A photo has to actually prove the goal. That's what makes the streak worth something."},
-      {q:"What happens if I miss a day?", a:"Your streak resets to zero. There's no money on the line — losing the streak you built is the cost. You can start a new one the same day."},
-      {q:"What kind of goal fits?", a:"Anything with a daily action you can photograph: gym, running, reading, cooking, coding, art. If a photo can prove it, the judge can check it."},
-      {q:"Can I do challenges with friends?", a:"Yes. Start solo or invite friends into a shared challenge — everyone's daily photo goes through the same impartial judge, so no one can fake their way through."},
-      {q:"Is there an app to download?", a:"Yes — Cert is live on the App Store for iPhone. Tap the App Store button above to download it. Android is coming soon."}
+    navHow: "How it works", navPricing: "Pricing",
+    heroKicker: "HABIT TRACKER WITH AN AI JUDGE",
+    heroH1a: "The streak", heroH1b: "you can't fake.",
+    heroSub: "Set one goal. Send live proof every day — a photo, a short video, or a location check-in. An AI judge looks at it and decides if your day counts.",
+    heroCta: "Get Cert free", heroFree: "Free to start · iPhone",
+    chipLive: "Live camera only", chipAI: "AI-verified", chipFriends: "Challenges with friends",
+    mockToday: "Today", mockDays: "days", mockGoal: "A photo with my morning coffee",
+    mockBtn: "Submit today's proof", mockVerdict: "Approved by the AI judge",
+    howKicker: "HOW IT WORKS", howH: "Three steps a day. That's the whole loop.",
+    how1H: "Set one goal", how1T: "Write it proof-first: “a photo with my running shoes on”. One sentence, one screen.",
+    how2H: "Send live proof daily", how2T: "The camera opens right in the app — no gallery, no old photos, no way to reuse yesterday.",
+    how3H: "The judge decides", how3T: "Approved — your streak grows. Missed a day — it resets to zero. That's exactly why it means something.",
+    proofKicker: "PROOF METHODS", proofH: "Prove it your way.",
+    proofSub: "Different goals need different evidence. Pick the method when you create the goal.",
+    pm1H: "Photo", pm1T: "One live photo of the goal happening. The judge is generous to honest attempts — bad lighting is fine, fakes are not.",
+    pm2H: "Video", pm2T: "Record a short clip in the app. The judge watches the whole thing — a propped-up photo won't pass.",
+    pm3H: "Location", pm3T: "Pin your gym, pool or library on the map. Being there is the proof. Fake-GPS apps get rejected.",
+    judgeKicker: "THE AI JUDGE", judgeH: "Generous to honest attempts. Merciless to fakes.",
+    judgeT: "Every submission is reviewed in seconds. The judge doesn't care about perfect framing — it cares whether the goal actually happened.",
+    judgeL1: "Rejects screenshots, stock images and stale photos",
+    judgeL2: "Explains every rejection in plain words",
+    judgeL3: "One appeal per day if you think it got it wrong",
+    judgeStampSub: "reviewed in seconds",
+    chKicker: "CHALLENGES", chH: "Bring your friends. Last place pays.",
+    chT: "Start a shared goal with your group. Everyone sends proof, everyone sees the leaderboard. Whoever finishes last spins a wheel of penalties — written by your own friends.",
+    chChip1: "Shared leaderboard", chChip2: "Penalty wheel", chChip3: "Streak freezes",
+    lbTitle: "Morning run club", lbLast: "LAST PLACE",
+    priceKicker: "PRICING", priceH: "Free to start. Pro when you're serious.",
+    freeList: "✓ 1 active goal<br>✓ Photo proof<br>✓ Challenges with friends<br>✓ Streak freezes",
+    proList: "✓ Unlimited goals<br>✓ Video & location proof<br>✓ 6-month analytics & trophies<br>✓ Monthly freezes included",
+    priceMore: "See full pricing",
+    faqH: "Questions, answered.",
+    ctaH: "Start a streak that means something.",
+    ctaT: "Free on the App Store. Your first goal takes under a minute.",
+    ftPrivacy: "Privacy", ftTerms: "Terms", ftDelete: "Delete account", ftSupport: "Support",
+    faq: [
+      ["Is Cert free?", "Yes. The free plan includes one active goal with photo proof, challenges with friends, and streak freezes. Pro adds video and location proof, unlimited goals and analytics."],
+      ["What counts as proof?", "A live photo, a short video recorded in the app, or a GPS check-in at a place you pinned. Everything is captured live — the gallery is never used."],
+      ["What happens if I miss a day?", "Your streak resets to zero — that's what makes it real. Your total verified days and best streak are never lost, and a streak freeze can auto-save a busy day."],
+      ["Can I trick the judge?", "People try. Screenshots, stock images, old photos and fake GPS get rejected. If the judge gets it wrong, you can appeal once — a second, more generous review."],
+      ["Where's the Android version?", "It's in closed testing on Google Play. iPhone is live today; Android is next."]
     ]
   },
   ru: {
-    day1:"День 1 — начать может каждый.", day2:"День 4 — большинство бросает.", day3:"День 30 — твой стрик настоящий.",
-    heroBig1:"Докажи", heroBig2:"каждый день", heroAlt:"prove it every day",
-    heroSub:"Поставь цель, доказывай каждый день фото — ИИ-судья, которого не обмануть, держит тебя честным. Соло или челлендж с друзьями. iOS и Android — бесплатно для старта.",
-    hiwKicker:"Как играть", hiwAlt:"три шага",
-    s1t:"Поставь цель", s1alt:"set one goal", s1d:"Одна цель на день — соло, или создай челлендж и позови друзей по коду.",
-    s2t:"Докажи фото", s2alt:"prove daily", s2d:"Сфоткай в приложении. ИИ-судья за секунды засчитывает или нет — без галочек и без обмана.",
-    s3t:"Выиграй стрик", s3alt:"the streak", s3d:"Зачтённые дни копятся. В челлендже лидерборд живой — последнее место крутит колесо фортуны.",
-    shameH:"Не подделать", shameAlt:"the streak you can't fake", shameBody:"В других приложениях ты сам ставишь галочку. Здесь каждый день заверяет беспристрастный судья. ", shameAccent:"Поэтому твой стрик чего-то стоит.",
-    judgeH1:"Судит код,", judgeH2:"не ты", judgeAlt:"the judge is code, not you",
-    judgeBody:"С ним не поспоришь, не уговоришь и не обманешь себя. Он смотрит на фото и твою цель — и решает. В этом весь смысл.",
-    ctaKicker:"Вайтлист · iOS и Android · 7 дней Pro бесплатно", ctaH1:"Забери", ctaH2:"приложение", ctaSub:"Оставь почту — пришлём приложение для iOS и Android к запуску и забронируем 7 дней Cert Pro бесплатно.",
-    emailLabel:"Твоя почта — приложение + 7 дней Pro бесплатно", emailPh:"you@email.com", btnQueue:"Забронировать 7 дней →",
-    challengeLabel:"С какой цели начнёшь?", challengePh:"напр. зал каждый день / читать 20 мин в день", btnNext:"Готово →",
-    betLabel:"", betYes:"", betNo:"", skip:"",
-    doneTitle:"Ты в деле", doneAlt:"7 дней Pro забронированы", queueLabel:"ранний доступ", doneBody:"Пришлём приложение для iOS и Android, как только оно выйдет, и забронируем 7 дней Cert Pro бесплатно для твоей почты. Соло или с друзьями.",
-    errEmail:"Похоже на неправильную почту.", errChallenge:"Назови цель — пусть даже грубо.",
-    heroCta:"В список ожидания →", scrollHint:"листай вниз", navPricing:"Цены", navApp:"В бету", navHome:"Главная",
-    ftTagline:"Стрик, который не подделать. Доказывай цели каждый день — соло или против друзей.",
-    ftProduct:"Продукт", ftLegal:"Правовое", ftConnect:"Контакты",
-    ftPrivacy:"Политика конфиденциальности", ftTerms:"Условия использования",
-    ftRights:"Все права защищены.", ftMade:"Для тех, кто доводит до конца.",
-    stat1l:"% беспристрастный судья", stat2l:"денег на кону", stat3l:"ИИ-судья на посту",
-    featKicker:"Что внутри",
-    feat1t:"Челленджи с друзьями", feat1d:"Соревнуйтесь на одной цели. Живой лидерборд — последнее место крутит колесо фортуны.",
-    feat2t:"Таймлапс", feat2d:"Ежедневные фото-доказательства сами собираются в видео прогресса.",
-    feat3t:"Гео-проверка", feat3d:"Доказательство можно подтвердить по месту съёмки. Сложнее подделать.",
-    feat4t:"ИИ-судья", feat4d:"Каждое фото сверяется с целью. Без галочек и без торга.",
-    featNote:"Таймлапс и гео-проверка — скоро в Pro.",
-    faqKicker:"Вопросы", faqAlt:"перед стартом",
-    faq:[
-      {q:"Это правда бесплатно?", a:"Да. Одна цель, фото в день и ИИ-судья — бесплатно навсегда. Pro добавляет больше целей, безлимит проверок и заморозки стрика."},
-      {q:"Как работает ИИ-судья?", a:"Каждый день ты присылаешь фото. Модель сверяет его с целью, которую ты описал своими словами, и за секунды возвращает «зачтено» или «отказ». Если ошибётся — можно оспорить один раз."},
-      {q:"Почему нельзя просто подделать стрик?", a:"Потому что галочку ставишь не ты, а беспристрастный судья. Фото должно реально доказывать цель. Именно это делает стрик ценным."},
-      {q:"Что будет, если пропущу день?", a:"Стрик обнуляется. Денег на кону нет — цена в том, что ты теряешь собранный стрик. Новый можно начать в тот же день."},
-      {q:"Какая цель подходит?", a:"Любая с ежедневным действием, которое можно сфотографировать: зал, бег, чтение, готовка, код, рисование. Есть фото-доказательство — судья проверит."},
-      {q:"Можно челленджи с друзьями?", a:"Да. Стартуй соло или зови друзей в общий челлендж — фото каждого проходит через одного беспристрастного судью, так что схитрить не выйдет."},
-      {q:"Есть приложение для скачивания?", a:"Да — Cert уже в App Store для iPhone. Нажми кнопку App Store выше, чтобы скачать. Android скоро."}
+    navHow: "Как работает", navPricing: "Цены",
+    heroKicker: "ТРЕКЕР ПРИВЫЧЕК С ИИ-СУДЬЁЙ",
+    heroH1a: "Серия, которую", heroH1b: "не подделать.",
+    heroSub: "Поставь одну цель. Каждый день присылай живое доказательство — фото, короткое видео или отметку по геолокации. ИИ-судья смотрит и решает, засчитан ли день.",
+    heroCta: "Скачать Cert бесплатно", heroFree: "Бесплатный старт · iPhone",
+    chipLive: "Только живая камера", chipAI: "Проверка ИИ", chipFriends: "Челленджи с друзьями",
+    mockToday: "Сегодня", mockDays: "дня", mockGoal: "Фото с утренним кофе",
+    mockBtn: "Отправить доказательство", mockVerdict: "Одобрено ИИ-судьёй",
+    howKicker: "КАК РАБОТАЕТ", howH: "Три шага в день. Вот и весь цикл.",
+    how1H: "Поставь одну цель", how1T: "Пиши её через доказательство: «фото в кроссовках на пробежке». Одно предложение, один экран.",
+    how2H: "Присылай живое доказательство", how2T: "Камера открывается прямо в приложении — без галереи, без старых фото, вчерашний снимок не прокатит.",
+    how3H: "Судья решает", how3T: "Одобрено — серия растёт. Пропустил день — сбрасывается в ноль. Именно поэтому она чего-то стоит.",
+    proofKicker: "ВИДЫ ДОКАЗАТЕЛЬСТВ", proofH: "Доказывай как удобно.",
+    proofSub: "Разным целям — разные доказательства. Способ выбираешь при создании цели.",
+    pm1H: "Фото", pm1T: "Одно живое фото происходящего. Судья добр к честным попыткам — плохой свет простит, подделку нет.",
+    pm2H: "Видео", pm2T: "Запиши короткий ролик в приложении. Судья смотрит его целиком — подставленное фото не пройдёт.",
+    pm3H: "Место", pm3T: "Закрепи на карте зал, бассейн или библиотеку. Доказательство — быть там. Fake-GPS отклоняется.",
+    judgeKicker: "ИИ-СУДЬЯ", judgeH: "Добр к честным. Беспощаден к подделкам.",
+    judgeT: "Каждое доказательство проверяется за секунды. Судье не важна идеальная картинка — важно, что цель реально выполнялась.",
+    judgeL1: "Отклоняет скриншоты, картинки из интернета и старые фото",
+    judgeL2: "Объясняет каждый отказ простыми словами",
+    judgeL3: "Одна апелляция в день, если судья ошибся",
+    judgeStampSub: "проверка за секунды",
+    chKicker: "ЧЕЛЛЕНДЖИ", chH: "Зови друзей. Последний платит.",
+    chT: "Создай общую цель с компанией. Все присылают доказательства, все видят таблицу лидеров. Кто финиширует последним — крутит колесо наказаний, которые придумали сами друзья.",
+    chChip1: "Общая таблица", chChip2: "Колесо наказаний", chChip3: "Заморозки серии",
+    lbTitle: "Клуб утренней пробежки", lbLast: "ПОСЛЕДНИЙ",
+    priceKicker: "ЦЕНЫ", priceH: "Начни бесплатно. Pro — когда серьёзно.",
+    freeList: "✓ 1 активная цель<br>✓ Фото-доказательство<br>✓ Челленджи с друзьями<br>✓ Заморозки серии",
+    proList: "✓ Безлимит целей<br>✓ Видео и гео-доказательства<br>✓ Аналитика за 6 месяцев и трофеи<br>✓ Ежемесячные заморозки",
+    priceMore: "Полные цены",
+    faqH: "Вопросы и ответы.",
+    ctaH: "Начни серию, которая чего-то стоит.",
+    ctaT: "Бесплатно в App Store. Первая цель займёт меньше минуты.",
+    ftPrivacy: "Конфиденциальность", ftTerms: "Условия", ftDelete: "Удаление аккаунта", ftSupport: "Поддержка",
+    faq: [
+      ["Cert бесплатный?", "Да. В бесплатном тарифе — одна активная цель с фото-доказательством, челленджи с друзьями и заморозки серии. Pro добавляет видео и гео-доказательства, безлимит целей и аналитику."],
+      ["Что считается доказательством?", "Живое фото, короткое видео, записанное в приложении, или GPS-отметка в закреплённом месте. Всё снимается вживую — галерея не используется вовсе."],
+      ["Что будет, если пропущу день?", "Серия сбросится в ноль — это и делает её настоящей. Общий счёт подтверждённых дней и рекорд не сгорают никогда, а заморозка может автоматически спасти занятый день."],
+      ["Можно ли обмануть судью?", "Пробуют многие. Скриншоты, картинки из интернета, старые фото и fake-GPS отклоняются. Если судья ошибся — есть одна апелляция: повторная, более щадящая проверка."],
+      ["Где версия для Android?", "В закрытом тестировании в Google Play. iPhone доступен уже сейчас, Android — следующий."]
     ]
   }
 };
-
-/* ---- state ---- */
-const state = { lang:'en', step:'email', bet:null, pos:null, seatsLeft:38, faqOpen:null };
-const C = ()=> dict[state.lang];
-const esc = (s)=> String(s).replace(/[&<>"]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
-
-function seatsLineText(){
-  // concept shift: no scarcity/seats framing — free to start
-  return '';
-}
-
-function applyLang(){
-  const d = C();
-  document.querySelectorAll('[data-k]').forEach(el=>{ const k=el.getAttribute('data-k'); if(d[k]!=null) el.textContent=d[k]; });
-  document.querySelectorAll('[data-kph]').forEach(el=>{ const k=el.getAttribute('data-kph'); if(d[k]!=null) el.setAttribute('placeholder', d[k]); });
-  document.getElementById('seatsLine').textContent = seatsLineText();
-  document.documentElement.lang = state.lang;
-  document.getElementById('lang-en').classList.toggle('active', state.lang==='en');
-  document.getElementById('lang-ru').classList.toggle('active', state.lang==='ru');
-  renderFAQ();
-}
-
-function setLang(l){ state.lang = l; applyLang(); }
-
-function renderFAQ(){
-  const wrap = document.getElementById('faqList');
-  const list = C().faq || [];
-  wrap.innerHTML = '';
-  list.forEach((it,i)=>{
-    const open = state.faqOpen === i;
-    const item = document.createElement('div');
-    item.style.borderBottom = '1px solid #241f29';
-    item.innerHTML =
-      '<button class="faq-btn" style="width:100%;display:flex;justify-content:space-between;align-items:center;gap:18px;text-align:left;background:none;border:none;cursor:pointer;padding:22px 4px;font-family:\'Tektur\',sans-serif;font-weight:700;font-size:18px;letter-spacing:.01em;color:#f4efe8;">'
-      + '<span>'+esc(it.q)+'</span>'
-      + '<span style="flex:none;font-family:\'JetBrains Mono\',monospace;font-size:24px;color:#e23b2e;line-height:1;">'+(open?'–':'+')+'</span>'
-      + '</button>'
-      + (open ? '<p style="margin:0;padding:0 4px 24px;max-width:660px;font-family:\'JetBrains Mono\',monospace;font-size:15px;line-height:1.7;color:#9a948d;">'+esc(it.a)+'</p>' : '');
-    item.querySelector('button').addEventListener('click', ()=>{ state.faqOpen = open ? null : i; renderFAQ(); });
-    wrap.appendChild(item);
+let lang = localStorage.getItem("cert_lang") || ((navigator.language || "").toLowerCase().startsWith("ru") ? "ru" : "en");
+function applyLang() {
+  const d = T[lang];
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-k]").forEach((el) => {
+    const v = d[el.getAttribute("data-k")];
+    if (v !== undefined) el.innerHTML = v;
+  });
+  document.getElementById("lang-en").classList.toggle("active", lang === "en");
+  document.getElementById("lang-ru").classList.toggle("active", lang === "ru");
+  const list = document.getElementById("faqList");
+  list.innerHTML = "";
+  d.faq.forEach(([q, a]) => {
+    const item = document.createElement("div");
+    item.className = "faq-item";
+    item.innerHTML = '<button class="faq-q">' + q + '<span class="faq-x">+</span></button><div class="faq-a">' + a + "</div>";
+    item.querySelector(".faq-q").onclick = () => item.classList.toggle("open");
+    list.appendChild(item);
   });
 }
-
-/* ---- waitlist flow ---- */
-function showStep(){
-  ['email','challenge','bet','done'].forEach(st=>{
-    document.getElementById('step-'+st).style.display = (state.step===st) ? 'block' : 'none';
-  });
-  if(state.step==='done'){
-    document.getElementById('pos').textContent = '#' + state.pos;
-    document.getElementById('seatsLine').textContent = seatsLineText();
-  }
-}
-
-function showErr(id, msg){
-  const el = document.getElementById(id);
-  if(msg){ el.textContent = msg; el.style.display = 'block'; }
-  else { el.textContent = ''; el.style.display = 'none'; }
-}
-
-function submitLead(){
-  const payload = {
-    email:     document.getElementById('in-email').value.trim(),
-    challenge: document.getElementById('in-challenge').value.trim() || null,
-    lang:      state.lang,
-    country:   (window.CertPrice && CertPrice.country) || null,
-    currency:  (window.CertPrice && CertPrice.code) || null
-  };
-  try {
-    fetch(SUPA_URL + '/rest/v1/waitlist', {
-      method:'POST',
-      headers:{ 'apikey':SUPA_KEY, 'Authorization':'Bearer '+SUPA_KEY, 'Content-Type':'application/json', 'Prefer':'return=minimal' },
-      body: JSON.stringify(payload)
-    }).catch(()=>{});
-    // local fallback copy (e.g. duplicate email or offline) — never blocks success
-    const all = JSON.parse(localStorage.getItem('cert_waitlist') || '[]');
-    all.push(payload); localStorage.setItem('cert_waitlist', JSON.stringify(all));
-  } catch(e){ console.warn('submit failed (showing success anyway):', e); }
-}
-
-function finish(){
-  state.pos = 100 - state.seatsLeft + 1;
-  state.seatsLeft = Math.max(0, state.seatsLeft - 1);
-  state.step = 'done';
-  submitLead();
-  showStep();
-}
-
-function bet(v){ state.bet = v; finish(); }
-
-document.getElementById('form-email').addEventListener('submit', (e)=>{
-  e.preventDefault();
-  const val = document.getElementById('in-email').value.trim();
-  const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-  if(!ok){ showErr('err-email', C().errEmail); return; }
-  showErr('err-email', '');
-  state.step = 'challenge'; showStep();
-  document.getElementById('in-challenge').focus();
-});
-
-document.getElementById('form-challenge').addEventListener('submit', (e)=>{
-  e.preventDefault();
-  const val = document.getElementById('in-challenge').value.trim();
-  if(val.length < 3){ showErr('err-challenge', C().errChallenge); return; }
-  showErr('err-challenge', '');
-  // no money-bet step in the new concept — go straight to done
-  finish();
-});
-
-document.getElementById('in-email').addEventListener('input', ()=> showErr('err-email',''));
-document.getElementById('in-challenge').addEventListener('input', ()=> showErr('err-challenge',''));
-
-/* ---- init ---- */
+function setLang(l) { lang = l; localStorage.setItem("cert_lang", l); applyLang(); }
 applyLang();
-showStep();
-if (window.CertPrice) CertPrice.load(); // populate country/currency for the lead
-
-/* ---- scroll reveal + count-up ---- */
-(function(){
-  const els = document.querySelectorAll('.reveal');
-  const countUp = (el)=>{
-    const target = parseInt(el.getAttribute('data-count'),10);
-    if(isNaN(target)) return;
-    const dur = 1100, t0 = performance.now();
-    const tick = (now)=>{ const p = Math.min(1,(now-t0)/dur); el.textContent = Math.round(target*(0.5-0.5*Math.cos(p*Math.PI))); if(p<1) requestAnimationFrame(tick); };
-    requestAnimationFrame(tick);
-  };
-  const fire = (el)=>{
-    const delay = parseInt(el.getAttribute('data-delay')||'0',10);
-    setTimeout(()=>{ el.classList.add('in'); el.querySelectorAll('[data-count]').forEach(countUp); if(el.hasAttribute('data-count')) countUp(el); }, delay);
-  };
-  if(!('IntersectionObserver' in window)){ els.forEach(fire); return; }
-  const io = new IntersectionObserver((entries)=>{
-    entries.forEach(en=>{ if(en.isIntersecting){ fire(en.target); io.unobserve(en.target); } });
-  }, { threshold:0.18 });
-  els.forEach(e=>io.observe(e));
-})();
-
-/* =====================================================================
-   ARENA CANVAS — pixel-art gladiator fight (ported verbatim from Arena.dc.html)
-   ===================================================================== */
-const arenaConfig = { language:'English', showEmperor:true, fightSpeed:1, ambientGlow:1 };
-
-(function startScene(){
-  const cv = document.getElementById('arena'); if(!cv) return;
-  const buf = document.createElement('canvas'); buf.width = 480; buf.height = 270;
-  const g = buf.getContext('2d');
-  const mctx = cv.getContext('2d');
-  const A = '#e23b2e';
-  const FY = 244;
-  const P = { armor:'#7a5e34', armorH:'#a8853f', armorD:'#473418', skin:'#a3795a', skinH:'#c39875', skinD:'#6e4f38', steel:'#9aa1ad', steelH:'#d2d7df', steelD:'#565c67', cloth:'#7e2622', cloth2:'#9a3530', clothD:'#491411', shield:'#6b5536', shieldR:'#a8853f' };
-  const dpr = Math.min(2, window.devicePixelRatio || 1);
-
-  const resize = ()=>{ const w = cv.clientWidth || window.innerWidth, h = cv.clientHeight || window.innerHeight; cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr); mctx.imageSmoothingEnabled = false; };
-  resize(); window.addEventListener('resize', resize);
-
-  let prog = 0;
-  const onScroll = ()=>{ const max = document.documentElement.scrollHeight - window.innerHeight; prog = max>0 ? Math.min(1, Math.max(0, window.scrollY/max)) : 0; };
-  onScroll(); window.addEventListener('scroll', onScroll, { passive:true });
-
-  const rnd = (n)=> Math.random()*n;
-  const crowdU = [], crowdF = [];
-  for(let i=0;i<180;i++) crowdU.push({ x:rnd(480), y:34+rnd(20), c:Math.random() });
-  for(let i=0;i<140;i++) crowdF.push({ x:rnd(480), y:124+rnd(18), c:Math.random() });
-  const dust = []; for(let i=0;i<28;i++) dust.push({ x:rnd(480), y:rnd(270), s:0.2+rnd(0.6), r:Math.random() });
-  let parts = [];
-
-  const px = (x,y,w,h,c)=>{ g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.max(1,Math.round(w)), Math.max(1,Math.round(h))); };
-
-  const gladA = (cx,t,L)=>{
-    const x = cx + L*7, fy = FY, b = Math.round(Math.sin(t*5));
-    px(x-9,fy,18,2,'rgba(0,0,0,0.5)');
-    px(x-4,fy-10,3,10,P.skinD); px(x+2,fy-10,3,10,P.skin);
-    px(x+2,fy-4,3,4,P.steelD); px(x-4,fy-3,3,3,P.steelD);
-    px(x-5,fy-16+b,11,8,P.cloth);
-    for(let i=0;i<6;i++) px(x-5+i*2,fy-9+b,1,2,P.clothD);
-    px(x-5,fy-16+b,11,1,P.cloth2);
-    px(x-5,fy-26+b,11,11,P.armor); px(x-5,fy-26+b,11,2,P.armorH); px(x-1,fy-24+b,3,7,P.armorD); px(x-6,fy-25+b,3,4,P.armorH);
-    px(x-3,fy-32+b,6,7,P.skin);
-    px(x-4,fy-36+b,10,6,P.steel); px(x-4,fy-36+b,10,1,P.steelH); px(x-4,fy-31+b,10,1,P.steelD); px(x+5,fy-32+b,1,5,P.steel); px(x-2,fy-32+b,4,1,'#070707');
-    px(x-1,fy-39+b,3,4,A);
-    for(let i=0;i<5;i++) px(x-3-i*2,fy-38+b+i,2,3,A);
-    const sx = x+4;
-    px(sx,fy-27+b,5,19,P.shield); px(sx,fy-27+b,5,2,P.shieldR); px(sx,fy-10+b,5,2,P.shieldR); px(sx+1,fy-20+b,3,5,P.armorH);
-    const r = Math.round(6+L*13), ay = fy-24+b-Math.round(L*4);
-    px(x+3,ay,Math.round(4+r*0.35),3,P.skin);
-    px(x+3+Math.round(r*0.35),ay-1,2,5,P.armorD);
-    px(x+6+Math.round(r*0.35),ay,r,2,P.steelH); px(x+6+Math.round(r*0.35),ay+2,r,1,P.steelD);
-    return { x:x+6+Math.round(r*0.35)+r, y:ay+1 };
-  };
-
-  const gladB = (cx,t,L)=>{
-    const x = cx + L*7, fy = FY, b = Math.round(Math.sin(t*5+1));
-    px(x-9,fy,18,2,'rgba(0,0,0,0.5)');
-    px(x-4,fy-10,3,10,P.skin); px(x+2,fy-10,3,10,P.skinD);
-    px(x-4,fy-16+b,9,8,P.clothD); px(x-4,fy-16+b,9,1,P.cloth);
-    px(x-4,fy-25+b,9,10,P.skin); px(x-4,fy-25+b,9,1,P.skinH); px(x-1,fy-23+b,2,7,P.skinD);
-    px(x-6,fy-25+b,3,6,P.armor); px(x-6,fy-25+b,3,1,P.armorH);
-    px(x-3,fy-32+b,6,7,P.skin); px(x-3,fy-32+b,6,2,A); px(x+1,fy-29+b,1,1,'#070707'); px(x-4,fy-30+b,2,4,'#2a1c12');
-    const r = Math.round(8+L*16), ay = fy-27+b-Math.round(L*3);
-    px(x+1,ay+2,Math.round(6+r),2,P.armorD); px(x+1,ay+2,Math.round(6+r),1,P.armorH);
-    const tx = x+1+Math.round(6+r);
-    px(tx,ay-3,2,2,P.steelH); px(tx,ay+1,2,2,P.steelH); px(tx,ay+5,2,2,P.steelH); px(tx-1,ay-1,1,9,P.steel); px(tx+1,ay-3,1,11,P.steelH);
-    px(x,ay+1,3,4,P.skin);
-    px(x+4,fy-17+b,3,3,P.skin);
-    for(let i=0;i<5;i++){ px(x+5+i,fy-14+b+i,1,1,'#7a7560'); px(x+5,fy-14+b+i,1,1,'#7a7560'); }
-    return { x:tx+2, y:ay+2 };
-  };
-
-  const emperor = (down,flash)=>{
-    const ex = 208, ey = 92;
-    if(flash>0){ g.save(); g.globalCompositeOperation='lighter'; const fg=g.createRadialGradient(240,ey+18,2,240,ey+18,40); fg.addColorStop(0,'rgba(226,59,46,'+(0.4*flash)+')'); fg.addColorStop(1,'rgba(226,59,46,0)'); g.fillStyle=fg; g.fillRect(ex-30,ey-20,124,90); g.restore(); }
-    px(ex,ey,64,4,'#2a2230'); px(ex,ey,64,1,'#3a3140');
-    px(ex+2,ey+4,60,30,'#191420');
-    px(ex+4,ey+34,56,8,'#5a1714'); for(let i=0;i<8;i++) px(ex+6+i*7,ey+40,3,4,'#3e0f0d'); px(ex+4,ey+34,56,2,'#7a2420');
-    px(ex+12,ey+10,8,16,'#241c12'); px(ex+13,ey+6,6,6,P.skin);
-    px(ex+44,ey+10,8,16,'#241c12'); px(ex+45,ey+6,6,6,P.skin);
-    px(ex+27,ey+8,10,18,'#6b5a2a'); px(ex+27,ey+8,10,2,'#9a8540'); px(ex+28,ey+3,8,7,P.skin); px(ex+27,ey+2,10,2,'#3a6a30');
-    const hx = ex+38;
-    if(down){ px(hx,ey+16,3,3,P.skin); px(hx+1,ey+19,1,5,A); px(hx,ey+22,2,2,P.skin); }
-    else { px(hx,ey+15,3,3,P.skin); px(hx+1,ey+11,1,4,P.skin); }
-  };
-
-  const brazierGlow = (bx,glow)=>{ g.save(); g.globalCompositeOperation='lighter'; const r=g.createRadialGradient(bx,172,2,bx,172,48); r.addColorStop(0,'rgba(244,150,40,'+(0.24*glow)+')'); r.addColorStop(1,'rgba(244,150,40,0)'); g.fillStyle=r; g.fillRect(bx-52,118,104,108); g.restore(); };
-  const brazier = (bx,t)=>{
-    px(bx-1,180,3,40,'#241c1a'); px(bx-1,180,1,40,'#352a26');
-    px(bx-4,176,9,6,'#2a2128'); px(bx-4,176,9,1,'#3a3140');
-    const f = Math.sin(t*14+bx)*0.5 + Math.sin(t*9+bx*1.3)*0.5;
-    const h = 8 + Math.round(f*3);
-    px(bx-3,176-h,6,h,'#c0531a'); px(bx-2,176-h-2,4,h,'#ef8b23'); px(bx-1,176-h-3,2,h-2,'#f9c45a'); px(bx-1,176-h-1,1,3,'#ffe9b0');
-    if(Math.random()<0.3) px(bx-2+rnd(4),176-h-3-rnd(4),1,1,'#f9c45a');
-  };
-
-  let lastSpark = 0;
-  const start = performance.now();
-  const loop = (now)=>{
-    const sp = (arenaConfig.fightSpeed) || 1;
-    const glow = (typeof arenaConfig.ambientGlow === 'number') ? arenaConfig.ambientGlow : 0.6;
-    const showEmp = !(arenaConfig.showEmperor === false);
-    const t = ((now - start)/1000) * sp;
-    const T = 3.4, tt = (t % T)/T;
-    const lng = (s,e)=>{ if(tt<s||tt>e) return 0; const u=(tt-s)/(e-s); return Math.sin(u*Math.PI); };
-    const aL = lng(0.08,0.30), bL = lng(0.56,0.80);
-    const spark = Math.max(aL,bL);
-    const sparkOn = spark>0.62 ? (spark-0.62)/0.38 : 0;
-    let shx=0, shy=0; if(sparkOn>0){ shx=(Math.random()-0.5)*sparkOn*5; shy=(Math.random()-0.5)*sparkOn*5; }
-
-    g.clearRect(0,0,480,270);
-    const sky = g.createLinearGradient(0,0,0,270); sky.addColorStop(0,'#0c0b14'); sky.addColorStop(0.55,'#0a0910'); sky.addColorStop(1,'#070608'); g.fillStyle = sky; g.fillRect(0,0,480,270);
-
-    px(0,30,480,26,'#0d0b13');
-    crowdU.forEach(d=>{ const fl=0.5+0.5*Math.sin(t*2+d.x); const sk=d.c<0.1; px(d.x,d.y,2,2, sk?'#5a4636':('rgba(42,38,52,'+(0.45+0.3*fl)+')')); });
-    for(let ax=-12; ax<492; ax+=44){
-      px(ax,58,8,82,'#171420'); px(ax,58,2,82,'#221d2c');
-      px(ax+8,72,36,68,'#0a0810');
-      px(ax+8,58,36,14,'#171420'); px(ax+8,58,36,3,'#241f2e');
-    }
-    crowdF.forEach(d=>{ const fl=0.5+0.5*Math.sin(t*1.7+d.x*0.7); const sk=d.c<0.12; px(d.x,d.y,2,2, sk?'#6a5240':('rgba(34,30,42,'+(0.5+0.3*fl)+')')); });
-    px(0,146,480,6,'#1c1826'); px(0,146,480,2,'#2a2433');
-
-    if(showEmp) emperor(sparkOn>0.4, sparkOn);
-
-    const sand = g.createLinearGradient(0,150,0,270); sand.addColorStop(0,'#221c14'); sand.addColorStop(1,'#15100a'); g.fillStyle = sand; g.fillRect(0,150,480,120);
-    for(let i=0;i<96;i++){ const sx=(i*53)%480, sy=153+((i*29)%114); px(sx,sy,1,1, (i%5)?'rgba(60,50,34,0.5)':'rgba(18,14,9,0.6)'); }
-
-    g.save(); g.globalCompositeOperation='lighter'; const cg=g.createRadialGradient(254,212,4,254,212,120); cg.addColorStop(0,'rgba(244,150,40,'+(0.08*glow+0.04)+')'); cg.addColorStop(1,'rgba(244,150,40,0)'); g.fillStyle=cg; g.fillRect(0,150,480,120); g.restore();
-
-    brazierGlow(66,glow); brazierGlow(414,glow);
-
-    gladA(226,t,aL);
-    g.save(); g.translate(2*282,0); g.scale(-1,1); gladB(282,t,bL); g.restore();
-
-    brazier(66,t); brazier(414,t);
-
-    if(sparkOn>0.55 && lastSpark<=0.55){
-      for(let i=0;i<13;i++){ const a=rnd(6.28); parts.push({ x:254, y:222, vx:Math.cos(a)*(0.5+rnd(1.5)), vy:-rnd(1.7), life:1, c: Math.random()<0.5?A:'#f9c45a' }); }
-    }
-    lastSpark = sparkOn;
-
-    if(sparkOn>0){
-      const sxp=254, syp=222;
-      g.save(); g.globalCompositeOperation='lighter';
-      const rg=g.createRadialGradient(sxp,syp,1,sxp,syp,18*sparkOn); rg.addColorStop(0,'rgba(255,232,182,'+(0.9*sparkOn)+')'); rg.addColorStop(0.4,'rgba(244,150,40,'+(0.5*sparkOn)+')'); rg.addColorStop(1,'rgba(244,150,40,0)'); g.fillStyle=rg; g.fillRect(sxp-20,syp-20,40,40); g.restore();
-      g.fillStyle='#ffe9b0'; const n=Math.round(sparkOn*5);
-      for(let i=0;i<n;i++){ const a=rnd(6.28), d=rnd(8*sparkOn); g.fillRect(Math.round(sxp+Math.cos(a)*d),Math.round(syp+Math.sin(a)*d),1,1); }
-    }
-
-    parts = parts.filter(p=>p.life>0);
-    parts.forEach(p=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.09; p.life-=0.03; g.globalAlpha=Math.max(0,p.life); px(p.x,p.y,1,1,p.c); }); g.globalAlpha=1;
-
-    dust.forEach(d=>{ d.y-=d.s*0.15; d.x+=Math.sin(t+d.r*9)*0.1; if(d.y<118){ d.y=270; d.x=rnd(480); } g.globalAlpha=0.13+d.r*0.1; px(d.x,d.y,1,1,'#caa46a'); }); g.globalAlpha=1;
-
-    const cw=cv.width, ch=cv.height;
-    const S=Math.max(cw/480, ch/270);
-    const dz=1+prog*0.14, sc=S*dz;
-    const fcx=240, fcy=150+prog*60;
-    const dx=cw/2 - fcx*sc + shx*dpr, dy=ch/2 - fcy*sc + shy*dpr;
-    mctx.setTransform(1,0,0,1,0,0); mctx.imageSmoothingEnabled=false;
-    mctx.fillStyle='#070608'; mctx.fillRect(0,0,cw,ch);
-    mctx.drawImage(buf,0,0,480,270,dx,dy,480*sc,270*sc);
-
-    requestAnimationFrame(loop);
-  };
-  requestAnimationFrame(loop);
-})();
 </script>
-
-<!-- Vercel Web Analytics (static site — no build step needed) -->
-<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
