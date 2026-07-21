@@ -18,7 +18,7 @@
     --ink:#0e1116; --mute:#5b6472; --faint:#98a1ae;
     --bg:#ffffff; --card:#f6f8fb; --line:#e7eaf1;
     --dark:#12102b; --dark2:#1e1b4e; --dark-ink:#f2f0ff; --dark-mute:#b9beF8;
-    --err:#dc2626; --ok:#16a34a;
+    --err:#dc2626; --ok:#16a34a; --black:#0e1116;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
@@ -26,27 +26,36 @@
   body{font-family:'Inter',-apple-system,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
   ::selection{background:var(--accent);color:#fff;}
   a{color:inherit;}
-  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
-  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--accent);color:#fff;border:none;border-radius:13px;padding:15px 26px;font:inherit;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:transform .15s,box-shadow .15s;}
-  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(79,70,229,.28);}
-  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);}
-  .btn.ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
-  .btn.light{background:#fff;color:var(--accent-deep);}
-  .kicker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
-  h1,h2,h3,h4{margin:0;font-weight:900;letter-spacing:-.025em;line-height:1.03;}
-  h1{font-size:clamp(42px,6.4vw,74px);}
-  h2{font-size:clamp(30px,4.4vw,48px);}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px;}
+  h1,h2,h3,h4{margin:0;font-weight:900;letter-spacing:-.03em;line-height:1.02;}
+  h1{font-size:clamp(46px,7vw,84px);}
+  h2{font-size:clamp(32px,4.6vw,52px);}
   .lead{font-size:clamp(18px,2vw,21px);line-height:1.55;color:var(--mute);}
   .sub{font-size:17px;line-height:1.6;color:var(--mute);}
+  .kicker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
   .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;}
   .chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--mute);background:#fff;}
   .chip svg{width:15px;height:15px;color:var(--accent);flex:none;}
   .icon-box{width:46px;height:46px;border-radius:13px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
   .icon-box svg{width:22px;height:22px;}
+  /* black store buttons — Forfeit style */
+  .store{display:inline-flex;align-items:center;gap:9px;background:var(--black);color:#fff;border-radius:12px;padding:10px 18px;text-decoration:none;transition:transform .15s,opacity .15s;}
+  .store:hover{transform:translateY(-1px);opacity:.9;}
+  .store small{display:block;font-size:10px;font-weight:600;opacity:.8;letter-spacing:.02em;line-height:1;}
+  .store b{display:block;font-size:16px;font-weight:800;line-height:1.15;}
+  .store.lg{padding:13px 22px;}
+  .store.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);}
+  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 24px;font:inherit;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:transform .15s,box-shadow .15s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(79,70,229,.28);}
+  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);}
+  .btn.ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
   .navlink{text-decoration:none;font-size:14px;font-weight:600;color:var(--mute);}
   .navlink:hover{color:var(--accent);}
   .lang-btn{background:none;border:none;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer;border-radius:7px;}
   .lang-btn.active{background:var(--accent);color:#fff;}
+  .live{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--mute);}
+  .live .dot{width:8px;height:8px;border-radius:5px;background:var(--accent);animation:pulse 1.6s ease infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
   .acc-q{width:100%;text-align:left;background:none;border:none;padding:20px 0;font:inherit;font-size:17px;font-weight:700;color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;}
   .acc-q:hover{color:var(--accent);}
   .acc-a{display:none;padding:0 0 20px;color:var(--mute);font-size:15.5px;line-height:1.65;}
@@ -58,23 +67,43 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
   .pro-tag{font-size:11px;font-weight:900;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;letter-spacing:.04em;}
   /* phone */
-  .phone{width:300px;border:11px solid #0e1116;border-radius:44px;background:#fff;box-shadow:0 40px 90px rgba(14,17,22,.20);overflow:hidden;flex:none;}
-  .phone-notch{height:26px;display:flex;justify-content:center;align-items:flex-start;background:#fff;}
-  .phone-notch i{width:118px;height:22px;background:#0e1116;border-radius:0 0 15px 15px;}
-  .phone .screen{padding:16px 15px 22px;min-height:430px;}
+  .phone{width:320px;border:12px solid #0e1116;border-radius:48px;background:#fff;box-shadow:0 40px 90px rgba(14,17,22,.20);overflow:hidden;flex:none;}
   .phone.real{line-height:0;background:#0e1116;}
   .phone.real .shot{width:100%;display:block;}
-  .pcell{width:16px;height:16px;border-radius:5px;background:#e8ecf1;}
-  .pcell.on{background:var(--accent);}
-  .pcell.fr{background:transparent;border:1.6px solid var(--accent);}
+  .pnotch{height:30px;display:flex;justify-content:center;align-items:center;background:#fff;padding-top:8px;}
+  .pnotch i{width:110px;height:22px;background:#0e1116;border-radius:14px;}
+  .pscreen{padding:14px 14px 20px;background:#fff;}
+  /* create-screen mock (animated) */
+  .cs-title{font-size:22px;font-weight:900;margin:2px 0 12px;}
+  .cs-toggle{display:flex;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;gap:4px;}
+  .cs-toggle span{flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13.5px;font-weight:800;color:var(--mute);}
+  .cs-toggle span.on{background:var(--accent);color:#fff;}
+  .cs-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:12px;}
+  .cs-say{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .cs-pill{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:800;transition:transform .25s ease, background .25s;}
+  .cs-pill.flash{transform:scale(1.08);background:var(--accent-soft);}
+  .cs-input{margin-top:11px;border:1.5px solid var(--accent);border-radius:12px;padding:12px 13px;font-size:14.5px;font-weight:600;min-height:46px;color:var(--ink);}
+  .cs-input .ph{color:var(--faint);}
+  .cs-deadline{display:flex;align-items:center;gap:10px;margin-top:13px;}
+  .cs-deadline .lbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;}
+  .cs-dl{border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;}
+  .cs-map{margin-top:11px;height:96px;border-radius:12px;background:linear-gradient(135deg,#e8ecf6,#dfe4f5);position:relative;overflow:hidden;}
+  .cs-map .pin{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:16px;height:16px;border-radius:50% 50% 50% 0;background:var(--err);rotate:-45deg;}
+  .cs-ideas-h{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin:14px 0 8px;}
+  .cs-ideas{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .cs-idea{display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:11px;padding:9px;font-size:12.5px;font-weight:700;}
+  .cs-idea .ic{width:24px;height:24px;border-radius:7px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
+  .cs-idea .ic svg{width:14px;height:14px;}
+  .cs-create{margin-top:14px;background:var(--accent);color:#fff;border-radius:12px;text-align:center;font-weight:800;font-size:15px;padding:13px;}
+  .caret{display:inline-block;width:2px;height:1.05em;background:var(--accent);vertical-align:-3px;animation:blink 1s steps(1) infinite;}
+  @keyframes blink{50%{opacity:0;}}
   /* interactive how-it-works */
   .pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;}
-  .pill{border:1.5px solid var(--line);background:#fff;color:var(--mute);border-radius:999px;padding:10px 18px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;transition:all .15s;}
+  .pill{border:1.5px solid var(--line);background:#fff;color:var(--mute);border-radius:999px;padding:10px 18px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;transition:all .15s;}
   .pill:hover{border-color:var(--accent);color:var(--accent);}
   .pill.active{background:var(--ink);color:#fff;border-color:var(--ink);}
-  .how-grid{display:grid;grid-template-columns:1fr 340px;gap:48px;margin-top:40px;align-items:start;}
-  .steps{display:flex;flex-direction:column;gap:0;}
-  .step{display:flex;gap:16px;opacity:.5;transition:opacity .3s;padding-bottom:8px;}
+  .how-grid{display:grid;grid-template-columns:1fr 360px;gap:52px;margin-top:40px;align-items:start;}
+  .step{display:flex;gap:16px;opacity:.45;transition:opacity .3s;}
   .step.on{opacity:1;}
   .step .rail{display:flex;flex-direction:column;align-items:center;flex:none;}
   .step .dot{width:34px;height:34px;border-radius:17px;background:var(--card);border:1.5px solid var(--line);color:var(--faint);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;transition:all .3s;}
@@ -88,15 +117,18 @@
   .step.on .bar{display:block;}
   .step .bar i{display:block;height:3px;background:var(--accent);width:0%;}
   .how-phone{position:sticky;top:90px;display:flex;justify-content:center;}
-  .caret{display:inline-block;width:2px;height:1em;background:var(--accent);vertical-align:-2px;animation:blink 1s steps(1) infinite;}
-  @keyframes blink{50%{opacity:0;}}
   .stat-num{font-size:clamp(30px,4vw,44px);font-weight:900;letter-spacing:-.03em;color:var(--ink);}
+  .price-toggle{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px;gap:4px;margin-top:24px;}
+  .price-toggle button{border:none;background:none;border-radius:999px;padding:9px 20px;font:inherit;font-weight:800;font-size:14px;color:var(--mute);cursor:pointer;transition:all .2s;}
+  .price-toggle button.on{background:var(--accent);color:#fff;}
+  .price-amt{font-size:44px;font-weight:900;letter-spacing:-.03em;}
+  .price-amt .per{font-size:16px;font-weight:700;color:var(--mute);}
   @media(max-width:900px){
     .grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}
     .hero-flex{flex-direction:column;text-align:center;}.hero-flex .chips,.hero-flex .hero-cta{justify-content:center;}
-    .how-grid{grid-template-columns:1fr;gap:12px;}.how-phone{position:static;order:-1;margin-bottom:8px;}
+    .how-grid{grid-template-columns:1fr;gap:14px;}.how-phone{position:static;order:-1;margin-bottom:8px;}
   }
-  @media(max-width:560px){.navlink.hide-sm{display:none;}}
+  @media(max-width:560px){.navlink.hide-sm{display:none;}.store small{display:none;}.store b{font-size:14px;}}
 </style>
 </head>
 <body>
@@ -112,10 +144,10 @@
       <a class="navlink hide-sm" href="#how" data-k="navHow"></a>
       <a class="navlink hide-sm" href="#flex" data-k="navFeatures"></a>
       <a class="navlink hide-sm" href="#faq">FAQ</a>
-      <a class="navlink hide-sm" href="pricing.html" data-k="navPricing"></a>
-      <a class="btn" style="padding:10px 17px;font-size:14px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
-        <svg width="15" height="17" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
-        App Store
+      <a class="navlink hide-sm" href="#pricing" data-k="navPricing"></a>
+      <a class="store" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+        <svg width="18" height="20" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
+        <span><small data-k="storeSmall"></small><b>App Store</b></span>
       </a>
       <div style="display:flex;gap:2px;">
         <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
@@ -126,48 +158,41 @@
 </header>
 
 <!-- HERO -->
-<section id="top" style="padding:78px 0 60px;">
-  <div class="wrap hero-flex" style="display:flex;align-items:center;gap:56px;">
+<section id="top" style="padding:72px 0 60px;">
+  <div class="wrap hero-flex" style="display:flex;align-items:center;gap:60px;">
     <div style="flex:1;min-width:0;">
-      <span class="kicker" data-k="heroKicker"></span>
-      <h1 style="margin-top:16px;"><span data-k="heroH1a"></span> <span style="color:var(--accent);" data-k="heroH1b"></span></h1>
-      <p class="lead" style="margin:24px 0 32px;max-width:500px;" data-k="heroSub"></p>
-      <div class="hero-cta" style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;">
-        <a class="btn" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
-          <svg width="17" height="19" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
-          <span data-k="heroCta"></span>
+      <span class="live"><span class="dot"></span><span id="liveText"></span></span>
+      <h1 style="margin-top:18px;"><span data-k="heroH1a"></span> <span style="color:var(--accent);" data-k="heroH1b"></span></h1>
+      <p class="lead" style="margin:24px 0 30px;max-width:500px;" data-k="heroSub"></p>
+      <div class="hero-cta" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+        <a class="store lg" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+          <svg width="20" height="22" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
+          <span><small data-k="storeSmall"></small><b>App Store</b></span>
         </a>
-        <span style="font-size:13.5px;color:var(--faint);font-weight:600;" data-k="heroFree"></span>
+        <a class="store lg ghost" href="#" onclick="return false;" style="cursor:default;">
+          <svg width="18" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 2.5v19l10.5-9.5L3 2.5zm12 8.2l3.1-2.8-11-6.2 7.9 9zm0 2.6l-7.9 9 11-6.2-3.1-2.8z"/></svg>
+          <span><small data-k="soonSmall"></small><b data-k="soonB"></b></span>
+        </a>
       </div>
-      <div class="chips" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:32px;">
+      <div class="chips" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;">
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.2"/><path d="M8 7l1.4-2.2h5.2L16 7"/></svg><span data-k="chipLive"></span></span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg><span data-k="chipAI"></span></span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17 19a5.5 5.5 0 0 0-3-4.9"/></svg><span data-k="chipFriends"></span></span>
       </div>
     </div>
-    <!-- HERO PHONE — real app screenshot -->
-    <div class="phone real"><img class="shot" src="assets/landing/screen-home.jpg" alt="Cert — home"></div>
+    <div class="phone"><div class="pnotch"><i></i></div><div class="pscreen" id="heroScreen"></div></div>
   </div>
 </section>
 
-<!-- STATS (honest product truths, not fabricated metrics) -->
-<section style="padding:20px 0 64px;">
-  <div class="wrap grid3">
-    <div style="text-align:center;"><div class="stat-num">1</div><div class="sub" style="margin-top:4px;" data-k="stat1"></div></div>
-    <div style="text-align:center;"><div class="stat-num" data-k="stat2n"></div><div class="sub" style="margin-top:4px;" data-k="stat2"></div></div>
-    <div style="text-align:center;"><div class="stat-num">0</div><div class="sub" style="margin-top:4px;" data-k="stat3"></div></div>
-  </div>
-</section>
-
-<!-- HOW IT WORKS (interactive) -->
+<!-- HOW IT WORKS (interactive; pills drive the animated create screen) -->
 <section id="how" style="padding:78px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap">
     <span class="kicker" data-k="howKicker"></span>
-    <h2 style="margin-top:14px;max-width:600px;" data-k="howH"></h2>
+    <h2 style="margin-top:14px;max-width:620px;" data-k="howH"></h2>
     <div class="pills" id="howPills"></div>
     <div class="how-grid">
       <div class="steps" id="howSteps"></div>
-      <div class="how-phone"><div class="phone"><div class="phone-notch"><i></i></div><div class="screen" id="howScreen"></div></div></div>
+      <div class="how-phone"><div class="phone"><div class="pnotch"><i></i></div><div class="pscreen" id="howScreen"></div></div></div>
     </div>
   </div>
 </section>
@@ -191,7 +216,7 @@
 <!-- ANALYTICS SHOWCASE (real screenshot) -->
 <section style="padding:78px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap grid2" style="align-items:center;">
-    <div class="phone real" style="justify-self:center;"><img class="shot" src="assets/landing/screean-stats.jpg" alt="Cert — analytics & trophies"></div>
+    <div class="phone real" style="justify-self:center;"><img class="shot" src="assets/landing/statistics.jpg" alt="Cert — analytics & trophies"></div>
     <div>
       <span class="kicker" data-k="anKicker"></span>
       <h2 style="margin-top:14px;" data-k="anH"></h2>
@@ -226,7 +251,7 @@
   </div>
 </section>
 
-<!-- CHALLENGES -->
+<!-- CHALLENGES (real screenshot) -->
 <section style="padding:82px 0;">
   <div class="wrap grid2" style="align-items:center;">
     <div>
@@ -239,11 +264,11 @@
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 7l16 10M20 7L4 17M12 4l3 2-3 2-3-2zM12 20l3-2-3-2-3 2z"/></svg><span data-k="chChip3"></span></span>
       </div>
     </div>
-    <div class="phone real" style="justify-self:center;"><img class="shot" src="assets/landing/screen-leaderboard.jpg" alt="Cert — challenge leaderboard"></div>
+    <div class="phone real" style="justify-self:center;"><img class="shot" src="assets/landing/group-challenge.jpg" alt="Cert — group challenge"></div>
   </div>
 </section>
 
-<!-- USE CASES (accordion) -->
+<!-- USE CASES -->
 <section style="padding:82px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap" style="max-width:820px;">
     <span class="kicker" data-k="ucKicker"></span>
@@ -252,16 +277,31 @@
   </div>
 </section>
 
-<!-- PRICING -->
-<section style="padding:82px 0;">
+<!-- PRICING (real, geo-aware) -->
+<section id="pricing" style="padding:82px 0;">
   <div class="wrap" style="text-align:center;">
     <span class="kicker" data-k="priceKicker"></span>
     <h2 style="margin-top:14px;" data-k="priceH"></h2>
-    <div class="grid2" style="max-width:760px;margin:38px auto 0;text-align:left;">
-      <div class="card" style="background:#fff;"><h3 style="margin:0;font-size:22px;">Free</h3><p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="freeList"></p></div>
-      <div class="card" style="background:#fff;border:2px solid var(--accent);"><h3 style="margin:0;font-size:22px;color:var(--accent);">Cert Pro</h3><p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="proList"></p></div>
+    <div class="price-toggle">
+      <button id="bill-mo" class="on" onclick="setBill('mo')" data-k="billMo"></button>
+      <button id="bill-yr" onclick="setBill('yr')" data-k="billYr"></button>
     </div>
-    <a class="btn ghost" style="margin-top:30px;" href="pricing.html" data-k="priceMore"></a>
+    <div class="grid2" style="max-width:760px;margin:28px auto 0;text-align:left;">
+      <div class="card" style="background:#fff;">
+        <div style="font-size:22px;font-weight:900;">Free</div>
+        <div class="price-amt" style="margin-top:10px;">$0 <span class="per" data-k="perForever"></span></div>
+        <p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="freeList"></p>
+      </div>
+      <div class="card" style="background:#fff;border:2px solid var(--accent);position:relative;">
+        <div style="position:absolute;top:-12px;right:20px;background:var(--accent);color:#fff;font-size:11px;font-weight:900;letter-spacing:.06em;border-radius:999px;padding:4px 12px;" data-k="popular"></div>
+        <div style="font-size:22px;font-weight:900;color:var(--accent);">Cert Pro</div>
+        <div class="price-amt" style="margin-top:10px;color:var(--accent);"><span id="proPrice">$4.99</span> <span class="per" id="proPer"></span></div>
+        <div style="font-size:13px;color:var(--faint);font-weight:600;margin-top:4px;" id="proNote"></div>
+        <p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="proList"></p>
+      </div>
+    </div>
+    <a class="btn" style="margin-top:30px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" data-k="priceCta"></a>
+    <div style="margin-top:12px;"><a class="navlink" href="pricing.html" data-k="priceMore"></a></div>
   </div>
 </section>
 
@@ -279,9 +319,9 @@
     <img src="assets/logo-mark.png" alt="Cert" style="width:56px;height:56px;filter:brightness(0) invert(1);">
     <h2 style="color:var(--dark-ink);margin-top:20px;" data-k="ctaH"></h2>
     <p style="color:var(--dark-mute);font-size:18px;margin:16px 0 32px;" data-k="ctaT"></p>
-    <a class="btn light" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
-      <svg width="17" height="19" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
-      <span data-k="heroCta"></span>
+    <a class="store lg" style="background:#fff;color:var(--ink);" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+      <svg width="20" height="22" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
+      <span><small data-k="storeSmall"></small><b>App Store</b></span>
     </a>
   </div>
 </section>
@@ -300,19 +340,16 @@
   </div>
 </footer>
 
+<script src="scripts/geo-price.js"></script>
 <script>
 const T = {
   en: {
     navHow:"How it works", navFeatures:"Features", navPricing:"Pricing",
-    heroKicker:"The habit tracker with an AI judge",
+    storeSmall:"Download on the", soonSmall:"Coming soon to", soonB:"Google Play",
     heroH1a:"The streak", heroH1b:"you can't fake.",
-    heroSub:"Set one goal. Send live proof every day — a photo, a short video, or a location check-in. An AI judge looks at it and decides if your day counts.",
-    heroCta:"Get Cert free", heroFree:"Free to start · iPhone",
+    heroSub:"Set one goal. Send live proof every day — a photo, a short video, or a location check-in. An AI judge decides if your day counts.",
     chipLive:"Live camera only", chipAI:"AI-verified", chipFriends:"Challenges with friends",
-    mockToday:"Today", mockDays:"day streak", mockGoal:"A photo at the gym",
-    mockBtn:"Submit today's proof", mockVerdict:"Approved by the AI judge",
-    stat1:"goal at a time — all your focus", stat2n:"1", stat2:"live proof, every single day", stat3:"ways to fake your way through",
-    howKicker:"How it works", howH:"Pick how you'll prove it. The judge does the rest.",
+    howKicker:"How it works", howH:"Choose how you'll prove it. The judge does the rest.",
     flexKicker:"Built to keep you honest", flexH:"Strict where it counts. Fair where it should be.",
     f1H:"An AI judge, not a checkbox", f1T:"Every proof is actually reviewed. A checkbox can be tapped without doing the thing — a verdict can't.",
     f2H:"One appeal a day", f2T:"Think the judge got it wrong? Explain it once and a second, more generous review takes another look.",
@@ -332,33 +369,28 @@ const T = {
     chKicker:"Challenges", chH:"Bring your friends. Last place pays.",
     chT:"Start a shared goal with your group. Everyone sends proof, everyone sees the leaderboard. Whoever finishes last spins a wheel of penalties — written by your own friends.",
     chChip1:"Shared leaderboard", chChip2:"Penalty wheel", chChip3:"Streak freezes",
-    lbTitle:"Morning run club", lbLast:"LAST PLACE",
     ucKicker:"Use cases", ucH:"Whatever you keep putting off.",
     priceKicker:"Pricing", priceH:"Free to start. Pro when you're serious.",
+    billMo:"Monthly", billYr:"Yearly", popular:"BEST VALUE", perForever:"/forever",
     freeList:"1 active goal<br>Photo proof<br>Challenges with friends<br>Streak freezes",
-    proList:"Unlimited goals<br>Video & location proof<br>6-month analytics & trophies<br>Monthly freezes included",
-    priceMore:"See full pricing",
+    proList:"Unlimited goals<br>Video &amp; location proof<br>6-month analytics &amp; trophies<br>Monthly freezes included",
+    priceCta:"Start free on iPhone", priceMore:"See full pricing details",
     faqH:"Questions, answered.",
     ctaH:"Start a streak that means something.",
     ctaT:"Free on the App Store. Your first goal takes under a minute.",
     ftPrivacy:"Privacy", ftTerms:"Terms", ftDelete:"Delete account", ftSupport:"Support",
+    // create-screen animation
+    csTitle:"New goal", csOne:"One-time", csRep:"Repeating", csSay:"I'll prove it with", csIdeasH:"Provable ideas", csCreate:"Create goal",
+    proofs:{
+      photo:{pill:"photo", goal:"A photo at the gym", dl:"22 Jul, 23:59"},
+      video:{pill:"video", goal:"A video of my 20 pushups", dl:"23 Jul, 10:00"},
+      geo:{pill:"location", place:"Invictus Fitness, Almaty", goal:"Morning check-in at the gym", dl:"23 Jul, 19:00"},
+    },
+    ideas:["Gym 45 min","Morning run","50 pushups","Home-cooked meal"],
     how:{
-      photo:{label:"Photo", goal:"A photo at the gym",
-        steps:[["Set a photo goal","Write it proof-first — one sentence, one screen."],
-               ["Snap it live","The camera opens in the app. No gallery, no old photos."],
-               ["The judge decides","A real photo of the goal? Your streak grows."]]},
-      video:{label:"Video", goal:"A video of my 20 pushups",
-        steps:[["Set a video goal","Pick video when the goal needs to show motion."],
-               ["Record a short clip","Recorded in-app. The judge watches the whole thing."],
-               ["The judge decides","A propped-up photo won't pass. A real rep will."]]},
-      geo:{label:"Location", goal:"Check in at the library",
-        steps:[["Pin your place","Drop your gym, pool or library on the map."],
-               ["Go there & check in","Being at the spot is the proof. Fake-GPS is rejected."],
-               ["Verified on location","You showed up. The day counts."]]},
-      challenge:{label:"Challenge", goal:"Morning run — 7 days",
-        steps:[["Start a shared goal","Invite friends with a code. One goal, everyone in."],
-               ["Everyone sends proof","Daily proof, one shared leaderboard."],
-               ["Last place pays","The bottom of the board spins a wheel of friend-written dares."]]}
+      photo:{label:"Photo", steps:[["Choose photo proof","Pick photo when a single frame shows it."],["Snap it live in-app","No gallery, no old photos — the camera opens right here."],["The judge decides","A real photo of the goal? Your streak grows."]]},
+      video:{label:"Video", steps:[["Choose video proof","Pick video when the goal needs motion."],["Record a short clip","The judge watches the whole thing — a propped photo won't pass."],["The judge decides","A real rep counts. A fake doesn't."]]},
+      geo:{label:"Location", steps:[["Choose a location","Pin your gym, pool or library on the map."],["Go there & check in","Being at the spot is the proof. Fake-GPS is rejected."],["Verified on location","You showed up. The day counts."]]},
     },
     uc:[
       ["Wake up on time","Set “a photo of me up and dressed by 7am”. No more snoozing on your own promise."],
@@ -372,18 +404,15 @@ const T = {
       ["What happens if I miss a day?","Your streak resets to zero — that's what makes it real. Your total verified days and best streak are never lost, and a streak freeze can auto-save a busy day."],
       ["Can I trick the judge?","People try. Screenshots, stock images, old photos and fake GPS get rejected. If the judge gets it wrong, you can appeal once — a second, more generous review."],
       ["Where's the Android version?","It's in closed testing on Google Play. iPhone is live today; Android is next."]
-    ]
+    ],
+    liveText:(s)=>"Live · Goal created · "+s+"s ago"
   },
   ru: {
     navHow:"Как работает", navFeatures:"Возможности", navPricing:"Цены",
-    heroKicker:"Трекер привычек с ИИ-судьёй",
+    storeSmall:"Скачать в", soonSmall:"Скоро в", soonB:"Google Play",
     heroH1a:"Серия, которую", heroH1b:"не подделать.",
-    heroSub:"Поставь одну цель. Каждый день присылай живое доказательство — фото, короткое видео или отметку по геолокации. ИИ-судья смотрит и решает, засчитан ли день.",
-    heroCta:"Скачать бесплатно", heroFree:"Бесплатный старт · iPhone",
+    heroSub:"Поставь одну цель. Каждый день присылай живое доказательство — фото, короткое видео или гео-отметку. ИИ-судья решает, засчитан ли день.",
     chipLive:"Только живая камера", chipAI:"Проверка ИИ", chipFriends:"Челленджи с друзьями",
-    mockToday:"Сегодня", mockDays:"дней подряд", mockGoal:"Фото в зале",
-    mockBtn:"Отправить доказательство", mockVerdict:"Одобрено ИИ-судьёй",
-    stat1:"цель за раз — весь фокус на ней", stat2n:"1", stat2:"живое доказательство каждый день", stat3:"способов схитрить",
     howKicker:"Как работает", howH:"Выбери, чем докажешь. Остальное — за судьёй.",
     flexKicker:"Чтобы держать честно", flexH:"Строг там, где важно. Справедлив там, где нужно.",
     f1H:"ИИ-судья, а не галочка", f1T:"Каждое доказательство реально проверяется. Галочку можно нажать, не сделав дело — вердикт нельзя.",
@@ -404,33 +433,27 @@ const T = {
     chKicker:"Челленджи", chH:"Зови друзей. Последний платит.",
     chT:"Создай общую цель с компанией. Все присылают доказательства, все видят таблицу лидеров. Кто финиширует последним — крутит колесо наказаний, которые придумали сами друзья.",
     chChip1:"Общая таблица", chChip2:"Колесо наказаний", chChip3:"Заморозки серии",
-    lbTitle:"Клуб утренней пробежки", lbLast:"ПОСЛЕДНИЙ",
     ucKicker:"Примеры", ucH:"Всё, что ты откладываешь.",
     priceKicker:"Цены", priceH:"Начни бесплатно. Pro — когда серьёзно.",
+    billMo:"Месяц", billYr:"Год", popular:"ВЫГОДНО", perForever:"/навсегда",
     freeList:"1 активная цель<br>Фото-доказательство<br>Челленджи с друзьями<br>Заморозки серии",
     proList:"Безлимит целей<br>Видео и гео-доказательства<br>Аналитика за 6 месяцев и трофеи<br>Ежемесячные заморозки",
-    priceMore:"Полные цены",
+    priceCta:"Начать бесплатно на iPhone", priceMore:"Полные детали цен",
     faqH:"Вопросы и ответы.",
     ctaH:"Начни серию, которая чего-то стоит.",
     ctaT:"Бесплатно в App Store. Первая цель займёт меньше минуты.",
     ftPrivacy:"Конфиденциальность", ftTerms:"Условия", ftDelete:"Удаление аккаунта", ftSupport:"Поддержка",
+    csTitle:"Новая цель", csOne:"Разовая", csRep:"Повторяющаяся", csSay:"Докажу", csIdeasH:"Доказуемые идеи", csCreate:"Создать цель",
+    proofs:{
+      photo:{pill:"фото", goal:"фото в зале", dl:"22 Jul, 23:59"},
+      video:{pill:"видео", goal:"видео, как я мою посуду", dl:"23 Jul, 10:00"},
+      geo:{pill:"гео-отметкой", place:"Invictus Fitness, Алматы", goal:"Утренний чек-ин в зале", dl:"23 Jul, 19:00"},
+    },
+    ideas:["Зал 45 мин","Утренняя пробежка","50 отжиманий","Домашняя еда"],
     how:{
-      photo:{label:"Фото", goal:"Фото в зале",
-        steps:[["Поставь фото-цель","Пиши через доказательство — одно предложение, один экран."],
-               ["Сними вживую","Камера открывается в приложении. Без галереи и старых фото."],
-               ["Судья решает","Настоящее фото цели? Серия растёт."]]},
-      video:{label:"Видео", goal:"Видео моих 20 отжиманий",
-        steps:[["Поставь видео-цель","Выбери видео, когда нужно показать движение."],
-               ["Запиши короткий ролик","Запись в приложении. Судья смотрит его целиком."],
-               ["Судья решает","Подставленное фото не пройдёт. Настоящий подход — да."]]},
-      geo:{label:"Место", goal:"Чек-ин в библиотеке",
-        steps:[["Закрепи место","Отметь на карте зал, бассейн или библиотеку."],
-               ["Приди и отметься","Доказательство — быть на месте. Fake-GPS отклоняется."],
-               ["Подтверждено по гео","Ты пришёл. День засчитан."]]},
-      challenge:{label:"Челлендж", goal:"Утренняя пробежка — 7 дней",
-        steps:[["Создай общую цель","Позови друзей по коду. Одна цель — все в деле."],
-               ["Все присылают пруф","Ежедневное доказательство, одна общая таблица."],
-               ["Последний платит","Кто внизу таблицы — крутит колесо наказаний от друзей."]]}
+      photo:{label:"Фото", steps:[["Выбери фото-пруф","Фото — когда всё видно на одном кадре."],["Сними вживую в приложении","Без галереи и старых фото — камера открывается здесь."],["Судья решает","Настоящее фото цели? Серия растёт."]]},
+      video:{label:"Видео", steps:[["Выбери видео-пруф","Видео — когда нужно показать движение."],["Запиши короткий ролик","Судья смотрит его целиком — подставленное фото не пройдёт."],["Судья решает","Настоящий подход засчитан. Подделка — нет."]]},
+      geo:{label:"Гео", steps:[["Выбери место","Отметь на карте зал, бассейн или библиотеку."],["Приди и отметься","Доказательство — быть на месте. Fake-GPS отклоняется."],["Подтверждено по гео","Ты пришёл. День засчитан."]]},
     },
     uc:[
       ["Вставать вовремя","Поставь «фото, где я встал и одет к 7:00». Больше не проспишь собственное обещание."],
@@ -444,140 +467,92 @@ const T = {
       ["Что будет, если пропущу день?","Серия сбросится в ноль — это и делает её настоящей. Общий счёт подтверждённых дней и рекорд не сгорают никогда, а заморозка может спасти занятый день."],
       ["Можно ли обмануть судью?","Пробуют многие. Скриншоты, картинки из интернета, старые фото и fake-GPS отклоняются. Если судья ошибся — есть одна апелляция: повторная, более щадящая проверка."],
       ["Где версия для Android?","В закрытом тестировании в Google Play. iPhone доступен уже сейчас, Android — следующий."]
-    ]
+    ],
+    liveText:(s)=>"Онлайн · Цель создана · "+s+" сек назад"
   }
 };
-
-// ---- interactive HOW-IT-WORKS engine ----
-const CATS = ["photo","video","geo","challenge"];
-const ICONS = {
-  photo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.2"/><path d="M8 7l1.4-2.2h5.2L16 7"/></svg>',
-  video:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="13" height="12" rx="3"/><path d="M16 10l5-3v10l-5-3z"/></svg>',
-  geo:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c5-5 7-8.2 7-11a7 7 0 1 0-14 0c0 2.8 2 6 7 11z"/><circle cx="12" cy="10" r="2.4"/></svg>',
-  challenge:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8v3a4 4 0 0 1-8 0z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3M9 15h6M10 20h4M12 12v3"/></svg>'
-};
-let cat=0, step=0, prog=0, typed="", tw=null, raf=null, lastT=0;
-const STEP_MS=2800;
-function D(){ return T[lang].how[CATS[cat]]; }
-
-function streakGrid(){
-  const pat=[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,0,0,0,0,0,0,0,0,0,0,0,0];
-  let cells='';
-  pat.forEach(v=>{ const st=v===1?'background:var(--accent);':v===2?'background:transparent;border:1.6px solid var(--accent);':'background:#e6e9f0;'; cells+='<i style="width:15px;height:15px;border-radius:4px;flex:none;'+st+'"></i>'; });
-  return '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:12px;">'+cells+'</div>';
-}
-function goalCard(streak, sub, statusHTML){
-  const flame='<svg width="19" height="24" viewBox="0 0 24 24" fill="var(--accent)"><path d="M12 2c1 3-1.5 4-1.5 7a4.5 4.5 0 0 0 9 0c0-2-1-3.5-1-3.5 2 1.5 3.5 4 3.5 7a8 8 0 1 1-16 0c0-4.5 4-6.5 6-10.5z"/></svg>';
-  const pct=Math.min(100,Math.round(streak/7*100));
-  return '<div style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;">'
-   +'<div style="display:flex;align-items:center;gap:8px;">'+flame
-   +'<span style="font-size:32px;font-weight:900;line-height:1;">'+streak+'</span>'
-   +'<span style="font-size:12px;color:var(--mute);font-weight:700;">'+(lang==="ru"?"ДН.":"D")+'</span>'
-   +'<span style="margin-left:auto;display:flex;align-items:center;gap:6px;"><span style="width:40px;height:5px;border-radius:3px;background:#e6e9f0;display:block;overflow:hidden;"><i style="display:block;height:5px;width:'+pct+'%;background:var(--accent);"></i></span><span style="font-size:11px;color:var(--mute);font-weight:700;">'+(lang==="ru"?"7ДН":"7D")+'</span></span></div>'
-   +'<div style="font-weight:700;margin-top:12px;font-size:15px;">'+D().goal+'</div>'
-   +'<div style="font-size:12px;color:var(--faint);margin-top:3px;">'+sub+'</div>'
-   +streakGrid()
-   +'<div style="margin-top:14px;">'+statusHTML+'</div></div>';
-}
-function phoneHTML(){
-  const c=CATS[cat];
-  const label=(step===0?(lang==="ru"?"Новая цель":"New goal"):(lang==="ru"?"Сегодня":"Today"));
-  const head='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-weight:900;font-size:15px;letter-spacing:.04em;">CERT</span><span style="font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;">'+label+'</span></div>';
-  const btnBlue=(t)=>'<div style="background:var(--accent);border-radius:12px;color:#fff;text-align:center;font-weight:700;font-size:14px;padding:13px;">'+t+'</div>';
-  const btnDone=(t)=>'<div style="border:1.5px solid var(--ok);border-radius:12px;color:var(--ok);text-align:center;font-weight:800;font-size:12.5px;padding:12px;display:flex;align-items:center;justify-content:center;gap:7px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="3"><path d="M5 12l4 4 10-10"/></svg>'+t+'</div>';
-  const subOf={photo:(lang==="ru"?"Ежедневно · фото":"Daily · photo"),video:(lang==="ru"?"Ежедневно · видео":"Daily · video"),geo:(lang==="ru"?"Ежедневно · Invictus Fitness":"Daily · at the gym"),challenge:(lang==="ru"?"Ежедневно · 4 друга":"Daily · 4 friends")};
-
-  if(step===0){
-    const proofPill='<span style="display:inline-flex;align-items:center;gap:5px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:5px 11px;font-size:12px;font-weight:800;">'+D().label+'</span>';
-    return head+'<div style="background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;">'
-      +'<div style="font-size:13px;color:var(--mute);font-weight:600;">'+(lang==="ru"?"Докажу через":"I'll prove it with")+' '+proofPill+'</div>'
-      +'<div style="margin-top:12px;border:1.5px solid var(--accent);border-radius:12px;padding:13px;font-weight:700;font-size:15px;min-height:48px;">'+typed+'<span class="caret"></span></div>'
-      +'<div style="margin-top:14px;background:#e6e9f0;color:var(--faint);border-radius:12px;text-align:center;font-weight:700;font-size:14px;padding:13px;">'+(lang==="ru"?"Создать цель":"Create goal")+'</div></div>';
-  }
-  if(step===1){
-    let status;
-    if(c==="geo") status=btnBlue(lang==="ru"?"Отметиться":"Check in now");
-    else if(c==="challenge") status=btnBlue(lang==="ru"?"Отправить друзьям":"Submit for friends");
-    else status=btnBlue(lang==="ru"?"Отправить доказательство":"Submit today's proof");
-    return head+goalCard(6, subOf[c], status);
-  }
-  // step 2 — done
-  if(c==="challenge"){
-    const row=(r,n,v,me,last)=>'<div style="display:flex;align-items:center;gap:10px;background:#fff;border:'+(me?"1.5px solid var(--accent)":"1px solid var(--line)")+';border-radius:12px;padding:10px;margin-top:8px;"><span style="width:24px;height:24px;border-radius:12px;background:'+(me?"var(--accent)":"#eef1f6")+';color:'+(me?"#fff":"var(--mute)")+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;">'+r+'</span><b style="flex:1;font-size:14px;'+(last?"color:var(--err);":"")+'">'+n+'</b>'+(last?'<span style="color:var(--err);font-weight:800;font-size:11px;">'+(lang==="ru"?"ПОСЛЕДНИЙ":"LAST")+'</span>':'<span style="color:'+(me?"var(--accent)":"var(--mute)")+';font-weight:900;font-size:16px;">'+v+'</span>')+'</div>';
-    return head+'<div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;">'+(lang==="ru"?"Таблица лидеров":"Leaderboard")+'</div>'
-      +row(1,(lang==="ru"?"Ты":"You"),8,true,false)+row(2,"Aida",8,false,false)+row(3,"Timur",6,false,false)+row(4,"Dana",3,false,true);
-  }
-  return head+goalCard(7, subOf[c], btnDone(lang==="ru"?"НА СЕГОДНЯ ГОТОВО":"Done for today"));
+let lang = localStorage.getItem("cert_lang") || ((navigator.language||"").toLowerCase().startsWith("ru")?"ru":"en");
+const IDEA_ICONS=[
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 8v8M18 8v8M6 12h12M3 10v4M21 10v4"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="13" cy="5" r="1.6"/><path d="M6 21l3-5 3 1 2 4M9 16l1-4 4 1 3-2"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.8"/><path d="M8 21l2-8-3-2 5-2 4 3M12 13l3 8"/></svg>',
+  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v8a3 3 0 0 0 6 0V3M8 3v18M17 3c-1.5 0-2 2-2 4s.5 4 2 4 2-2 2-4-.5-4-2-4zM17 15v6"/></svg>'
+];
+// ---- animated CREATE screen ----
+const PT=["photo","video","geo"];
+function createScreen(pt, typed, flash){
+  const d=T[lang], p=d.proofs[pt];
+  const chev='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg>';
+  const pill='<span class="cs-pill'+(flash?' flash':'')+'">'+p.pill+chev+'</span>';
+  const say = pt==="geo"
+    ? '<div class="cs-say">'+d.csSay+' '+pill+' '+(lang==="ru"?"в":"at")+'</div><div style="margin-top:8px;"><span class="cs-pill">'+p.place+chev+'</span></div>'
+    : '<div class="cs-say">'+d.csSay+' '+pill+' :</div>';
+  const input='<div class="cs-input">'+(typed?'<span>'+typed+'</span>':'<span class="ph">'+(lang==="ru"?"напр. ":"e.g. ")+p.goal+'</span>')+'<span class="caret"></span></div>';
+  const map = pt==="geo" ? '<div class="cs-map"><div class="pin"></div></div>' : '';
+  const ideas = d.ideas.map((t,i)=>'<div class="cs-idea"><span class="ic">'+IDEA_ICONS[i]+'</span>'+t+'</div>').join('');
+  return '<div class="cs-title">'+d.csTitle+'</div>'
+    +'<div class="cs-toggle"><span class="on">'+d.csOne+'</span><span>'+d.csRep+'</span></div>'
+    +'<div class="cs-card">'+say+input+map
+      +'<div class="cs-deadline"><span class="lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl">'+p.dl+chev+'</span></div></div>'
+    +'<div class="cs-ideas-h">'+d.csIdeasH+'</div><div class="cs-ideas">'+ideas+'</div>'
+    +'<div class="cs-create">'+d.csCreate+'</div>';
 }
 
-function renderPills(){
-  const el=document.getElementById("howPills");
-  el.innerHTML="";
-  CATS.forEach((c,i)=>{
-    const b=document.createElement("button");
-    b.className="pill"+(i===cat?" active":"");
-    b.innerHTML=T[lang].how[c].label;
-    b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; startTypewriter(); renderAll(); };
-    el.appendChild(b);
-  });
+// ---- hero animation (auto-cycle proof type + typewriter) ----
+let hIdx=0, hTyped="", hPhase="type", hTick=0, hStart=Date.now();
+function heroFull(){ return T[lang].proofs[PT[hIdx]].goal; }
+function renderHero(flash){ const el=document.getElementById("heroScreen"); if(el) el.innerHTML=createScreen(PT[hIdx], hTyped, flash); }
+function heroLoop(){
+  const full=heroFull();
+  if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); renderHero(); } else { hPhase="hold"; hTick=0; } }
+  else if(hPhase==="hold"){ hTick++; if(hTick>26){ hPhase="next"; } }
+  else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); setTimeout(()=>renderHero(false),260); }
 }
-function renderSteps(){
-  const el=document.getElementById("howSteps"); const d=D();
-  el.innerHTML="";
-  d.steps.forEach((s,i)=>{
-    const div=document.createElement("div");
-    div.className="step"+(i===step?" on":"")+(i<step?" done":"");
-    const conn=i<d.steps.length-1?'<div class="conn"></div>':'';
-    div.innerHTML='<div class="rail"><div class="dot">'+(i+1)+'</div>'+conn+'</div>'
-      +'<div class="body"><h4>'+s[0]+'</h4><p>'+s[1]+'</p><div class="bar"><i style="width:'+(i===step?Math.round(prog*100):0)+'%"></i></div></div>';
-    el.appendChild(div);
-  });
-}
-function renderPhone(){ document.getElementById("howScreen").innerHTML=phoneHTML(); }
-function renderAll(){ renderPills(); renderSteps(); renderPhone(); }
+setInterval(heroLoop,55);
+setInterval(()=>{ const el=document.getElementById("liveText"); if(el) el.textContent=T[lang].liveText(Math.floor((Date.now()-hStart)/1000)%60); },1000);
 
-function startTypewriter(){
-  clearInterval(tw); typed="";
-  const full=D().goal; let i=0;
-  tw=setInterval(()=>{ i++; typed=full.slice(0,i); if(step===0) renderPhone(); if(i>=full.length) clearInterval(tw); }, 55);
+// ---- how-it-works (pills + steps + progress drive the SAME create screen) ----
+let cat=0, step=0, prog=0, raf=null, lastT=0, cTyped="", cTw=null;
+const STEP_MS=2700; const HOWCATS=["photo","video","geo"];
+function howD(){ return T[lang].how[HOWCATS[cat]]; }
+function startHowType(){ clearInterval(cTw); cTyped=""; const full=T[lang].proofs[HOWCATS[cat]].goal; let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); renderHowPhone(); if(i>=full.length) clearInterval(cTw); },50); }
+function renderHowPhone(){ const el=document.getElementById("howScreen"); if(el) el.innerHTML=createScreen(HOWCATS[cat], cTyped, step===0); }
+function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; startHowType(); renderAll(); }; el.appendChild(b); }); }
+function renderSteps(){ const el=document.getElementById("howSteps"), d=howD(); el.innerHTML=""; d.steps.forEach((s,i)=>{ const div=document.createElement("div"); div.className="step"+(i===step?" on":"")+(i<step?" done":""); const conn=i<d.steps.length-1?'<div class="conn"></div>':''; div.innerHTML='<div class="rail"><div class="dot">'+(i+1)+'</div>'+conn+'</div><div class="body"><h4>'+s[0]+'</h4><p>'+s[1]+'</p><div class="bar"><i style="width:'+(i===step?Math.round(prog*100):0)+'%"></i></div></div>'; el.appendChild(div); }); }
+function renderAll(){ renderPills(); renderSteps(); renderHowPhone(); }
+function frame(t){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } raf=requestAnimationFrame(frame); }
+
+// ---- pricing ----
+let bill="mo";
+function renderPrice(){
+  const yr=bill==="yr", d=T[lang];
+  const P=window.CertPrice;
+  const mo=P?P.monthly():"$4.99", yrp=P?P.yearly():"$29.99", perMo=P?P.yearlyPerMo():"$2.50";
+  document.getElementById("proPrice").textContent = yr?yrp:mo;
+  document.getElementById("proPer").textContent = yr?(lang==="ru"?"/год":"/year"):(lang==="ru"?"/мес":"/month");
+  document.getElementById("proNote").textContent = yr
+    ? (lang==="ru"?"≈ "+perMo+"/мес — экономия ~50%":"≈ "+perMo+"/mo — saves ~50%")
+    : (lang==="ru"?"Помесячно. Отмена в любой момент.":"Billed monthly. Cancel anytime.");
+  document.getElementById("bill-mo").classList.toggle("on",!yr);
+  document.getElementById("bill-yr").classList.toggle("on",yr);
 }
-function frame(t){
-  if(!lastT) lastT=t;
-  prog += (t-lastT)/STEP_MS; lastT=t;
-  if(prog>=1){
-    prog=0; step++;
-    if(step>2){ step=0; cat=(cat+1)%CATS.length; startTypewriter(); }
-    renderAll();
-  } else {
-    // update only the active bar + phone typing cheaply
-    const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%";
-  }
-  raf=requestAnimationFrame(frame);
-}
+function setBill(b){ bill=b; renderPrice(); }
 
 // ---- i18n + accordions ----
-let lang = localStorage.getItem("cert_lang") || ((navigator.language||"").toLowerCase().startsWith("ru")?"ru":"en");
-function buildAcc(listId, arr){
-  const list=document.getElementById(listId); list.innerHTML="";
-  arr.forEach(([q,a])=>{
-    const item=document.createElement("div"); item.className="acc-item";
-    item.innerHTML='<button class="acc-q">'+q+'<span class="acc-x">+</span></button><div class="acc-a">'+a+'</div>';
-    item.querySelector(".acc-q").onclick=()=>item.classList.toggle("open");
-    list.appendChild(item);
-  });
-}
+function buildAcc(id,arr){ const list=document.getElementById(id); list.innerHTML=""; arr.forEach(([q,a])=>{ const it=document.createElement("div"); it.className="acc-item"; it.innerHTML='<button class="acc-q">'+q+'<span class="acc-x">+</span></button><div class="acc-a">'+a+'</div>'; it.querySelector(".acc-q").onclick=()=>it.classList.toggle("open"); list.appendChild(it); }); }
 function applyLang(){
-  const d=T[lang];
-  document.documentElement.lang=lang;
-  document.querySelectorAll("[data-k]").forEach(el=>{ const v=d[el.getAttribute("data-k")]; if(v!==undefined) el.innerHTML=v; });
+  const d=T[lang]; document.documentElement.lang=lang;
+  document.querySelectorAll("[data-k]").forEach(el=>{ const v=d[el.getAttribute("data-k")]; if(typeof v==="string") el.innerHTML=v; });
   document.getElementById("lang-en").classList.toggle("active",lang==="en");
   document.getElementById("lang-ru").classList.toggle("active",lang==="ru");
-  buildAcc("ucList", d.uc); buildAcc("faqList", d.faq);
-  startTypewriter(); renderAll();
+  buildAcc("ucList",d.uc); buildAcc("faqList",d.faq);
+  hTyped=""; hPhase="type"; renderHero();
+  startHowType(); renderAll(); renderPrice();
 }
 function setLang(l){ lang=l; localStorage.setItem("cert_lang",l); applyLang(); }
 applyLang();
 raf=requestAnimationFrame(frame);
+if(window.CertPrice) window.CertPrice.load(renderPrice);
 </script>
 </body>
 </html>
