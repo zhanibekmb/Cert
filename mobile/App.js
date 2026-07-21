@@ -113,6 +113,7 @@ let _tabSwipeLocked = false; // set while an inner horizontal scroller is touche
 /* Full profile cache — the Profile tab unmounts on every tab switch; rendering
    from this cache makes it open instantly (refresh happens in the background). */
 let _profileCache = null; // { uid, data }
+let _refCache = null; // { uid, code, redeemed } — referral code is stable per user
 
 /* Display name: set once in the profile, reused on every leaderboard. Cached so
    challenge screens don't re-query (and so a profile edit reflects immediately). */
@@ -209,10 +210,16 @@ export default function App() {
       setSession(s);
       if (event === "PASSWORD_RECOVERY") setRecovery(true);
       if (event === "SIGNED_OUT") { _profileCache = null; _cachedName = null; }
-      // funnel: first successful sign-in on this device completes the first-run flow
+      // funnel: first successful sign-in on this device completes the first-run flow.
+      // On that same first sign-in, arm the first-goal tutorial: Main consumes this
+      // flag once (and only if the account has no goals yet) to auto-open the wizard.
       if (event === "SIGNED_IN") {
         AsyncStorage.getItem("cert_funnel_done").then((v) => {
-          if (!v) { AsyncStorage.setItem("cert_funnel_done", "1").catch(() => {}); track("signup_complete"); }
+          if (!v) {
+            AsyncStorage.setItem("cert_funnel_done", "1").catch(() => {});
+            AsyncStorage.setItem("cert_first_goal_pending", "1").catch(() => {});
+            track("signup_complete");
+          }
         }).catch(() => {});
       }
     });
@@ -557,16 +564,6 @@ function ObFrame({ children }) {
     </View>
   );
 }
-function ObMockRow({ label, dead }) {
-  return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 13, marginTop: 8, opacity: dead ? 0.55 : 1 }}>
-      <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: dead ? C.faint : C.green, alignItems: "center", justifyContent: "center" }}>
-        <Ionicons name="checkmark" size={15} color={C.bg} />
-      </View>
-      <Text style={[s.goalText, { marginTop: 0, flex: 1 }]}>{label}</Text>
-    </View>
-  );
-}
 function ObStamp({ active, size = 26 }) {
   const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
@@ -582,20 +579,11 @@ function ObStamp({ active, size = 26 }) {
   );
 }
 function Onboarding({ onDone }) {
-  const [page, setPage] = useState(0);
-  const scrollRef = useRef(null);
+  // One what/why screen — the hook (pain + promise) with the hero approval stamp.
+  // The real goal wizard auto-opens right after sign-in and teaches "the doing" by
+  // doing it, so the old 5-slide exposition (loop/flex/mock-form) is gone.
   const [, setLangChoice] = useLang(); // re-render on RU/EN switch
   useEffect(() => { track("onboarding_view"); }, []);
-  const W = Dimensions.get("window").width;
-  const goTo = (i) => { scrollRef.current?.scrollTo({ x: i * W, animated: true }); setPage(i); };
-  const last = page === PAGES.length - 1;
-  const PAGES = [
-    { head: t("Every streak is a lie."), sub: t("You tap a checkbox nobody checks. So you quit — and nothing happens.") },
-    { head: t("Cert makes it real."), sub: t("One photo a day. An AI judge decides if it counts — no faking a tap.") },
-    { head: t("Worth bragging about."), sub: t("Share a streak nobody can fake. Challenge friends — last place spins the wheel.") },
-    { head: t("Simple every day."), sub: t("Create a goal, send proof, the judge counts it. That's the whole loop.") },
-    { head: t("What will you prove?"), sub: t("One goal. A streak that means something.") },
-  ];
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
       <View style={{ flexDirection: "row", justifyContent: "flex-end", alignItems: "center", gap: 8, padding: 20, paddingBottom: 0 }}>
@@ -604,97 +592,28 @@ function Onboarding({ onDone }) {
             <Text style={[s.langChipT, activeLang() === v && { color: C.bg }]}>{lbl}</Text>
           </TouchableOpacity>
         ))}
-        {!last ? (
-          <TouchableOpacity onPress={onDone} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Text style={[s.langChipT, { paddingHorizontal: 6 }]}>{t("Skip")}</Text>
-          </TouchableOpacity>
-        ) : null}
+        <TouchableOpacity onPress={onDone} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Text style={[s.langChipT, { paddingHorizontal: 6 }]}>{t("Skip")}</Text>
+        </TouchableOpacity>
       </View>
-      <ScrollView ref={scrollRef} horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ flex: 1 }}
-        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / W))}>
-        {/* 1 — the pain: a dead generic tracker */}
-        <View style={{ width: W, justifyContent: "center" }}>
-          <ObFrame>
-            <Text style={[s.kicker, { textAlign: "center", marginBottom: 6 }]}>{t("your old habit app")}</Text>
-            <ObMockRow label={t("Meditate")} dead />
-            <ObMockRow label={t("Gym")} dead />
-            <ObMockRow label={t("Read")} dead />
-            <View style={{ position: "absolute", alignSelf: "center", top: "42%", transform: [{ rotate: "-10deg" }], borderWidth: 2.5, borderColor: C.err, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 4, backgroundColor: C.isDark ? "rgba(10,13,18,0.4)" : "rgba(255,255,255,0.6)" }}>
-              <Text style={{ color: C.err, fontSize: 20, fontWeight: "800", letterSpacing: 2 }}>{t("UNVERIFIED")}</Text>
-            </View>
-          </ObFrame>
-        </View>
-        {/* 2 — the magic (hero): a proof photo gets stamped APPROVED */}
-        <View style={{ width: W, justifyContent: "center" }}>
-          <ObFrame>
-            <View style={{ borderRadius: 14, backgroundColor: C.isDark ? "#12151a" : "#eef1f6", height: 150, alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="camera-outline" size={40} color={C.faint} />
-              <Text style={[s.note, { marginTop: 8 }]}>{t("your daily photo")}</Text>
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 10 }}>
-              <Ionicons name="shield-checkmark" size={16} color={C.bronze} />
-              <Text style={[s.note, { textAlign: "left", marginTop: 0, flex: 1 }]}>{t("AI judge: real workout. Counted.")}</Text>
-            </View>
-            <ObStamp active={page === 1} />
-          </ObFrame>
-        </View>
-        {/* 3 — the flex: cert card + friends leaderboard */}
-        <View style={{ width: W, justifyContent: "center" }}>
-          <ObFrame>
-            <View style={{ borderWidth: 1.5, borderColor: C.bronze, borderRadius: 14, padding: 14, alignItems: "center" }}>
-              <Text style={{ color: C.bronze, fontSize: 44, fontWeight: "800", lineHeight: 46 }}>47</Text>
-              <Text style={{ color: C.ink, fontSize: 11, letterSpacing: 3, fontWeight: "700" }}>{t("VERIFIED DAYS")}</Text>
-              <Text style={{ color: C.bronze, fontSize: 10, letterSpacing: 2, fontWeight: "800", marginTop: 4 }}>{t("NOT FAKED")}</Text>
-            </View>
-            {[["1", "Yerdan", "8"], ["2", t("You"), "5"], ["3", "Mukhtar", "3"]].map(([m, n, d]) => (
-              <View key={n} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 9, marginTop: 7 }}>
-                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: C.red, alignItems: "center", justifyContent: "center" }}><Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "800" }}>{m}</Text></View>
-                <Avatar name={n} size={24} />
-                <Text style={[s.goalText, { marginTop: 0, flex: 1, fontSize: 13 }]}>{n}</Text>
-                <Text style={[s.note, { marginTop: 0 }]}>{d} {t("days")}</Text>
-              </View>
-            ))}
-          </ObFrame>
-        </View>
-        {/* 4 — how to use: the whole loop in three numbered steps */}
-        <View style={{ width: W, justifyContent: "center" }}>
-          <ObFrame>
-            {[["create-outline", t("Set one goal")], ["camera-outline", t("Send proof every day")], ["shield-checkmark-outline", t("The judge approves — streak grows")]].map(([ic, txt], i) => (
-              <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 12, padding: 13, marginTop: i ? 8 : 0 }}>
-                <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.red, alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ color: "#ffffff", fontSize: 12, fontWeight: "800" }}>{i + 1}</Text>
-                </View>
-                <Ionicons name={ic} size={18} color={C.bronze} />
-                <Text style={[s.goalText, { marginTop: 0, flex: 1, fontSize: 14 }]}>{txt}</Text>
-              </View>
-            ))}
-          </ObFrame>
-        </View>
-        {/* 5 — the start: one goal away */}
-        <View style={{ width: W, justifyContent: "center" }}>
-          <ObFrame>
-            <Text style={[s.label, { marginBottom: 6 }]}>{t("Your goal")}</Text>
-            <View style={[s.input, { justifyContent: "center" }]}>
-              <Text style={s.goalText}>{t("gym 45 min")}</Text>
-            </View>
-            <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-              <View style={[s.chip, s.chipOn]}><Text style={[s.chipText, { color: C.ink }]}>{t("Photo")}</Text></View>
-              <View style={s.chip}><Text style={s.chipText}>{t("Video")}</Text></View>
-              <View style={s.chip}><Text style={s.chipText}>{t("Geo")}</Text></View>
-            </View>
-            <View style={[s.btn, { marginTop: 18 }]}><Text style={s.btnText}>{t("Create")}</Text></View>
-          </ObFrame>
-        </View>
-      </ScrollView>
+      <View style={{ flex: 1, justifyContent: "center" }}>
+        <ObFrame>
+          {/* hero: a proof photo gets stamped APPROVED — the "whoa" moment */}
+          <View style={{ borderRadius: 14, backgroundColor: C.isDark ? "#12151a" : "#eef1f6", height: 150, alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="camera-outline" size={40} color={C.faint} />
+            <Text style={[s.note, { marginTop: 8 }]}>{t("your daily photo")}</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 12, backgroundColor: C.card, borderWidth: 1, borderColor: C.line, borderRadius: 10, padding: 10 }}>
+            <Ionicons name="shield-checkmark" size={16} color={C.bronze} />
+            <Text style={[s.note, { textAlign: "left", marginTop: 0, flex: 1 }]}>{t("AI judge: real workout. Counted.")}</Text>
+          </View>
+          <ObStamp active />
+        </ObFrame>
+      </View>
       <View style={{ paddingHorizontal: 28, paddingBottom: 30 }}>
-        <Text style={[s.h1, { fontSize: 26, lineHeight: 30, textAlign: "center" }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.65}>{PAGES[page].head}</Text>
-        <Text style={[s.lede, { textAlign: "center", marginTop: 6, marginBottom: 8 }]} numberOfLines={3} adjustsFontSizeToFit minimumFontScale={0.8}>{PAGES[page].sub}</Text>
-        <View style={{ flexDirection: "row", justifyContent: "center", gap: 7, marginBottom: 2 }}>
-          {PAGES.map((_, i) => (
-            <View key={i} style={{ width: i === page ? 22 : 8, height: 8, borderRadius: 4, backgroundColor: i === page ? C.bronze : C.line }} />
-          ))}
-        </View>
-        <Btn label={last ? t("Start") + " →" : t("Next") + " →"} onPress={last ? onDone : () => goTo(page + 1)} />
+        <Text style={[s.h1, { fontSize: 26, lineHeight: 30, textAlign: "center" }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.65}>{t("Cert makes it real.")}</Text>
+        <Text style={[s.lede, { textAlign: "center", marginTop: 6, marginBottom: 8 }]} numberOfLines={4} adjustsFontSizeToFit minimumFontScale={0.8}>{t("Every streak app is a checkbox nobody checks. Cert takes one photo a day — an AI judge decides if it counts. No faking a tap.")}</Text>
+        <Btn label={t("Start") + " →"} onPress={onDone} />
       </View>
     </View>
   );
@@ -747,6 +666,8 @@ function Main({ session }) {
   const [joinCode, setJoinCode] = useState(""); // prefilled from an invite link
   const [refreshing, setRefreshing] = useState(false);
   const [intro, setIntro] = useState(null); // null=loading | "onboarding" | "done" (fallback for pre-flag installs)
+  const [firstRunTutorial, setFirstRunTutorial] = useState(false); // first goal ever = the onboarding walkthrough
+  const firstGoalChecked = useRef(false); // consume the first-goal auto-open exactly once
 
   // Invite links: cert://join?code=ABC123 (or the exp:// form in Expo Go).
   useEffect(() => {
@@ -783,8 +704,28 @@ function Main({ session }) {
     setSubs(sRes.data || []);
     setProfile(pRes.data || null);
     syncDeadlineReminders(gRes.data || []).catch(() => {}); // auto "deadline soon" nudges
+    return { goals: gRes.data || [], error: gRes.error || null };
   }, [session.user.id]);
-  useEffect(() => { load(); }, [load]);
+  // Initial load. On the very first run (armed by the first sign-in, see App's
+  // SIGNED_IN handler) open the real goal wizard as the onboarding walkthrough —
+  // but only once, and only if the account actually has no goals yet. Consume the
+  // flag as soon as we fire so an abandon never re-triggers it. A failed load
+  // leaves the flag intact so the tutorial retries on the next clean load.
+  useEffect(() => {
+    (async () => {
+      const res = await load();
+      if (firstGoalChecked.current || res.error) return;
+      firstGoalChecked.current = true;
+      const pending = await AsyncStorage.getItem("cert_first_goal_pending").catch(() => null);
+      if (!pending) return;
+      await AsyncStorage.removeItem("cert_first_goal_pending").catch(() => {});
+      if ((res.goals || []).length === 0) {
+        setFirstRunTutorial(true);
+        setTab("home");
+        setScreen("new");
+      }
+    })();
+  }, [load]);
 
   // RevenueCat: identify this user so store purchases credit the right account.
   // Push: register this device for "streak at risk" notifications.
@@ -837,13 +778,14 @@ function Main({ session }) {
 
   // ----- overlay screens (full screen, own back + swipe-from-left to go back) -----
   let overlay = null;
-  if (screen === "new") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><NewGoal session={session} isPro={isPro} onUpgrade={openPaywall} onDone={async () => { await load(); setScreen(null); }} onBack={back} /></SwipeBack>; }
+  if (screen === "new") { const back = () => { setFirstRunTutorial(false); setScreen(null); }; overlay = <SwipeBack onBack={back}><NewGoal session={session} isPro={isPro} firstRun={firstRunTutorial} onUpgrade={openPaywall} onDone={async () => { const wasFirst = (goals || []).length === 0; setFirstRunTutorial(false); if (wasFirst) track("first_goal_created"); await load(); setScreen(null); }} onBack={back} /></SwipeBack>; }
   else if (screen === "submit" && active) { const back = () => { setScreen(submitReturn); setSubmitReturn(null); }; overlay = <SwipeBack onBack={back}><Submit goal={active} goalSubs={(subs || []).filter((x) => x.goal_id === active.id)} onDone={async () => { await load(); setScreen(submitReturn); setSubmitReturn(null); }} onViewBadge={openBadge} onBack={back} /></SwipeBack>; }
   else if (screen === "challengeNew") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><CreateChallenge isPro={isPro} onUpgrade={openPaywall} onCreated={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
   else if (screen === "challengeJoin") { const back = () => { setJoinCode(""); setScreen(null); }; overlay = <SwipeBack onBack={back}><JoinChallenge initialCode={joinCode} onJoined={(id) => { setJoinCode(""); setActiveChallenge(id); setScreen("challengeDetail"); }} onBack={back} /></SwipeBack>; }
   else if (screen === "challengeDetail" && activeChallenge) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ChallengeDetail challengeId={activeChallenge} onSubmitProof={(g) => { setActive(g); setSubmitReturn("challengeDetail"); setScreen("submit"); }} onReview={() => setScreen("review")} onSharePlacement={(rank, title) => { setActivePlacement({ rank, title }); setScreen("placement"); }} onBack={back} /></SwipeBack>; }
   else if (screen === "review") { overlay = <SwipeReview onBack={() => setScreen("challengeDetail")} />; }
   else if (screen === "placement" && activePlacement) { const back = () => setScreen("challengeDetail"); overlay = <SwipeBack onBack={back}><ShareScreen kind="placement" rank={activePlacement.rank} title={activePlacement.title} onBack={back} /></SwipeBack>; }
+  else if (screen === "analytics") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><AnalyticsScreen goals={goals || []} subs={subs} onOpenBadge={openBadge} onBack={back} /></SwipeBack>; }
   else if (screen === "settings") { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><SettingsScreen session={session} onBack={back} /></SwipeBack>; }
   else if (screen === "cert" && activeCert) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="cert" days={activeCert.days} title={activeCert.title} subtitle={activeCert.issued_at ? "Earned " + new Date(activeCert.issued_at).toLocaleDateString() : null} onBack={back} /></SwipeBack>; }
   else if (screen === "badge" && activeBadge) { const back = () => setScreen(null); overlay = <SwipeBack onBack={back}><ShareScreen kind="milestone" days={activeBadge.days} title={activeBadge.title} onBack={back} /></SwipeBack>; }
@@ -920,7 +862,7 @@ function Main({ session }) {
           <ChallengesScreen onOpen={(id) => { setActiveChallenge(id); setScreen("challengeDetail"); }}
             onCreate={() => setScreen("challengeNew")} onJoin={() => setScreen("challengeJoin")} />
         )}
-        {tab === "stats" && <Stats goals={goals || []} subs={subs} onOpenBadge={openBadge} isPro={isPro} onUpgrade={openPaywall} refreshing={refreshing} onRefresh={onRefresh} />}
+        {tab === "stats" && <Stats goals={goals || []} subs={subs} onOpenBadge={openBadge} onOpenAnalytics={() => setScreen("analytics")} isPro={isPro} onUpgrade={openPaywall} refreshing={refreshing} onRefresh={onRefresh} />}
         {tab === "profile" && <ProfileTab session={session} goals={goals || []} certs={certs} subs={subs} freezes={freezes} onOpenCert={openCert} onOpenSettings={() => setScreen("settings")} onUpgrade={openPaywall} onBuyFreezes={() => setFreezeSheetOpen(true)} onReload={load} refreshing={refreshing} onRefresh={onRefresh} />}
         </ScreenFade>
       </View>
@@ -1175,32 +1117,32 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]}>
       <BackBar onBack={onBack} />
 
-      {/* Hero: the brand's stamp motif — same language as the APPROVED stamp */}
-      <View style={s.pwHero}>
-        <View style={s.pwStamp}>
-          <Text style={s.pwStampT}>CERT PRO ✓</Text>
+      {/* Hero: bold indigo panel with a shield watermark — premium, modern. */}
+      <View style={{ backgroundColor: C.red, borderRadius: 22, padding: 24, overflow: "hidden", marginTop: 4 }}>
+        <Ionicons name="shield-checkmark" size={150} color="rgba(255,255,255,0.10)" style={{ position: "absolute", right: -22, top: -16 }} />
+        <View style={{ alignSelf: "flex-start", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.9)", borderRadius: 8, paddingHorizontal: 9, paddingVertical: 3 }}>
+          <Text style={{ color: "#fff", fontWeight: "900", letterSpacing: 2, fontSize: 12 }}>CERT PRO</Text>
         </View>
-        <Text style={[s.pwSub, { marginTop: 20 }]}>{t("Stronger proof methods, more goals, and deeper stats.")}</Text>
+        <Text style={{ color: "#fff", fontSize: 27, fontWeight: "900", marginTop: 16, lineHeight: 31 }}>{t("Prove more.\nFake nothing.")}</Text>
+        <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 8, lineHeight: 20 }}>{t("Stronger proof, unlimited goals, and the full stats suite.")}</Text>
       </View>
 
-      {/* Free vs Pro comparison — makes the upgrade reason obvious at a glance */}
-      <View style={[s.card, { marginTop: 16, paddingVertical: 12 }]}>
-        <View style={{ flexDirection: "row", paddingBottom: 9, borderBottomWidth: 1, borderColor: C.line }}>
-          <Text style={[s.kicker, { flex: 1.5 }]}>{t("What you get")}</Text>
-          <Text style={[s.kicker, { flex: 0.7, textAlign: "center" }]}>Free</Text>
-          <Text style={[s.kicker, { flex: 0.7, textAlign: "center", color: C.bronze }]}>PRO</Text>
-        </View>
+      {/* Benefits — icon rows read more premium than a Free/Pro table. */}
+      <View style={{ marginTop: 20, gap: 14 }}>
         {[
-          [t("Active goals"), "1", "∞"],
-          [t("Photo proof"), "✓", "✓"],
-          [t("Video & location proof"), "—", "✓"],
-          [t("Analytics & trophies"), "—", "✓"],
-          [t("Monthly freezes"), "—", "✓"],
-        ].map(([f, a, b], i, arr) => (
-          <View key={f} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: i === arr.length - 1 ? 0 : 1, borderColor: C.line }}>
-            <Text style={[s.goalText, { flex: 1.5, marginTop: 0, fontSize: 13.5 }]}>{f}</Text>
-            <Text style={{ flex: 0.7, textAlign: "center", color: C.faint, fontSize: 14 }}>{a}</Text>
-            <Text style={{ flex: 0.7, textAlign: "center", color: C.bronze, fontSize: 15, fontWeight: "800" }}>{b}</Text>
+          ["infinite", t("Unlimited goals"), t("Run as many streaks as you want")],
+          ["videocam", t("Video & location proof"), t("Timelapse and GPS check-ins, not just photos")],
+          ["stats-chart", t("Analytics & trophies"), t("Heatmap, trends and shareable badges")],
+          ["snow", t("Monthly freezes"), t("Protect your streak on an off day")],
+        ].map(([ic, title, desc]) => (
+          <View key={title} style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+            <View style={{ width: 44, height: 44, borderRadius: 13, backgroundColor: C.isDark ? "rgba(99,102,241,0.16)" : "rgba(79,70,229,0.09)", alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name={ic} size={21} color={C.red} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[s.goalText, { marginTop: 0, fontSize: 15 }]}>{title}</Text>
+              <Text style={[s.note, { textAlign: "left", marginTop: 1 }]}>{desc}</Text>
+            </View>
           </View>
         ))}
       </View>
@@ -1246,8 +1188,9 @@ function Paywall({ isPro, freezes = 0, onDone, onBack }) {
         </>
       )}
 
-      {/* fine print: one quiet links row + tiny auto-renew note */}
-      <View style={{ flexDirection: "row", justifyContent: "center", gap: 20, marginTop: 18 }}>
+      {/* fine print: one quiet links row + tiny auto-renew note.
+          Wraps + horizontal padding so the three links never run off-screen. */}
+      <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", columnGap: 16, rowGap: 6, marginTop: 18, paddingHorizontal: 16 }}>
         <TouchableOpacity onPress={doRestore} disabled={restoring}>
           <Text style={s.finePrintLink}>{restoring ? t("Restoring…") : t("Restore purchases")}</Text>
         </TouchableOpacity>
@@ -1283,14 +1226,24 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
   const st = computeStats(goals, subs);
   const plan = profile?.plan === "monthly" || profile?.plan === "yearly" ? "Pro" : "Free";
 
-  // referral freezes: my code + one-time redemption of a friend's code
-  const [refCode, setRefCode] = useState(null);
-  const [refRedeemed, setRefRedeemed] = useState(true); // hide input until we know
+  // referral freezes: my code + one-time redemption of a friend's code.
+  // The code is stable per user, so seed from the module cache and refresh
+  // silently — the Profile tab unmounts on every switch, and refetching each
+  // time made the code flicker/reload. Only the redemption state can change.
+  const _refCached = _refCache && _refCache.uid === session.user.id ? _refCache : null;
+  const [refCode, setRefCode] = useState(_refCached?.code ?? null);
+  const [refRedeemed, setRefRedeemed] = useState(_refCached ? _refCached.redeemed : true); // hide input until we know
   const [refInput, setRefInput] = useState("");
   const [refBusy, setRefBusy] = useState(false);
   useEffect(() => {
+    if (_refCache && _refCache.uid === session.user.id && _refCache.code) return; // already have it
     supabase.functions.invoke("referral", { body: { action: "me" } })
-      .then(({ data }) => { if (data) { setRefCode(data.code || null); setRefRedeemed(!!data.redeemed); } })
+      .then(({ data }) => {
+        if (data) {
+          setRefCode(data.code || null); setRefRedeemed(!!data.redeemed);
+          _refCache = { uid: session.user.id, code: data.code || null, redeemed: !!data.redeemed };
+        }
+      })
       .catch(() => {});
   }, [session.user.id]);
   async function redeemCode() {
@@ -1300,6 +1253,7 @@ function ProfileTab({ session, goals, certs, subs, freezes = 0, onOpenCert, onOp
       const { data } = await supabase.functions.invoke("referral", { body: { action: "redeem", code: refInput.trim() } });
       if (data?.ok) {
         setRefRedeemed(true);
+        if (_refCache && _refCache.uid === session.user.id) _refCache.redeemed = true;
         Alert.alert("Cert", t("Code accepted — you both got {n} freezes!", { n: data.granted }));
         onReload && onReload();
       } else {
@@ -1623,6 +1577,10 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
   const isWeekly = goal.type === "recurring" && (goal.format === "3x" || goal.format === "5x" || goal.format === "custom");
   const isRecurring = goal.type === "recurring";
   const verifiedCount = (subs || []).filter((x) => x.status === "approved" || x.status === "frozen").length;
+  // A same-day rejection isn't "done", but the card shouldn't look like a fresh
+  // start either — surface it so the retry button reads as a retry.
+  const todayStr = isoDateParts(new Date()).date;
+  const rejectedToday = !doneToday && !completed && (subs || []).some((x) => x.status === "rejected" && x.day === todayStr);
   return (
     <View style={s.card}>
       {onDelete ? (
@@ -1636,21 +1594,20 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
           <Text style={[s.kicker, { marginTop: 4 }]}>{t("streak hidden")}</Text>
         </View>
       ) : (
-        <>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Ionicons name="flame" size={26} color={C.red} />
-            <AnimatedStreakNum value={goal.streak} />
-            <Text style={[s.kicker, { marginBottom: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
-          </View>
-          <Text style={s.kicker}>{t("verified by the judge")}</Text>
-        </>
+        // Compact header: streak on one line with an inline mini "next badge" bar.
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+          <Ionicons name="flame" size={24} color={C.red} />
+          <AnimatedStreakNum value={goal.streak} />
+          <Text style={[s.kicker, { marginBottom: 0 }]}>{isWeekly ? t("weeks") : t("days")}</Text>
+          {isRecurring && !completed ? <MilestoneMini streak={goal.streak || 0} /> : null}
+        </View>
       )}
-      <Text style={s.goalText}>{goal.text}</Text>
-      <Text style={[s.spec, { color: C.mute }]}>{goalCadence(goal)}</Text>
-      {goal.proof_type === "geo" ? <Text style={s.spec}>{goal.geo_place || t("geo check-in")}{goal.daily_start ? ` · ${t("from")} ${goal.daily_start}` : ""}</Text> : null}
-      {proofSpec(goal) ? <Text style={s.spec}>{proofSpec(goal)}</Text> : null}
-      {isRecurring && !hideStreak ? <StreakCalendar subs={subs} goal={goal} /> : null}
-      {isRecurring && !completed && !hideStreak ? <MilestoneBar streak={goal.streak || 0} /> : null}
+      {/* goal + schedule on one tight line each; proof detail lives in the goal */}
+      <Text style={[s.goalText, { marginTop: 8 }]} numberOfLines={1}>{goal.text}</Text>
+      <Text style={[s.spec, { color: C.mute, marginTop: 2 }]} numberOfLines={1}>
+        {goalCadence(goal)}{goal.proof_type === "geo" && goal.geo_place ? " · " + goal.geo_place : ""}
+      </Text>
+      {isRecurring && !hideStreak ? <StreakCalendar subs={subs} goal={goal} compact /> : null}
       {completed ? (
         <TouchableOpacity onPress={onOpenCert}><Text style={[s.kicker, { color: C.bronze, marginTop: 12 }]}>{t("Completed — view & share Cert")} ›</Text></TouchableOpacity>
       ) : doneToday ? (
@@ -1658,17 +1615,29 @@ function GoalCard({ goal, subs, doneToday, hideStreak, onSubmit, onOpenCert, onR
           <Ionicons name="checkmark-circle" size={20} color={C.green} style={{ flexShrink: 0 }} />
           <Text style={[s.kicker, { color: C.green, flexShrink: 1, textAlign: "center" }]} numberOfLines={2}>{isWeekly ? t("Done for today · come back tomorrow") : t("Done for today")}</Text>
         </View>
+      ) : rejectedToday ? (
+        // Rejected today: the prominent "submit" CTA is intentionally gone — the
+        // day was a real attempt. A quiet link still opens the goal to appeal or
+        // (if attempts remain) retry; the Submit screen gates which is allowed.
+        <>
+          <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 16, paddingVertical: 8, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: C.err }}>
+            <Ionicons name="close-circle" size={18} color={C.err} style={{ flexShrink: 0 }} />
+            <Text style={[s.kicker, { color: C.err, marginBottom: 0, flexShrink: 1, textAlign: "center" }]} numberOfLines={2}>{t("Not approved today")}</Text>
+          </View>
+          <BtnGhost label={t("Appeal or retry")} onPress={onSubmit} />
+        </>
       ) : (
         <Btn label={goal.proof_type === "geo" ? t("Check in now") : t("Submit today's proof")} onPress={onSubmit} />
       )}
-      {verifiedCount >= 2 ? <BtnGhost label={t("Progress reel") + ` · ${verifiedCount} ` + t("days")} onPress={onReel} /> : null}
+      {/* geo goals store no photo, so there's nothing to browse */}
+      {goal.proof_type !== "geo" && verifiedCount >= 2 ? <BtnGhost label={t("Progress") + ` · ${verifiedCount} ` + t("days")} onPress={onReel} /> : null}
     </View>
   );
 }
 
 /* Last 5 weeks of verified days as a grid (recent streak at a glance).
    Rows of 7 flex cells, so the grid stretches to the card's full width. */
-function StreakCalendar({ subs, goal }) {
+function StreakCalendar({ subs, goal, compact }) {
   // Progress cells sized to the goal: a 14-day goal shows exactly 14 cells;
   // ongoing / longer goals cap at 30. Verified days fill sequentially (indigo),
   // days saved by a freeze render as outlined cells with the accent border.
@@ -1677,12 +1646,30 @@ function StreakCalendar({ subs, goal }) {
     .sort((a, b) => (a.day < b.day ? -1 : 1)).slice(-total);
   const cells = Array.from({ length: total }, (_, i) => (i < doneSubs.length ? doneSubs[i].status : null));
   const off = C.isDark ? "#1f242c" : "#e8ecf1";
+  const sz = compact ? 12 : 16;
   return (
-    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 14 }}>
+    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: compact ? 3 : 4, marginTop: compact ? 10 : 14 }}>
       {cells.map((st, i) => {
         const frozen = st === "frozen";
-        return <View key={i} style={{ width: 16, height: 16, borderRadius: 3, backgroundColor: st === "approved" ? C.bronze : frozen ? "transparent" : off, borderWidth: frozen ? 1.2 : 0, borderColor: C.red }} />;
+        return <View key={i} style={{ width: sz, height: sz, borderRadius: 3, backgroundColor: st === "approved" ? C.bronze : frozen ? "transparent" : off, borderWidth: frozen ? 1.2 : 0, borderColor: C.red }} />;
       })}
+    </View>
+  );
+}
+
+/* Inline mini progress to the next milestone badge — a compact bar + "→ Nd"
+   that sits on the streak header line, replacing the taller MilestoneBar. */
+function MilestoneMini({ streak }) {
+  const next = MILESTONES.find((m) => m > streak);
+  if (!next) return null;
+  const pct = Math.max(0.04, Math.min(1, streak / next));
+  const track = C.isDark ? "#1f242c" : "#e8ecf1";
+  return (
+    <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+      <View style={{ width: 46, height: 5, borderRadius: 3, backgroundColor: track, overflow: "hidden" }}>
+        <View style={{ height: 5, width: (pct * 100) + "%", backgroundColor: C.bronze }} />
+      </View>
+      <Text style={[s.kicker, { marginBottom: 0 }]}>{next}{t("d")}</Text>
     </View>
   );
 }
@@ -1710,8 +1697,6 @@ function MilestoneBar({ streak }) {
 /* ---------- TIMELAPSE REEL (flip-through of a goal's verified proofs) ---------- */
 function Reel({ goal, onBack }) {
   const [items, setItems] = useState(null); // null=loading · []=none · [{day,url,isVideo}]
-  const [idx, setIdx] = useState(0);
-  const [playing, setPlaying] = useState(true);
   const [exporting, setExporting] = useState(false);
   useEffect(() => {
     let alive = true;
@@ -1724,37 +1709,45 @@ function Reel({ goal, onBack }) {
         const { data: signed } = await supabase.storage.from("proofs").createSignedUrl(r.photo_path, 3600);
         if (signed?.signedUrl) out.push({ day: r.day, url: signed.signedUrl, isVideo: /\.(mp4|mov|m4v|webm)$/i.test(r.photo_path) });
       }
-      if (alive) { setItems(out); setIdx(0); }
+      if (alive) setItems(out);
     })();
     return () => { alive = false; };
   }, [goal.id]);
 
-  const cur = items && items[idx];
-  // One player, re-pointed at the current clip when the item is a video. Clips
-  // play sped up (×REEL_SPEED) so a recorded video looks like a real timelapse.
+  // Gallery view: a grid of verified days you can browse like a journal. Tapping
+  // a tile opens a full-screen lightbox for that proof (video plays there).
+  const [viewer, setViewer] = useState(null); // index into items, or null
+  const [selected, setSelected] = useState({}); // {index: true} for selective export
+  const selCount = Object.keys(selected).filter((k) => selected[k]).length;
+  const toggleSel = (i) => setSelected((sl) => ({ ...sl, [i]: !sl[i] }));
+  const cur = items && viewer != null ? items[viewer] : null;
+  // Horizontal swipe in the lightbox → prev/next. Length is read from a ref at
+  // gesture time so the responder (created once) always sees the current list.
+  const navRef = useRef({ len: 0 });
+  navRef.current.len = items ? items.length : 0;
+  const swipe = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => false, // let taps reach the buttons
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy),
+    onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 12 && Math.abs(g.dx) > Math.abs(g.dy),
+    onPanResponderTerminationRequest: () => false,
+    onPanResponderRelease: (_, g) => {
+      const len = navRef.current.len;
+      if (g.dx <= -40) setViewer((v) => (v != null && v < len - 1 ? v + 1 : v));
+      else if (g.dx >= 40) setViewer((v) => (v != null && v > 0 ? v - 1 : v));
+    },
+  })).current;
+  // One player, re-pointed at the open clip. Recorded clips play sped up
+  // (×REEL_SPEED) so a video still reads like a timelapse.
   const REEL_SPEED = 3;
   const player = useVideoPlayer(null, (p) => { p.loop = false; p.playbackRate = REEL_SPEED; });
   useEffect(() => {
     if (!player) return;
     if (cur && cur.isVideo) {
-      try { player.replace(cur.url); player.playbackRate = REEL_SPEED; if (playing) player.play(); } catch (_) { /* */ }
+      try { player.replace(cur.url); player.playbackRate = REEL_SPEED; player.play(); } catch (_) { /* */ }
     } else { try { player.pause(); } catch (_) { /* */ } }
-  }, [cur && cur.url, cur && cur.isVideo, playing]);
-  // advance: images on a timer, videos when they finish
-  useEffect(() => {
-    if (!playing || !items || items.length < 2) return;
-    if (cur && cur.isVideo) return;
-    const tmr = setInterval(() => setIdx((i) => (i + 1) % items.length), 900);
-    return () => clearInterval(tmr);
-  }, [playing, items, cur && cur.isVideo]);
-  useEffect(() => {
-    if (!player) return;
-    const sub = player.addListener("playToEnd", () => { if (items && items.length > 1) setIdx((i) => (i + 1) % items.length); });
-    return () => { try { sub.remove(); } catch (_) { /* */ } };
-  }, [player, items]);
+  }, [cur && cur.url, cur && cur.isVideo]);
 
-  // Share the CURRENT proof as a real file (photo or clip) — a text-only share
-  // had nothing to show.
+  // Share the OPEN proof as a real file (photo or clip).
   const [sharing, setSharing] = useState(false);
   async function share() {
     if (!cur) return;
@@ -1768,16 +1761,16 @@ function Reel({ goal, onBack }) {
       Alert.alert("Cert", t("Couldn't share this one. Try exporting instead."));
     } finally { setSharing(false); }
   }
-  // Export the whole reel: download each proof and save it to the gallery, so it
-  // can be turned into a story / video in any editor.
-  async function exportAll() {
-    if (!items || !items.length) return;
+  // Export proofs to the gallery: the selected ones if any are picked, else all.
+  // Each saved file can be turned into a story / video in any editor.
+  async function exportItems(list) {
+    if (!list || !list.length) return;
     try {
       setExporting(true);
       const perm = await MediaLibrary.requestPermissionsAsync(true);
       if (!perm.granted) { Alert.alert("Cert", t("Allow photo library access to export.")); return; }
       let saved = 0;
-      for (const it of items) {
+      for (const it of list) {
         try {
           const ext = it.isVideo ? "mp4" : "jpg";
           const target = `${FileSystem.cacheDirectory}cert_${goal.id}_${it.day}.${ext}`;
@@ -1795,37 +1788,83 @@ function Reel({ goal, onBack }) {
   return (
     <ScrollView contentContainerStyle={s.wrap}>
       <BackBar onBack={onBack} />
-      <Text style={s.h2}>{t("Progress reel")}</Text>
+      <Text style={s.h2}>{t("Progress")}</Text>
       <Text style={s.lede} numberOfLines={2}>{goal.text}</Text>
       {items.length === 0 ? (
         <View style={[s.card, { alignItems: "center", marginTop: 16 }]}>
-          <Text style={s.h2}>{t("No reel yet")}</Text>
-          <Text style={[s.lede, { textAlign: "center" }]}>{t("Verify a few days and your reel builds itself.")}</Text>
+          <Text style={s.h2}>{t("Nothing here yet")}</Text>
+          <Text style={[s.lede, { textAlign: "center" }]}>{t("Verify a few days and your journal builds itself.")}</Text>
         </View>
       ) : (
         <>
-          <TouchableOpacity activeOpacity={0.95} onPress={() => setPlaying((p) => !p)}>
-            {cur.isVideo ? (
-              <VideoView player={player} nativeControls={false} contentFit="cover"
-                style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#12151a", marginTop: 8 }} />
-            ) : (
-              <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 16, backgroundColor: "#12151a", marginTop: 8 }} resizeMode="cover" />
-            )}
-          </TouchableOpacity>
-          <View style={{ height: 4, borderRadius: 2, backgroundColor: C.isDark ? "#1f242c" : "#e8ecf1", overflow: "hidden", marginTop: 12 }}>
-            <View style={{ height: 4, width: ((idx + 1) / items.length * 100) + "%", backgroundColor: C.bronze }} />
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+            <Text style={[s.note, { textAlign: "left" }]}>{selCount > 0 ? t("{n} selected", { n: selCount }) : t("{n} verified days", { n: items.length })}</Text>
+            {selCount > 0 ? <TouchableOpacity onPress={() => setSelected({})}><Text style={[s.note, { color: C.red, textAlign: "right" }]}>{t("Clear")}</Text></TouchableOpacity> : null}
           </View>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 8 }}>
-            <Text style={s.note}>{t("Day")} {idx + 1} / {items.length}</Text>
-            <Text style={s.note}>{cur.day}</Text>
+          {/* grid journal — one tile per verified day; the circle selects for export */}
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 10, marginHorizontal: -3 }}>
+            {items.map((it, i) => (
+              <TouchableOpacity key={it.day + i} activeOpacity={0.85} onPress={() => setViewer(i)}
+                style={{ width: "33.333%", padding: 3 }}>
+                <View style={{ aspectRatio: 1, borderRadius: 10, overflow: "hidden", backgroundColor: "#12151a", borderWidth: selected[i] ? 2 : 0, borderColor: C.red }}>
+                  {it.isVideo ? (
+                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name="play-circle" size={26} color="rgba(255,255,255,0.9)" />
+                    </View>
+                  ) : (
+                    <Image source={{ uri: it.url }} style={{ flex: 1 }} resizeMode="cover" />
+                  )}
+                  <Text style={{ position: "absolute", left: 5, bottom: 4, fontSize: 10, fontWeight: "700", color: "#fff", backgroundColor: "rgba(0,0,0,0.45)", paddingHorizontal: 5, paddingVertical: 1, borderRadius: 6, overflow: "hidden" }}>{it.day?.slice(5) || it.day}</Text>
+                  <TouchableOpacity onPress={() => toggleSel(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ position: "absolute", top: 4, right: 4 }}>
+                    <Ionicons name={selected[i] ? "checkmark-circle" : "ellipse-outline"} size={22} color={selected[i] ? C.red : "rgba(255,255,255,0.9)"} />
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
+            ))}
           </View>
-          <View style={{ flexDirection: "row", gap: 12, marginTop: 14 }}>
-            <View style={{ flex: 1 }}><BtnGhost label={playing ? t("Pause") : t("Play")} onPress={() => setPlaying((p) => !p)} /></View>
-            <View style={{ flex: 1 }}><BtnGhost label={sharing ? "…" : t("Share")} onPress={share} disabled={sharing} /></View>
-          </View>
-          <Btn label={exporting ? t("Exporting…") : t("⤓ Export to gallery")} onPress={exportAll} disabled={exporting} />
+          <Btn label={exporting ? t("Exporting…") : selCount > 0 ? t("⤓ Export {n} selected", { n: selCount }) : t("⤓ Export all")}
+            onPress={() => exportItems(selCount > 0 ? items.filter((_, i) => selected[i]) : items)} disabled={exporting} style={{ marginTop: 16 }} />
         </>
       )}
+
+      {/* lightbox: full-screen view of the tapped proof */}
+      <Modal visible={viewer != null} animationType="fade" transparent onRequestClose={() => setViewer(null)}>
+        <View {...swipe.panHandlers} style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.92)", justifyContent: "center", padding: 16 }}>
+          {cur ? (
+            <>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                <Text style={{ color: "#fff", fontWeight: "700" }}>{cur.day}</Text>
+                <TouchableOpacity onPress={() => setViewer(null)} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                  <Ionicons name="close" size={26} color="#fff" />
+                </TouchableOpacity>
+              </View>
+              {/* swipe left/right anywhere on the dark backdrop to move between proofs */}
+              {cur.isVideo ? (
+                <VideoView player={player} nativeControls contentFit="contain"
+                  style={{ width: "100%", aspectRatio: 1, borderRadius: 14, backgroundColor: "#000" }} />
+              ) : (
+                <Image source={{ uri: cur.url }} style={{ width: "100%", aspectRatio: 1, borderRadius: 14, backgroundColor: "#000" }} resizeMode="contain" />
+              )}
+              {/* icon arrows keep the row compact; Share is a white pill so it
+                  reads on the near-black overlay in both light and dark themes */}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 14, marginTop: 18 }}>
+                <TouchableOpacity onPress={() => viewer > 0 && setViewer(viewer - 1)} disabled={viewer <= 0}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={{ padding: 6, opacity: viewer <= 0 ? 0.3 : 1 }}>
+                  <Ionicons name="chevron-back" size={28} color="#fff" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={share} disabled={sharing}
+                  style={{ flex: 1, borderWidth: 1, borderColor: "rgba(255,255,255,0.55)", borderRadius: 12, paddingVertical: 12, alignItems: "center" }}>
+                  <Text style={{ color: "#fff", fontWeight: "700", fontSize: 15 }}>{sharing ? "…" : t("Share")}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => viewer < items.length - 1 && setViewer(viewer + 1)} disabled={viewer >= items.length - 1}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} style={{ padding: 6, opacity: viewer >= items.length - 1 ? 0.3 : 1 }}>
+                  <Ionicons name="chevron-forward" size={28} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </>
+          ) : null}
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -1889,7 +1928,7 @@ function MapPicker({ visible, initial, onPick, onClose }) {
   );
 }
 
-function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
+function NewGoal({ session, isPro, firstRun, onUpgrade, onDone, onBack }) {
   const [text, setText] = useState("");
   const [type, setType] = useState("recurring"); // recurring | one_time
   const [format, setFormat] = useState("daily");  // daily | 3x | 5x | custom
@@ -2004,6 +2043,21 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
           options={[{ value: "one_time", label: t("One-time") }, { value: "recurring", label: t("Repeating") }]} />
       </View>
 
+      {/* first-goal coaching: a lightweight step strip that advances as the user
+          fills the sentence. Robust across screen sizes (no anchored tooltips). */}
+      {firstRun ? (
+        <View style={[s.card, { borderColor: C.bronze, marginTop: 14, flexDirection: "row", alignItems: "center", gap: 10 }]}>
+          <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: C.bronze, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: C.bg, fontSize: 12, fontWeight: "800" }}>{text.trim() ? "2" : "1"}</Text>
+          </View>
+          <Text style={[s.note, { flex: 1, textAlign: "left", marginTop: 0 }]}>
+            {text.trim()
+              ? t("Nice. Set how often below, then tap Create — your first proof is due tomorrow.")
+              : t("Start here: write your goal in one line. Tap an idea below or type your own.")}
+          </Text>
+        </View>
+      ) : null}
+
       {/* the goal as one sentence — the bronze pills are the choices */}
       <View style={[s.card, { marginTop: 14, paddingVertical: 18 }]}>
         <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
@@ -2018,12 +2072,12 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
           {isGeo ? null : <Text style={s.sentenceText}>:</Text>}
         </View>
 
-        {/* geo goals need no text — being at the place IS the goal */}
-        {isGeo ? null : (
-          <TextInput style={[s.input, { marginTop: 10 }]} blurOnSubmit returnKeyType="done"
-            placeholder={proofType === "timelapse" ? t("e.g. a video of me doing the dishes") : t("e.g. a photo with my morning coffee")} placeholderTextColor={C.faint}
-            value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
-        )}
+        {/* every goal gets a short description — for geo it names the check-in */}
+        <TextInput style={[s.input, { marginTop: 10 }]} blurOnSubmit returnKeyType="done"
+          placeholder={isGeo ? t("e.g. Morning gym check-in")
+            : proofType === "timelapse" ? t("e.g. a video of me doing the dishes")
+            : t("e.g. a photo with my morning coffee")} placeholderTextColor={C.faint}
+          value={text} onChangeText={(val) => setText(val.replace(/\n/g, " "))} />
 
         {/* schedule: one labeled line per decision — nothing crowds */}
         {type === "recurring" ? (
@@ -2095,28 +2149,41 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
         ) : null}
       </View>
 
-      {/* one-tap starters — kill the blank-page problem */}
+      {/* one-tap starters — only things a photo/video can actually PROVE
+          (a gym visit, a run, pushups, a cooked meal), not "read 20 pages" */}
       {isGeo ? null : (
         <>
-          <Text style={[s.label, { marginTop: 14, marginBottom: 2 }]}>{t("Ideas")}</Text>
-          <View style={s.chipRow}>
-            {[t("Gym 45 min"), t("Read 20 pages"), t("Morning run"), t("Meditate 10 min")].map((sug) => (
-              <TouchableOpacity key={sug} style={[s.chip, { backgroundColor: C.card, borderColor: C.bronze, paddingVertical: 10 }]} onPress={() => setText(sug)}>
-                <Text style={[s.chipText, { color: C.ink, fontWeight: "600" }]}>{sug}</Text>
-              </TouchableOpacity>
-            ))}
+          <Text style={[s.label, { marginTop: 16, marginBottom: 6 }]}>{t("Provable ideas")}</Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -4 }}>
+            {[["barbell-outline", t("Gym 45 min")], ["walk-outline", t("Morning run")], ["body-outline", t("50 pushups")], ["restaurant-outline", t("Home-cooked meal")]].map(([ic, label]) => {
+              const on = text === label;
+              return (
+                <View key={label} style={{ width: "50%", padding: 4 }}>
+                  <TouchableOpacity activeOpacity={0.85} onPress={() => setText(label)}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: on ? (C.isDark ? "rgba(99,102,241,0.14)" : "rgba(79,70,229,0.08)") : C.card, borderWidth: 1, borderColor: on ? C.red : C.line, borderRadius: 12, padding: 11 }}>
+                    <View style={{ width: 30, height: 30, borderRadius: 8, backgroundColor: C.isDark ? "rgba(99,102,241,0.16)" : "rgba(79,70,229,0.09)", alignItems: "center", justifyContent: "center" }}>
+                      <Ionicons name={ic} size={17} color={C.red} />
+                    </View>
+                    <Text style={[s.goalText, { marginTop: 0, flex: 1, fontSize: 13 }]} numberOfLines={1}>{label}</Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
         </>
       )}
-      <Text style={[s.note, { textAlign: "left" }]}>{t("The AI judge reviews your proof before the day counts.")}</Text>
 
       {/* pill pickers */}
       <OptionSheet visible={sheet === "proof"} title={t("Proof")} onClose={() => setSheet(null)}>
+        {firstRun ? <Text style={[s.note, { textAlign: "left", marginTop: 0, marginBottom: 8 }]}>{t("A photo is the simplest proof — the AI checks it. You can add video & location later with Pro.")}</Text> : null}
         <OptionCard icon="camera-outline" title={t("Photo")} desc={t("One quick photo.")} active={proofType === "photo"} onPress={() => pickProof("photo", false)} />
-        <OptionCard icon="videocam-outline" title={t("Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={proofType === "timelapse"} onPress={() => pickProof("timelapse", !isPro)} />
-        <OptionCard icon="location-outline" title={t("Location")} locked={!isPro} desc={t("Be at a place.")} active={proofType === "geo"} onPress={() => pickProof("geo", !isPro)} />
+        {/* During the first-goal tutorial, hide the Pro proof types: tapping a locked
+            one opens the paywall, which would derail a brand-new user mid-onboarding. */}
+        {!firstRun && <OptionCard icon="videocam-outline" title={t("Video")} locked={!isPro} desc={t("Short clip, AI-judged.")} active={proofType === "timelapse"} onPress={() => pickProof("timelapse", !isPro)} />}
+        {!firstRun && <OptionCard icon="location-outline" title={t("Location")} locked={!isPro} desc={t("Be at a place.")} active={proofType === "geo"} onPress={() => pickProof("geo", !isPro)} />}
       </OptionSheet>
       <OptionSheet visible={sheet === "cadence"} title={t("How often?")} onClose={() => setSheet(null)}>
+        {firstRun ? <Text style={[s.note, { textAlign: "left", marginTop: 0, marginBottom: 8 }]}>{t("How many days a week you'll send proof. Every day builds the strongest streak.")}</Text> : null}
         <OptionCard icon="repeat" title={t("every day")} active={format === "daily"} onPress={() => pickCadence("daily")} />
         <OptionCard icon="calendar-outline" title={t("3× a week")} active={format === "3x"} onPress={() => pickCadence("3x")} />
         <OptionCard icon="calendar" title={t("5× a week")} active={format === "5x"} onPress={() => pickCadence("5x")} />
@@ -2142,10 +2209,11 @@ function NewGoal({ session, isPro, onUpgrade, onDone, onBack }) {
    The proof is a short video the user records here — not picked from the library,
    so a pre-made / faked clip can't be used. Hard-capped in length + file size so
    the base64 payload stays under Gemini's ~20MB inline limit. Front/back camera. */
-const TL_MAX_SECONDS = 15;             // recording auto-stops here
+const TL_MAX_SECONDS = 30;             // recording auto-stops here
 const TL_MIN_SECONDS = 3;              // enough to show a real attempt
 // Gemini's ~20MB request cap applies to the base64-INFLATED payload (×1.33),
-// so raw bytes must stay ≤ ~14MB. With the 2 Mbps bitrate below, 15s ≈ 4MB.
+// so raw bytes must stay ≤ ~14MB. With the 2 Mbps bitrate below, 30s ≈ 7.5MB —
+// still well under the cap, so the size auto-stop rarely trips before 30s.
 const TL_MAX_BYTES = 14 * 1024 * 1024;
 const TL_BITRATE = 2000000; // 2 Mbps — plenty for the AI to judge motion
 
@@ -2355,6 +2423,13 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
   const [anchorSet, setAnchorSet] = useState(true);     // false → first check-in pins it
   const [capturing, setCapturing] = useState(false);    // timelapse recorder open
   const [celebrate, setCelebrate] = useState(null);     // approval overlay payload
+  const [firstProofHint, setFirstProofHint] = useState(false); // one-time "what the judge looks for" nudge
+
+  // First-ever proof: show a one-time hint about what the AI judge wants to see.
+  useEffect(() => {
+    AsyncStorage.getItem("cert_first_proof_seen").then((v) => { if (!v) setFirstProofHint(true); }).catch(() => {});
+  }, []);
+  const dismissFirstProofHint = () => { AsyncStorage.setItem("cert_first_proof_seen", "1").catch(() => {}); setFirstProofHint(false); };
 
   // Ask the judge what today's anti-cheat check is, so the screen shows EXACTLY
   // what the server will enforce (no client/server day drift).
@@ -2447,11 +2522,18 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
       }
       const v = data.verdict;
       if (v.approved) {
+        // Funnel: fire once on the user's first-ever approved proof (activation).
+        AsyncStorage.getItem("cert_first_proof_done").then((done) => {
+          if (!done) { AsyncStorage.setItem("cert_first_proof_done", "1").catch(() => {}); track("first_proof_submitted"); }
+        }).catch(() => {});
+        dismissFirstProofHint(); // they've done it; the one-time nudge is spent
         // Branded celebration overlay (stamp animation) instead of a system alert.
         setCelebrate({
           streak: typeof data.goal?.streak === "number" ? data.goal.streak : null,
           isWeekly: !!data.weekly,
-          reason: (v.reason || "") + (!isGeo && geoPlaceNow ? "\n" + geoPlaceNow : ""),
+          // No AI photo-description on approval — the stamp + streak say it all.
+          // Keep only the short geo check-in place when there is one.
+          reason: !isGeo && geoPlaceNow ? geoPlaceNow : "",
           milestone: data.milestone || null,
           completed: !!data.completed,
         });
@@ -2492,6 +2574,19 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 60 }]} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive">
       <BackBar onBack={onBack} />
       <Text style={s.h2}>{isGeo ? t("Check in") : t("Submit proof")}</Text>
+      {firstProofHint ? (
+        <View style={[s.card, { borderColor: C.bronze, flexDirection: "row", alignItems: "flex-start", gap: 10 }]}>
+          <Ionicons name="sparkles-outline" size={18} color={C.bronze} style={{ marginTop: 2 }} />
+          <Text style={[s.note, { flex: 1, textAlign: "left", marginTop: 0 }]}>
+            {isGeo ? t("First check-in: be at the actual place. The app verifies your GPS — fake locations are rejected.")
+              : isTimelapse ? t("First proof: the AI watches the whole clip. Show the activity actually happening — a propped photo won't pass.")
+              : t("First proof: the AI judge looks at your photo and decides if it's real. Make the goal obviously happening in frame.")}
+          </Text>
+          <TouchableOpacity onPress={dismissFirstProofHint} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close" size={18} color={C.mute} />
+          </TouchableOpacity>
+        </View>
+      ) : null}
       <View style={s.card}>
         <Text style={[s.kicker, { color: C.bronze }]}>{isGeo ? t("Be at the place") : isTimelapse ? t("Record a timelapse of this") : t("Send a photo like this")}</Text>
         <Text style={s.goalText}>{(isGeo || isTimelapse) ? goal.text : (proofSpec(goal) || goal.text)}</Text>
@@ -2798,6 +2893,22 @@ function lastNDays(n) {
   }
   return out;
 }
+// The 7 dates (Monday → Sunday) of the calendar week `weekOff` weeks ago
+// (0 = the current week). Aligned to Monday like the heatmap.
+function mondayWeek(weekOff = 0) {
+  const now = new Date();
+  const base = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const dow = (base.getUTCDay() + 6) % 7; // 0=Mon … 6=Sun
+  const monday = new Date(base);
+  monday.setUTCDate(base.getUTCDate() - dow - 7 * weekOff);
+  const out = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setUTCDate(monday.getUTCDate() + i);
+    out.push(d.toISOString().slice(0, 10));
+  }
+  return out;
+}
 // Derive every stat + the earned-badge list from goals + submissions in one place.
 function computeStats(goals, subs) {
   const approved = subs.filter((s) => s.status === "approved" || s.status === "frozen").length;
@@ -2904,12 +3015,12 @@ function Heatmap({ byDay, countByDay = {} }) {
   );
 }
 
-function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefresh }) {
+function Stats({ goals, subs, onOpenBadge, onOpenAnalytics, isPro, onUpgrade, refreshing, onRefresh }) {
   const st = computeStats(goals, subs);
-  const windowVerified = lastNDays(182).filter((d) => st.byDay[d] === "approved").length;
-  // week pager: 0 = current week, 1 = last week, … (up to ~6 months back)
+  // week pager: 0 = current week, 1 = last week, … (up to ~6 months back).
+  // Calendar week, Monday → Sunday (not a rolling 7-day window).
   const [weekOff, setWeekOff] = useState(0);
-  const week = lastNDays(7 * (weekOff + 1)).slice(0, 7); // that week's 7 days, oldest first
+  const week = mondayWeek(weekOff); // Mon…Sun, that week
   const thisWeek = week.filter((d) => st.byDay[d] === "approved" || st.byDay[d] === "frozen").length;
   const fmtDay = (d) => { try { return new Date(d + "T00:00:00").toLocaleString(activeLang() === "ru" ? "ru" : "en", { day: "numeric", month: "short" }); } catch (_) { return d; } };
   const weekTitle = weekOff === 0 ? t("This week") : `${fmtDay(week[0])} – ${fmtDay(week[6])}`;
@@ -2959,12 +3070,15 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
           <Text style={[s.kicker, { color: C.bronze }]}>{thisWeek}/7</Text>
         </View>
         <View style={{ flexDirection: "row", gap: 8, marginTop: 10 }}>
-          {week.map((d) => {
+          {week.map((d, i) => {
             const frozen = st.byDay[d] === "frozen";
             return (
-              <View key={d} style={{ flex: 1, height: 26, borderRadius: 8, backgroundColor: frozen ? "transparent" : dayDot(d), borderWidth: frozen ? 1.5 : 0, borderColor: C.red, alignItems: "center", justifyContent: "center" }}>
-                {st.byDay[d] === "approved" ? <Ionicons name="checkmark" size={14} color="#ffffff" />
-                  : frozen ? <Ionicons name="snow" size={13} color={C.red} /> : null}
+              <View key={d} style={{ flex: 1, alignItems: "center", gap: 4 }}>
+                <Text style={{ fontSize: 10, fontWeight: "700", color: C.faint }}>{t(DOW_NAMES[i]).slice(0, 2)}</Text>
+                <View style={{ alignSelf: "stretch", height: 26, borderRadius: 8, backgroundColor: frozen ? "transparent" : dayDot(d), borderWidth: frozen ? 1.5 : 0, borderColor: C.red, alignItems: "center", justifyContent: "center" }}>
+                  {st.byDay[d] === "approved" ? <Ionicons name="checkmark" size={14} color="#ffffff" />
+                    : frozen ? <Ionicons name="snow" size={13} color={C.red} /> : null}
+                </View>
               </View>
             );
           })}
@@ -2976,39 +3090,21 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
         <BtnGhost label={t("Share my week")} onPress={() => onOpenBadge({ days: thisWeek, title: t("My week in Cert") })} />
       </View>
 
-      {/* Analytics (heatmap + trophies) is a Pro feature. */}
+      {/* Analytics (heatmap + trophies) lives on its own screen to keep this
+          overview light. Pro-only; free users see the locked upsell below. */}
       {isPro ? (
-        <>
-          <View style={s.card}>
-            <View style={s.rowBetween}>
-              <Text style={s.kicker}>{t("Last 6 months")}</Text>
-              <Text style={s.note}>{windowVerified} {t("verified")}</Text>
-            </View>
-            <Heatmap byDay={st.byDay} countByDay={st.countByDay} />
-            <View style={{ flexDirection: "row", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
-              <Legend color={C.red} outline label={t("frozen")} />
-              <Legend color="rgba(220,38,38,0.5)" label={t("rejected")} />
-              <Legend color={C.isDark ? "#2a3140" : "#dde3ec"} label={t("missed")} />
-            </View>
+        <TouchableOpacity style={[s.card, { flexDirection: "row", alignItems: "center", gap: 12 }]} onPress={onOpenAnalytics}>
+          <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: C.isDark ? "rgba(99,102,241,0.16)" : "rgba(79,70,229,0.09)", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="stats-chart" size={22} color={C.red} />
           </View>
-
-          <Text style={[s.kicker, { color: C.bronze, marginTop: 20, marginBottom: 8 }]}>{t("Trophy shelf")} · {st.badges.length}</Text>
-          {st.badges.length === 0 ? (
-            <Text style={s.note}>{t("Hit a 7, 30 or 100-day verified streak to earn shareable badges.")}</Text>
-          ) : (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
-              {st.badges.map((b) => (
-                <TouchableOpacity key={b.key} style={s.trophy} onPress={() => onOpenBadge(b)}>
-                  <Text style={s.trophyDays}>{b.days}</Text>
-                  <Text style={s.trophyLabel} numberOfLines={1}>{b.title}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-        </>
+          <View style={{ flex: 1 }}>
+            <Text style={s.goalText}>{t("Analytics & trophies")}</Text>
+            <Text style={[s.note, { textAlign: "left", marginTop: 2 }]}>{t("Heatmap, trends and your badge shelf")}</Text>
+          </View>
+          <Text style={s.certRowChevron}>›</Text>
+        </TouchableOpacity>
       ) : (
-        // Locked state teases the real thing: a faded heatmap behind a lock
-        // sells analytics better than an emoji ever did.
+        // Locked state teases the real thing: a faded heatmap behind a lock.
         <TouchableOpacity style={s.card} activeOpacity={0.85} onPress={onUpgrade}>
           <View>
             <View style={{ opacity: 0.35 }}>
@@ -3035,6 +3131,45 @@ function Stats({ goals, subs, onOpenBadge, isPro, onUpgrade, refreshing, onRefre
           <Text style={[s.note, { textAlign: "center" }]}>{t("Unlock the 12-week consistency heatmap, trophy shelf and trends.")}</Text>
           <Text style={[s.kicker, { color: C.bronze, textAlign: "center", marginTop: 8 }]}>{t("Upgrade →")}</Text>
         </TouchableOpacity>
+      )}
+    </ScrollView>
+  );
+}
+
+/* Analytics detail (Pro) — the heavy heatmap + trophy shelf, split off the Stats
+   overview so that tab stays light. */
+function AnalyticsScreen({ goals, subs, onOpenBadge, onBack }) {
+  const st = computeStats(goals, subs);
+  const windowVerified = lastNDays(182).filter((d) => st.byDay[d] === "approved").length;
+  return (
+    <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}>
+      <BackBar onBack={onBack} />
+      <Text style={s.h2}>{t("Analytics & trophies")}</Text>
+      <View style={s.card}>
+        <View style={s.rowBetween}>
+          <Text style={s.kicker}>{t("Last 6 months")}</Text>
+          <Text style={s.note}>{windowVerified} {t("verified")}</Text>
+        </View>
+        <Heatmap byDay={st.byDay} countByDay={st.countByDay} />
+        <View style={{ flexDirection: "row", gap: 14, marginTop: 6, flexWrap: "wrap" }}>
+          <Legend color={C.red} outline label={t("frozen")} />
+          <Legend color="rgba(220,38,38,0.5)" label={t("rejected")} />
+          <Legend color={C.isDark ? "#2a3140" : "#dde3ec"} label={t("missed")} />
+        </View>
+      </View>
+
+      <Text style={[s.kicker, { color: C.bronze, marginTop: 20, marginBottom: 8 }]}>{t("Trophy shelf")} · {st.badges.length}</Text>
+      {st.badges.length === 0 ? (
+        <Text style={s.note}>{t("Hit a 7, 30 or 100-day verified streak to earn shareable badges.")}</Text>
+      ) : (
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+          {st.badges.map((b) => (
+            <TouchableOpacity key={b.key} style={s.trophy} onPress={() => onOpenBadge(b)}>
+              <Text style={s.trophyDays}>{b.days}</Text>
+              <Text style={s.trophyLabel} numberOfLines={1}>{b.title}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       )}
     </ScrollView>
   );
@@ -3146,7 +3281,7 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
     <ScrollView contentContainerStyle={[s.wrap, { paddingBottom: 96 }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
       <Text style={s.h2}>{t("Challenges")}</Text>
-      <Text style={s.lede}>{t("Compete with friends on one shared goal. Last place spins the wheel of fortune.")}</Text>
+      <Text style={s.lede}>{t("One shared goal. Last place spins the wheel.")}</Text>
       <Btn label={"+ " + t("Create a challenge")} onPress={onCreate} />
       <BtnGhost label={t("Join by code")} onPress={onJoin} />
       {rows === null ? <ActivityIndicator color={C.bronze} style={{ marginTop: 24 }} /> : (() => {
@@ -3160,16 +3295,25 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
             {active.map((m) => {
               const ch = m.challenges;
               return (
-                <TouchableOpacity key={ch.id} style={s.card} onPress={() => onOpen(ch.id)}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.goalText}>{ch.title}</Text>
-                      <Text style={s.note}>{timeLeft(ch.ends_at)} · {t("code")} {ch.code}</Text>
-                    </View>
-                    <TouchableOpacity onPress={() => removeChallenge(ch, false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                      <Ionicons name="trash-outline" size={19} color={C.faint} />
-                    </TouchableOpacity>
+                <TouchableOpacity key={ch.id} style={[s.card, { flexDirection: "row", alignItems: "center", gap: 12 }]} onPress={() => onOpen(ch.id)}>
+                  <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: C.red, alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="flame" size={24} color="#fff" />
                   </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.goalText} numberOfLines={1}>{ch.title}</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 5 }}>
+                      {[["time-outline", timeLeft(ch.ends_at)], ["key-outline", ch.code]].map(([ic, lbl], i) => (
+                        <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: C.isDark ? "rgba(99,102,241,0.14)" : "rgba(79,70,229,0.08)", borderRadius: 16, paddingVertical: 3, paddingHorizontal: 8 }}>
+                          <Ionicons name={ic} size={12} color={C.red} />
+                          <Text style={{ fontSize: 12, fontWeight: "700", color: C.red }}>{lbl}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                  <TouchableOpacity onPress={() => removeChallenge(ch, false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                    <Ionicons name="trash-outline" size={19} color={C.faint} />
+                  </TouchableOpacity>
+                  <Text style={s.certRowChevron}>›</Text>
                 </TouchableOpacity>
               );
             })}
@@ -3182,19 +3326,27 @@ function ChallengesScreen({ onOpen, onCreate, onJoin }) {
                 </TouchableOpacity>
                 {showHistory ? past.map((m) => {
                   const ch = m.challenges;
+                  const grey = C.isDark ? "#1f242c" : "#eef1f6";
                   return (
-                    <TouchableOpacity key={ch.id} style={[s.card, { opacity: 0.75 }]} onPress={() => onOpen(ch.id)}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                        {m.final_rank ? <Text style={{ fontSize: 22 }}>{medal(m.final_rank)}</Text> : null}
-                        <View style={{ flex: 1 }}>
-                          <Text style={s.goalText}>{ch.title}</Text>
-                          <Text style={s.note}>{t("Ended")}{ch.dare ? " · " + t("wheel spun") : ""}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => removeChallenge(ch, true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                          <Ionicons name="trash-outline" size={19} color={C.faint} />
-                        </TouchableOpacity>
-                        <Text style={s.certRowChevron}>›</Text>
+                    <TouchableOpacity key={ch.id} style={[s.card, { flexDirection: "row", alignItems: "center", gap: 12 }]} onPress={() => onOpen(ch.id)}>
+                      <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: grey, alignItems: "center", justifyContent: "center" }}>
+                        {m.final_rank ? <Text style={{ fontSize: 24 }}>{medal(m.final_rank)}</Text> : <Ionicons name="flag-outline" size={22} color={C.mute} />}
                       </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={s.goalText} numberOfLines={1}>{ch.title}</Text>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 5 }}>
+                          {[["checkmark-done-outline", t("Ended")], ...(ch.dare ? [["disc-outline", t("wheel spun")]] : [])].map(([ic, lbl], i) => (
+                            <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: grey, borderRadius: 16, paddingVertical: 3, paddingHorizontal: 8 }}>
+                              <Ionicons name={ic} size={12} color={C.mute} />
+                              <Text style={{ fontSize: 12, fontWeight: "700", color: C.mute }}>{lbl}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                      <TouchableOpacity onPress={() => removeChallenge(ch, true)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="trash-outline" size={19} color={C.faint} />
+                      </TouchableOpacity>
+                      <Text style={s.certRowChevron}>›</Text>
                     </TouchableOpacity>
                   );
                 }) : null}
@@ -3497,13 +3649,34 @@ function ChallengeDetail({ challengeId, onSubmitProof, onReview, onSharePlacemen
     <ScrollView contentContainerStyle={s.wrap}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={C.bronze} />}>
       <BackBar onBack={onBack} />
-      <Text style={s.h2}>{ch.title}</Text>
-      <View style={s.card}>
-        <Text style={s.goalText}>{ch.goal_text}</Text>
-        <Text style={[s.note, { textAlign: "left" }]}>{cadenceLabel(ch)} · {board.ended ? t("Ended") : timeLeft(ch.ends_at)}</Text>
-        <Text style={[s.note, { textAlign: "left" }]}>{t("share code")} <Text style={{ color: C.bronze, fontWeight: "800", letterSpacing: 1 }}>{ch.code}</Text></Text>
+      {/* hero banner — indigo, flame watermark, stat pills, tappable invite code */}
+      <View style={{ backgroundColor: C.red, borderRadius: 18, padding: 18, marginTop: 6, overflow: "hidden" }}>
+        <Ionicons name="flame" size={128} color="rgba(255,255,255,0.10)" style={{ position: "absolute", right: -20, top: -24 }} />
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+          <Ionicons name="flame" size={16} color="#fff" />
+          <Text style={{ color: "rgba(255,255,255,0.9)", fontSize: 11, fontWeight: "800", letterSpacing: 2 }}>{board.ended ? t("CHALLENGE ENDED") : t("LIVE CHALLENGE")}</Text>
+        </View>
+        <Text style={{ color: "#fff", fontSize: 22, fontWeight: "800", marginTop: 8 }} numberOfLines={2}>{ch.title}</Text>
+        <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, marginTop: 4 }} numberOfLines={2}>{ch.goal_text}</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 14 }}>
+          {[["time-outline", board.ended ? t("Ended") : timeLeft(ch.ends_at)], ["people-outline", String(board.members.length)], ["repeat", cadenceLabel(ch)]].map(([ic, lbl], i) => (
+            <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: "rgba(255,255,255,0.16)", borderRadius: 20, paddingVertical: 5, paddingHorizontal: 10 }}>
+              <Ionicons name={ic} size={13} color="#fff" />
+              <Text style={{ color: "#fff", fontSize: 12, fontWeight: "700" }}>{lbl}</Text>
+            </View>
+          ))}
+        </View>
+        <TouchableOpacity activeOpacity={0.85} onPress={shareInvite} style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 14, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14 }}>
+          <View>
+            <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>{t("INVITE CODE")}</Text>
+            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "800", letterSpacing: 3, marginTop: 1 }}>{ch.code}</Text>
+          </View>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Ionicons name="share-social-outline" size={18} color="#fff" />
+            <Text style={{ color: "#fff", fontWeight: "700" }}>{t("Share")}</Text>
+          </View>
+        </TouchableOpacity>
       </View>
-      <BtnGhost label={t("Share invite link")} onPress={shareInvite} />
 
       {board.members.map((m) => (
         <View key={m.userId} style={[s.lbRow, m.rank === 1 && { borderColor: C.red, borderWidth: 1.5 }, m.isMe && { backgroundColor: C.isDark ? "rgba(99,102,241,0.08)" : "rgba(79,70,229,0.06)" }]}>

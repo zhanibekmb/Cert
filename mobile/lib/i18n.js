@@ -696,7 +696,7 @@ const RU = {
   "This week: {a}/{b}. Come back another day.": "На этой неделе: {a}/{b}. Возвращайся в другой день.",
   "Come back tomorrow to keep your lead.": "Возвращайся завтра, чтобы удержать лидерство.",
   "This week: {a}/{b} done": "На этой неделе: {a}/{b}",
-  "Submit for friends to judge": "Отправить на суд друзей",
+  "Submit for friends to judge": "Отправить друзьям на проверку",
   "Sending…": "Отправка…",
   "Review friends' proofs ({n})": "Проверить доказательства друзей ({n})",
   "End challenge now (host)": "Завершить челлендж (хост)",
@@ -737,6 +737,71 @@ const RU = {
   // --- freeze packs (explicit to keep Russian plurals correct) ---
   "3 freezes": "3 заморозки",
   "10 freezes": "10 заморозок",
+
+  // --- onboarding rebuild: intro hook, first-goal coaching, first-proof hint ---
+  "Every streak app is a checkbox nobody checks. Cert takes one photo a day — an AI judge decides if it counts. No faking a tap.":
+    "Любое приложение для привычек — это галочка, которую никто не проверяет. Cert берёт одно фото в день, а ИИ-судья решает, засчитано ли. Галочку подделать нельзя.",
+  "Start here: write your goal in one line. Tap an idea below or type your own.":
+    "Начни здесь: опиши цель одной строкой. Нажми идею ниже или напиши свою.",
+  "Nice. Set how often below, then tap Create — your first proof is due tomorrow.":
+    "Отлично. Ниже выбери, как часто, и жми «Создать» — первый пруф уже завтра.",
+  "A photo is the simplest proof — the AI checks it. You can add video & location later with Pro.":
+    "Фото — самый простой пруф, его проверяет ИИ. Видео и локацию можно добавить позже с Pro.",
+  "How many days a week you'll send proof. Every day builds the strongest streak.":
+    "Сколько дней в неделю ты будешь присылать пруф. Каждый день — самый сильный стрик.",
+  "First proof: the AI judge looks at your photo and decides if it's real. Make the goal obviously happening in frame.":
+    "Первый пруф: ИИ-судья смотрит на фото и решает, настоящее ли оно. Пусть в кадре будет чётко видно, как цель выполняется.",
+  "First proof: the AI watches the whole clip. Show the activity actually happening — a propped photo won't pass.":
+    "Первый пруф: ИИ смотрит весь клип. Покажи, как реально делаешь — подставленное фото не пройдёт.",
+  "First check-in: be at the actual place. The app verifies your GPS — fake locations are rejected.":
+    "Первый чек-ин: будь в нужном месте. Приложение проверяет GPS — поддельные локации отклоняются.",
+
+  // --- home card: same-day rejection state ---
+  "Not approved — try again": "Не засчитано — попробуй ещё",
+  "Try again": "Попробовать ещё",
+  "Not approved today": "Сегодня не засчитано",
+  "Appeal or retry": "Оспорить или повторить",
+
+  // --- progress journal (grid gallery) ---
+  "Progress": "Прогресс",
+  "Nothing here yet": "Пока пусто",
+  "Verify a few days and your journal builds itself.": "Подтверди несколько дней — журнал соберётся сам.",
+  "{n} verified days": "{n} подтверждённых дней",
+  "‹ Prev": "‹ Назад",
+  "Next ›": "Дальше ›",
+
+  // --- challenge hero banner ---
+  "LIVE CHALLENGE": "ЖИВОЙ ЧЕЛЛЕНДЖ",
+  "CHALLENGE ENDED": "ЧЕЛЛЕНДЖ ЗАВЕРШЁН",
+  "INVITE CODE": "КОД ПРИГЛАШЕНИЯ",
+
+  // --- goal creation: geo description + provable idea starters ---
+  "e.g. Morning gym check-in": "напр. Утренний чек-ин в зале",
+  "Provable ideas": "Доказуемые идеи",
+  "50 pushups": "50 отжиманий",
+  "Home-cooked meal": "Домашняя еда",
+
+  // --- progress gallery: selective export ---
+  "{n} selected": "Выбрано: {n}",
+  "Clear": "Сбросить",
+  "⤓ Export {n} selected": "⤓ Экспорт выбранных ({n})",
+  "⤓ Export all": "⤓ Экспорт всех",
+
+  // --- challenges tab tagline ---
+  "One shared goal. Last place spins the wheel.": "Одна общая цель. Последний крутит колесо.",
+
+  // --- stats: split analytics screen + cadence word ---
+  "Daily": "Ежедневно",
+  "Heatmap, trends and your badge shelf": "Теплокарта, тренды и полка бейджей",
+
+  // --- paywall redesign ---
+  "Prove more.\nFake nothing.": "Доказывай больше.\nНичего не подделывай.",
+  "Stronger proof, unlimited goals, and the full stats suite.": "Сильнее доказательства, безлимит целей и вся статистика.",
+  "Unlimited goals": "Безлимит целей",
+  "Run as many streaks as you want": "Веди сколько угодно стриков",
+  "Timelapse and GPS check-ins, not just photos": "Таймлапс и GPS-чек-ины, не только фото",
+  "Heatmap, trends and shareable badges": "Теплокарта, тренды и бейджи для шеринга",
+  "Protect your streak on an off day": "Защити стрик в пропущенный день",
 };
 
 export function t(str, vars) {
