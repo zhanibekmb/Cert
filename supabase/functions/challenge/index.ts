@@ -178,24 +178,25 @@ Deno.serve(async (req) => {
     const darePool = buildDarePool((members || []).map((m: any) => m.dare_text));
 
     const goalIds = (members || []).map((m: any) => m.goal_id).filter(Boolean);
-    const goalsById: Record<string, any> = {};
-    if (goalIds.length) {
-      const { data: gs } = await svc.from("goals").select("*").in("id", goalIds);
-      for (const g of gs || []) goalsById[g.id] = g;
-    }
-    // avatars for the leaderboard
-    const avatarByUser: Record<string, string | null> = {};
     const memberIds = (members || []).map((m: any) => m.user_id);
-    if (memberIds.length) {
-      const { data: profs } = await svc.from("profiles").select("id,avatar_url").in("id", memberIds);
-      for (const p of profs || []) avatarByUser[p.id] = p.avatar_url || null;
-    }
-    // verified days per goal = approved submissions
+
+    // Fetch everything the board needs in ONE parallel batch instead of a chain
+    // of round trips: member goals, avatars, all their submissions, and my tz.
+    const emptyRes = { data: [] as any[] };
+    const [gsRes, profsRes, subsRes, myProfRes] = await Promise.all([
+      goalIds.length ? svc.from("goals").select("*").in("id", goalIds) : Promise.resolve(emptyRes),
+      memberIds.length ? svc.from("profiles").select("id,avatar_url").in("id", memberIds) : Promise.resolve(emptyRes),
+      goalIds.length ? svc.from("submissions").select("id,goal_id,status,day").in("goal_id", goalIds) : Promise.resolve(emptyRes),
+      svc.from("profiles").select("timezone").eq("id", user.id).maybeSingle(),
+    ]);
+    const goalsById: Record<string, any> = {};
+    for (const g of gsRes.data || []) goalsById[g.id] = g;
+    const avatarByUser: Record<string, string | null> = {};
+    for (const p of profsRes.data || []) avatarByUser[p.id] = p.avatar_url || null;
+    const allSubs = subsRes.data || [];
+    // verified days per goal = approved/frozen submissions
     const verifiedByGoal: Record<string, number> = {};
-    if (goalIds.length) {
-      const { data: subs } = await svc.from("submissions").select("goal_id,status").in("goal_id", goalIds);
-      for (const s of subs || []) if (s.status === "approved" || s.status === "frozen") verifiedByGoal[s.goal_id] = (verifiedByGoal[s.goal_id] || 0) + 1;
-    }
+    for (const su of allSubs) if (su.status === "approved" || su.status === "frozen") verifiedByGoal[su.goal_id] = (verifiedByGoal[su.goal_id] || 0) + 1;
 
     let rows = (members || []).map((m: any) => {
       const g = m.goal_id ? goalsById[m.goal_id] : null;
@@ -212,7 +213,7 @@ Deno.serve(async (req) => {
     const ended = ch.status === "ended" || Date.now() >= new Date(ch.ends_at).getTime();
     // lazily persist final standings so the history list can show placements
     if (ended) {
-      for (const r of rows) await svc.from("challenge_members").update({ final_rank: r.rank }).eq("challenge_id", challengeId).eq("user_id", r.userId);
+      await Promise.all(rows.map((r) => svc.from("challenge_members").update({ final_rank: r.rank }).eq("challenge_id", challengeId).eq("user_id", r.userId)));
     }
     const last = rows.length ? rows[rows.length - 1] : null;
     const loser = ended && last ? { name: last.name, userId: last.userId, isMe: last.isMe } : null;
@@ -225,41 +226,39 @@ Deno.serve(async (req) => {
     let rejectedToday = false; // peer: a friends-declined proof today closes the day (no resubmit)
     let weekly: { quota: number; thisWeek: number; weekDone: boolean } | null = null;
     if (myGoal) {
-      const { data: prof } = await svc.from("profiles").select("timezone").eq("id", user.id).maybeSingle();
-      const tz = prof?.timezone || "UTC";
+      // tz + all submissions already fetched above — derive today/week locally.
+      const tz = myProfRes.data?.timezone || "UTC";
       const today = new Date().toLocaleDateString("en-CA", { timeZone: tz });
       if (myGoal.status === "completed") {
         doneToday = true;
       } else {
-        const { data: t } = await svc.from("submissions").select("status").eq("goal_id", myGoal.id).eq("day", today);
-        const approved = (t || []).some((x: any) => x.status === "approved" || x.status === "frozen");
-        const pending = (t || []).some((x: any) => x.status === "pending");
+        const todaySubs = allSubs.filter((x: any) => x.goal_id === myGoal.id && x.day === today);
+        const approved = todaySubs.some((x: any) => x.status === "approved" || x.status === "frozen");
+        const pending = todaySubs.some((x: any) => x.status === "pending");
         doneToday = approved || pending;
         awaitingVotes = pending;
         // In peer mode there is ONE attempt per day: a decline ends the day.
         // (AI mode keeps its own retry/attempts logic via the judge, so don't lock it here.)
-        rejectedToday = ch.judge_mode === "peer" && !approved && !pending && (t || []).some((x: any) => x.status === "rejected");
+        rejectedToday = ch.judge_mode === "peer" && !approved && !pending && todaySubs.some((x: any) => x.status === "rejected");
       }
       if (myGoal.type === "recurring" && (myGoal.format === "3x" || myGoal.format === "5x")) {
         const quota = myGoal.format === "5x" ? 5 : 3;
         const wk = weekKeyUTC(today);
-        const { data: w } = await svc.from("submissions").select("status").eq("goal_id", myGoal.id).gte("day", wk).lt("day", shiftDay(wk, 7));
-        const thisWeek = (w || []).filter((x: any) => x.status === "approved" || x.status === "frozen").length;
+        const wkEnd = shiftDay(wk, 7);
+        const thisWeek = allSubs.filter((x: any) => x.goal_id === myGoal.id && x.day >= wk && x.day < wkEnd && (x.status === "approved" || x.status === "frozen")).length;
         weekly = { quota, thisWeek, weekDone: thisWeek >= quota };
       }
     }
-    // peer review: how many of others' proofs are waiting for my vote
+    // peer review: how many of others' proofs are waiting for my vote (pending
+    // set derived from the submissions we already have; only votes need a query)
     let pendingForMe = 0;
     if (ch.judge_mode === "peer") {
-      const otherGoalIds = (members || []).filter((m: any) => m.user_id !== user.id).map((m: any) => m.goal_id).filter(Boolean);
-      if (otherGoalIds.length) {
-        const { data: pend } = await svc.from("submissions").select("id").in("goal_id", otherGoalIds).eq("status", "pending");
-        const pendIds = (pend || []).map((p: any) => p.id);
-        if (pendIds.length) {
-          const { data: v } = await svc.from("challenge_votes").select("submission_id").eq("voter_id", user.id).in("submission_id", pendIds);
-          const voted = new Set((v || []).map((x: any) => x.submission_id));
-          pendingForMe = pendIds.filter((id: string) => !voted.has(id)).length;
-        }
+      const otherGoalIds = new Set((members || []).filter((m: any) => m.user_id !== user.id).map((m: any) => m.goal_id).filter(Boolean));
+      const pendIds = allSubs.filter((x: any) => x.status === "pending" && otherGoalIds.has(x.goal_id)).map((x: any) => x.id);
+      if (pendIds.length) {
+        const { data: v } = await svc.from("challenge_votes").select("submission_id").eq("voter_id", user.id).in("submission_id", pendIds);
+        const voted = new Set((v || []).map((x: any) => x.submission_id));
+        pendingForMe = pendIds.filter((id: string) => !voted.has(id)).length;
       }
     }
     return json({ challenge: ch, ended, members: rows, loser, dare: ch.dare || null, dares: darePool, canSpin, myGoal, doneToday, awaitingVotes, rejectedToday, weekly, isHost: ch.host_user_id === user.id, judgeMode: ch.judge_mode, pendingForMe });

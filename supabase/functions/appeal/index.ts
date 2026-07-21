@@ -22,6 +22,41 @@ const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// Where DENIED appeals are emailed for a manual second look, and the verified
+// Resend sender. Best-effort: a missing key or a send failure never blocks the
+// user's appeal response.
+const APPEAL_NOTIFY_TO = Deno.env.get("APPEAL_NOTIFY_TO") || "zhanibek@certapp.pro";
+const RESEND_FROM = Deno.env.get("RESEND_FROM") || "Cert <noreply@certapp.pro>";
+const RESEND_API_KEY = () => Deno.env.get("RESEND_API_KEY") || "";
+
+function esc(s: string): string {
+  return String(s || "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c] as string));
+}
+async function emailDeniedAppeal(opts: {
+  userId: string; goalText: string; note: string; firstReason: string; appealReason: string;
+  submissionId: string; photoUrl: string | null;
+}): Promise<void> {
+  const apiKey = RESEND_API_KEY();
+  if (!apiKey) return; // not configured — skip silently
+  const html = [
+    `<h2>Appeal denied — manual review</h2>`,
+    `<p><b>User:</b> ${esc(opts.userId)}</p>`,
+    `<p><b>Goal:</b> ${esc(opts.goalText)}</p>`,
+    `<p><b>User's explanation:</b> ${esc(opts.note) || "<i>(none)</i>"}</p>`,
+    `<p><b>First-pass rejection:</b> ${esc(opts.firstReason) || "<i>(none)</i>"}</p>`,
+    `<p><b>Appeal verdict:</b> ${esc(opts.appealReason) || "<i>(none)</i>"}</p>`,
+    `<p><b>Submission:</b> ${esc(opts.submissionId)}</p>`,
+    opts.photoUrl ? `<p><a href="${esc(opts.photoUrl)}">View the proof photo</a> (link valid ~7 days)</p>` : `<p><i>No stored photo.</i></p>`,
+  ].join("\n");
+  try {
+    await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: RESEND_FROM, to: [APPEAL_NOTIFY_TO], subject: "Cert — appeal denied (manual review)", html }),
+    });
+  } catch (_) { /* best-effort; never block the user */ }
+}
+
 function extractText(data: any): string {
   const parts = data?.candidates?.[0]?.content?.parts;
   if (!parts) return "";
@@ -127,7 +162,7 @@ Deno.serve(async (req) => {
       const data = await geminiCall({
         system_instruction: { parts: [{ text: buildAppealPrompt(goal.text, String(note || ""), daily, String(sub.reason || "")) }] },
         contents: [{ role: "user", parts: [{ text: "Review this appeal. Reply with ONLY the JSON object." }, { inline_data: { mime_type: mime, data: toBase64(photoBytes) } }] }],
-        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
+        generationConfig: { responseMimeType: "application/json", maxOutputTokens: 256, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } },
       });
       const p = parseJsonLoose(extractText(data));
       if (!p) throw new Error("no parseable verdict");
@@ -145,6 +180,19 @@ Deno.serve(async (req) => {
   });
 
   if (!verdict.approved) {
+    // Denied appeals go to a human for a manual second look (best-effort email).
+    let photoUrl: string | null = null;
+    if (sub.photo_path) {
+      try {
+        const { data: signed } = await svc.storage.from("proofs").createSignedUrl(sub.photo_path, 60 * 60 * 24 * 7);
+        photoUrl = signed?.signedUrl || null;
+      } catch (_) { photoUrl = null; }
+    }
+    await emailDeniedAppeal({
+      userId: user.id, goalText: String(goal.text || ""), note: String(note || ""),
+      firstReason: String(sub.reason || ""), appealReason: String(verdict.reason || ""),
+      submissionId: String(submissionId), photoUrl,
+    });
     return json({ verdict, restored: false, goal });
   }
 

@@ -109,7 +109,7 @@ async function judgeTimelapse(opts: { frames: string[]; goalText: string; proofS
   const data = await geminiCall({
     system_instruction: { parts: [{ text: buildTimelapsePrompt(opts.goalText, opts.proofSpec, opts.reasonLang) }] },
     contents: [{ role: "user", parts }],
-    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
+    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 256, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } },
   });
   const p = parseJsonLoose(extractText(data));
   if (!p) throw new Error("no parseable verdict");
@@ -130,7 +130,7 @@ async function judgeVideo(opts: { video: string; goalText: string; proofSpec?: s
   const data = await geminiCall({
     system_instruction: { parts: [{ text: buildVideoPrompt(opts.goalText, opts.proofSpec, opts.reasonLang) }] },
     contents: [{ role: "user", parts: [{ text: "Judge this video clip. Reply with ONLY the JSON object." }, { inline_data: { mime_type: v.mimeType, data: v.data } }] }],
-    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
+    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 256, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } },
   });
   const p = parseJsonLoose(extractText(data));
   if (!p) throw new Error("no parseable verdict");
@@ -141,7 +141,7 @@ async function judgePhoto(opts: { photo: string; goalText: string; proofSpec?: s
   const data = await geminiCall({
     system_instruction: { parts: [{ text: buildJudgePrompt(opts.goalText, opts.proofSpec, opts.dailyReq, opts.reasonLang) }] },
     contents: [{ role: "user", parts: [{ text: "Judge this photo. Reply with ONLY the JSON object." }, { inline_data: { mime_type: img.mimeType, data: img.data } }] }],
-    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 1024, temperature: 0.3 },
+    generationConfig: { responseMimeType: "application/json", maxOutputTokens: 256, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } },
   });
   const p = parseJsonLoose(extractText(data));
   if (!p) throw new Error("no parseable verdict");
