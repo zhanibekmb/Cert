@@ -11,7 +11,7 @@
 <link rel="icon" type="image/png" href="assets/logo-mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
     --accent:#4f46e5; --accent-deep:#4338ca; --accent-soft:#eef2ff;
@@ -23,7 +23,7 @@
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;background:var(--bg);}
-  body{font-family:'Hanken Grotesk',-apple-system,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+  body{font-family:'Geist','Inter',-apple-system,system-ui,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;letter-spacing:-.005em;}
   ::selection{background:var(--accent);color:#fff;}
   a{color:inherit;}
   .wrap{max-width:1140px;margin:0 auto;padding:0 24px;}
@@ -68,8 +68,13 @@
   .pro-tag{font-size:11px;font-weight:900;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;letter-spacing:.04em;}
   /* phone */
   .phone{width:320px;border:12px solid #0e1116;border-radius:48px;background:#fff;box-shadow:0 40px 90px rgba(14,17,22,.20);overflow:hidden;flex:none;}
-  .phone.real{line-height:0;background:#0e1116;}
+  .phone.real{line-height:0;background:#0e1116;position:relative;}
   .phone.real .shot{width:100%;display:block;}
+  /* clean status bar overlay (hides the Safari bar in the screenshot) + camera island */
+  .phone.real .rbar{position:absolute;top:0;left:0;right:0;height:38px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:9px 20px 0;z-index:2;line-height:1;}
+  .phone.real .rbar .isl{position:absolute;left:50%;top:9px;transform:translateX(-50%);width:78px;height:22px;background:#0e1116;border-radius:14px;}
+  .phone.real .rbar .t{font-size:14px;font-weight:800;color:#0e1116;}
+  .phone.real .rbar .st{display:flex;align-items:center;gap:5px;}
   /* realistic status bar: time · dynamic island · wifi/battery */
   .pbar{position:relative;display:flex;align-items:center;justify-content:space-between;padding:11px 22px 3px;background:#fff;}
   .pbar .ptime{font-size:14px;font-weight:800;color:#0e1116;letter-spacing:-.01em;}
@@ -109,7 +114,8 @@
   .pill{border:1.5px solid var(--line);background:#fff;color:var(--mute);border-radius:999px;padding:10px 18px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;transition:all .15s;}
   .pill:hover{border-color:var(--accent);color:var(--accent);}
   .pill.active{background:var(--ink);color:#fff;border-color:var(--ink);}
-  .how-grid{display:grid;grid-template-columns:1fr 360px;gap:52px;margin-top:40px;align-items:start;}
+  .how-grid{display:grid;grid-template-columns:1fr 340px;gap:56px;margin-top:36px;align-items:stretch;}
+  .how-left{display:flex;flex-direction:column;justify-content:space-between;}
   .step{display:flex;gap:16px;opacity:.45;transition:opacity .3s;}
   .step.on{opacity:1;}
   .step .rail{display:flex;flex-direction:column;align-items:center;flex:none;}
@@ -202,7 +208,16 @@
     <h2 style="margin-top:14px;max-width:620px;" data-k="howH"></h2>
     <div class="pills" id="howPills"></div>
     <div class="how-grid">
-      <div class="steps" id="howSteps"></div>
+      <div class="how-left">
+        <div class="steps" id="howSteps"></div>
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:24px;">
+          <a class="store lg" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+            <svg width="20" height="22" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
+            <span><small data-k="storeSmall"></small><b>App Store</b></span>
+          </a>
+          <span style="font-size:13.5px;color:var(--faint);font-weight:600;" data-k="heroFree"></span>
+        </div>
+      </div>
       <div class="how-phone"><div class="phone"><div class="pbar"><span class="ptime">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><div class="pscreen" id="howScreen"></div></div></div>
     </div>
   </div>
@@ -227,7 +242,7 @@
 <!-- ANALYTICS SHOWCASE (real screenshot) -->
 <section style="padding:78px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap grid2" style="align-items:center;">
-    <div class="phone real" style="justify-self:center;"><img class="shot" src="assets/landing/statistics.jpg" alt="Cert — analytics & trophies"></div>
+    <div class="phone real" style="justify-self:center;"><div class="rbar"><span class="t">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><img class="shot" src="assets/landing/statistics.jpg" alt="Cert — analytics & trophies"></div>
     <div>
       <span class="kicker" data-k="anKicker"></span>
       <h2 style="margin-top:14px;" data-k="anH"></h2>
@@ -275,7 +290,7 @@
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 7l16 10M20 7L4 17M12 4l3 2-3 2-3-2zM12 20l3-2-3-2-3 2z"/></svg><span data-k="chChip3"></span></span>
       </div>
     </div>
-    <div class="phone real" style="justify-self:center;"><img class="shot" src="assets/landing/group-challenge.jpg" alt="Cert — group challenge"></div>
+    <div class="phone real" style="justify-self:center;"><div class="rbar"><span class="t">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><img class="shot" src="assets/landing/group-challenge.jpg" alt="Cert — group challenge"></div>
   </div>
 </section>
 
@@ -355,9 +370,9 @@
 const T = {
   en: {
     navHow:"How it works", navFeatures:"Features", navPricing:"Pricing",
-    storeSmall:"Download on the", soonSmall:"Coming soon to", soonB:"Google Play",
+    storeSmall:"Download on the", soonSmall:"Coming soon to", soonB:"Google Play", heroFree:"Free to start · iPhone",
     heroH1a:"The streak", heroH1b:"you can't fake.",
-    heroSub:"Set one goal. Send live proof every day — a photo, a short video, or a location check-in. An AI judge decides if your day counts.",
+    heroSub:"Set <b style='color:var(--accent)'>one goal</b>. Send <b style='color:var(--accent)'>live proof</b> every day — a photo, a short video, or a location check-in. An <b style='color:var(--accent)'>AI judge</b> decides if your day counts.",
     chipLive:"Live camera only", chipAI:"AI-verified", chipFriends:"Challenges with friends",
     howKicker:"How it works", howH:"Choose how you'll prove it. The judge does the rest.",
     flexKicker:"Built to keep you honest", flexH:"Strict where it counts. Fair where it should be.",
@@ -419,9 +434,9 @@ const T = {
   },
   ru: {
     navHow:"Как работает", navFeatures:"Возможности", navPricing:"Цены",
-    storeSmall:"Скачать в", soonSmall:"Скоро в", soonB:"Google Play",
+    storeSmall:"Скачать в", soonSmall:"Скоро в", soonB:"Google Play", heroFree:"Бесплатный старт · iPhone",
     heroH1a:"Серия, которую", heroH1b:"не подделать.",
-    heroSub:"Поставь одну цель. Каждый день присылай живое доказательство — фото, короткое видео или гео-отметку. ИИ-судья решает, засчитан ли день.",
+    heroSub:"Поставь <b style='color:var(--accent)'>одну цель</b>. Каждый день присылай <b style='color:var(--accent)'>живое доказательство</b> — фото, короткое видео или гео-отметку. <b style='color:var(--accent)'>ИИ-судья</b> решает, засчитан ли день.",
     chipLive:"Только живая камера", chipAI:"Проверка ИИ", chipFriends:"Челленджи с друзьями",
     howKicker:"Как работает", howH:"Выбери, чем докажешь. Остальное — за судьёй.",
     flexKicker:"Чтобы держать честно", flexH:"Строг там, где важно. Справедлив там, где нужно.",
@@ -511,29 +526,35 @@ function createScreen(pt, typed, flash){
     +'<div class="cs-create">'+d.csCreate+'</div>';
 }
 
+// animations pause when their section is off-screen (smooth scrolling)
+let heroVis=true, howVis=true;
+// light update: only rewrite the typed input, not the whole phone (perf)
+function setInputText(id, typed){ const el=document.getElementById(id); if(!el) return; const inp=el.querySelector('.cs-input'); if(inp) inp.innerHTML=(typed?'<span>'+typed+'</span>':'')+'<span class="caret"></span>'; }
+
 // ---- hero animation (auto-cycle proof type + typewriter) ----
 let hIdx=0, hTyped="", hPhase="type", hTick=0, hStart=Date.now();
-function heroFull(){ return T[lang].proofs[PT[hIdx]].goal; }
 function renderHero(flash){ const el=document.getElementById("heroScreen"); if(el) el.innerHTML=createScreen(PT[hIdx], hTyped, flash); }
 function heroLoop(){
-  const full=heroFull();
-  if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); renderHero(); } else { hPhase="hold"; hTick=0; } }
+  if(!heroVis) return;
+  const full=T[lang].proofs[PT[hIdx]].goal;
+  if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); setInputText("heroScreen", hTyped); } else { hPhase="hold"; hTick=0; } }
   else if(hPhase==="hold"){ hTick++; if(hTick>26){ hPhase="next"; } }
   else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); setTimeout(()=>renderHero(false),260); }
 }
 setInterval(heroLoop,55);
-setInterval(()=>{ const el=document.getElementById("liveText"); if(el) el.textContent=T[lang].liveText(Math.floor((Date.now()-hStart)/1000)%60); },1000);
+setInterval(()=>{ if(!heroVis) return; const el=document.getElementById("liveText"); if(el) el.textContent=T[lang].liveText(Math.floor((Date.now()-hStart)/1000)%60); },1000);
 
 // ---- how-it-works (pills + steps + progress drive the SAME create screen) ----
 let cat=0, step=0, prog=0, raf=null, lastT=0, cTyped="", cTw=null;
 const STEP_MS=2700; const HOWCATS=["photo","video","geo"];
 function howD(){ return T[lang].how[HOWCATS[cat]]; }
-function startHowType(){ clearInterval(cTw); cTyped=""; const full=T[lang].proofs[HOWCATS[cat]].goal; let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); renderHowPhone(); if(i>=full.length) clearInterval(cTw); },50); }
+function startHowType(){ clearInterval(cTw); cTyped=""; const full=T[lang].proofs[HOWCATS[cat]].goal; let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); setInputText("howScreen", cTyped); if(i>=full.length) clearInterval(cTw); },50); }
 function renderHowPhone(){ const el=document.getElementById("howScreen"); if(el) el.innerHTML=createScreen(HOWCATS[cat], cTyped, step===0); }
 function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; startHowType(); renderAll(); }; el.appendChild(b); }); }
 function renderSteps(){ const el=document.getElementById("howSteps"), d=howD(); el.innerHTML=""; d.steps.forEach((s,i)=>{ const div=document.createElement("div"); div.className="step"+(i===step?" on":"")+(i<step?" done":""); const conn=i<d.steps.length-1?'<div class="conn"></div>':''; div.innerHTML='<div class="rail"><div class="dot">'+(i+1)+'</div>'+conn+'</div><div class="body"><h4>'+s[0]+'</h4><p>'+s[1]+'</p><div class="bar"><i style="width:'+(i===step?Math.round(prog*100):0)+'%"></i></div></div>'; el.appendChild(div); }); }
 function renderAll(){ renderPills(); renderSteps(); renderHowPhone(); }
-function frame(t){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } raf=requestAnimationFrame(frame); }
+function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
+try{ const io=new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.target.id==="top") heroVis=e.isIntersecting; if(e.target.id==="how") howVis=e.isIntersecting; }); },{threshold:0}); io.observe(document.getElementById("top")); io.observe(document.getElementById("how")); }catch(_){}
 
 // ---- pricing ----
 let bill="mo";
