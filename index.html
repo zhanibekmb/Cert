@@ -88,8 +88,10 @@
   .cs-toggle span.on{background:var(--accent);color:#fff;}
   .cs-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:12px;}
   .cs-say{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .cs-pill{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:800;transition:transform .25s ease, background .25s;}
-  .cs-pill.flash{transform:scale(1.08);background:var(--accent-soft);}
+  .cs-pill{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:800;}
+  /* crossfade: new pill/deadline fades + slides in when the scenario changes */
+  @keyframes pillIn{0%{opacity:0;transform:translateY(6px) scale(.96);}100%{opacity:1;transform:translateY(0) scale(1);}}
+  .cs-pill.anim,.cs-dl.anim{animation:pillIn .42s cubic-bezier(.2,.7,.2,1);}
   .cs-input{margin-top:11px;border:1.5px solid var(--accent);border-radius:12px;padding:12px 13px;font-size:14.5px;font-weight:600;min-height:46px;color:var(--ink);}
   .cs-input .ph{color:var(--faint);}
   .cs-deadline{display:flex;align-items:center;gap:10px;margin-top:13px;}
@@ -99,8 +101,10 @@
     background:repeating-linear-gradient(90deg,transparent 0 26px,rgba(120,130,160,.16) 26px 28px),
       repeating-linear-gradient(0deg,transparent 0 24px,rgba(120,130,160,.16) 24px 26px),
       linear-gradient(135deg,#eef1f8,#e3e8f3);}
-  .cs-map .pin{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%) rotate(-45deg);width:16px;height:16px;border-radius:50% 50% 50% 0;background:var(--err);box-shadow:0 4px 10px rgba(0,0,0,.18);}
-  .cs-map .cs-place{position:absolute;left:8px;bottom:8px;background:#fff;color:var(--accent);font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);}
+  .cs-map .radius{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:74px;height:74px;border-radius:50%;background:rgba(79,70,229,.16);border:2px solid rgba(79,70,229,.55);animation:radiusPulse 2.2s ease-in-out infinite;}
+  @keyframes radiusPulse{0%,100%{transform:translate(-50%,-50%) scale(.72);opacity:.75;}50%{transform:translate(-50%,-50%) scale(1.12);opacity:.3;}}
+  .cs-map .pin{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-45deg);width:16px;height:16px;border-radius:50% 50% 50% 0;background:var(--err);box-shadow:0 4px 10px rgba(0,0,0,.18);z-index:2;}
+  .cs-map .cs-place{position:absolute;left:8px;bottom:8px;background:#fff;color:var(--accent);font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);z-index:2;}
   .cs-ideas-h{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin:14px 0 8px;}
   .cs-ideas{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .cs-idea{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:13px;font-weight:700;}
@@ -432,7 +436,8 @@ const T = {
       ["Can I trick the judge?","People try. Screenshots, stock images, old photos and fake GPS get rejected. If the judge gets it wrong, you can appeal once — a second, more generous review."],
       ["Where's the Android version?","It's in closed testing on Google Play. iPhone is live today; Android is next."]
     ],
-    liveText:(s)=>"Live · Goal created · "+s+"s ago"
+    liveMsgs:["Goal created","Proof approved","Streak hit 12 days","Friend joined a challenge"],
+    liveText:(m,s)=>"Live · "+m+" · "+s+"s ago"
   },
   ru: {
     navHow:"Как работает", navFeatures:"Возможности", navPricing:"Цены",
@@ -495,7 +500,8 @@ const T = {
       ["Можно ли обмануть судью?","Пробуют многие. Скриншоты, картинки из интернета, старые фото и fake-GPS отклоняются. Если судья ошибся — есть одна апелляция: повторная, более щадящая проверка."],
       ["Где версия для Android?","В закрытом тестировании в Google Play. iPhone доступен уже сейчас, Android — следующий."]
     ],
-    liveText:(s)=>"Онлайн · Цель создана · "+s+" сек назад"
+    liveMsgs:["Цель создана","Пруф одобрен","Серия — 12 дней","Друг зашёл в челлендж"],
+    liveText:(m,s)=>"Онлайн · "+m+" · "+s+" сек назад"
   }
 };
 let lang = localStorage.getItem("cert_lang") || ((navigator.language||"").toLowerCase().startsWith("ru")?"ru":"en");
@@ -510,13 +516,14 @@ const PT=["photo","video","geo"];
 function createScreen(pt, typed, flash){
   const d=T[lang], p=d.proofs[pt], geo=pt==="geo";
   const chev='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg>';
-  const pill='<span class="cs-pill'+(flash?' flash':'')+'">'+p.pill+chev+'</span>';
+  const a=flash?' anim':'';
+  const pill='<span class="cs-pill'+a+'">'+p.pill+chev+'</span>';
   const say = geo
-    ? '<div class="cs-say">'+d.csSay+' '+pill+' '+(lang==="ru"?"в":"at")+'</div><div style="margin-top:8px;"><span class="cs-pill">'+p.place+chev+'</span></div>'
+    ? '<div class="cs-say">'+d.csSay+' '+pill+' '+(lang==="ru"?"в":"at")+'</div><div style="margin-top:8px;"><span class="cs-pill'+a+'">'+p.place+chev+'</span></div>'
     : '<div class="cs-say">'+d.csSay+' '+pill+' :</div>';
   const input='<div class="cs-input">'+(typed?'<span>'+typed+'</span>':'<span class="ph">'+(lang==="ru"?"напр. ":"e.g. ")+p.goal+'</span>')+'<span class="caret"></span></div>';
-  const deadline='<div class="cs-deadline"><span class="lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl">'+p.dl+chev+'</span></div>';
-  const map = geo ? '<div class="cs-map"><div class="pin"></div><span class="cs-place">'+p.place+'</span></div>' : '';
+  const deadline='<div class="cs-deadline"><span class="lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl'+a+'">'+p.dl+chev+'</span></div>';
+  const map = geo ? '<div class="cs-map"><div class="radius"></div><div class="pin"></div><span class="cs-place">'+p.place+'</span></div>' : '';
   const ideas = d.ideas.map((t,i)=>'<div class="cs-idea"><span class="ic">'+IDEA_ICONS[i]+'</span>'+t+'</div>').join('');
   // geo: map lives in the card, no "ideas" grid — matches the real screen and
   // keeps the phone the SAME height as photo/video variants.
@@ -541,10 +548,14 @@ function heroLoop(){
   const full=T[lang].proofs[PT[hIdx]].goal;
   if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); setInputText("heroScreen", hTyped); } else { hPhase="hold"; hTick=0; } }
   else if(hPhase==="hold"){ hTick++; if(hTick>26){ hPhase="next"; } }
-  else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); setTimeout(()=>renderHero(false),260); }
+  else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); }
 }
 setInterval(heroLoop,55);
-setInterval(()=>{ if(!heroVis) return; const el=document.getElementById("liveText"); if(el) el.textContent=T[lang].liveText(Math.floor((Date.now()-hStart)/1000)%60); },1000);
+let liveMsgIdx=0, liveMsgStart=Date.now();
+setInterval(()=>{ if(!heroVis) return;
+  if(Math.floor((Date.now()-liveMsgStart)/1000)>=13){ liveMsgIdx=(liveMsgIdx+1)%T[lang].liveMsgs.length; liveMsgStart=Date.now(); }
+  const el=document.getElementById("liveText"); if(el) el.textContent=T[lang].liveText(T[lang].liveMsgs[liveMsgIdx], Math.floor((Date.now()-liveMsgStart)/1000));
+},1000);
 
 // ---- how-it-works (pills + steps + progress drive the SAME create screen) ----
 let cat=0, step=0, prog=0, raf=null, lastT=0, cTyped="", cTw=null;
