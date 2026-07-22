@@ -67,9 +67,13 @@
   .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
   .pro-tag{font-size:11px;font-weight:900;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;letter-spacing:.04em;}
   /* phone */
-  .phone{width:356px;border:13px solid #0e1116;border-radius:52px;background:#fff;box-shadow:0 44px 100px rgba(14,17,22,.22);overflow:hidden;flex:none;}
-  .phone.real{line-height:0;background:#0e1116;position:relative;}
+  .phone{width:322px;border:12px solid #ffffff;border-radius:54px;background:#fff;box-shadow:0 0 0 1.5px var(--line),0 40px 90px rgba(14,17,22,.16);overflow:hidden;flex:none;}
+  .phone.real{line-height:0;background:#fff;position:relative;}
   .phone.real .shot{width:100%;display:block;}
+  /* crossfading real app screenshots (hero + how-it-works) */
+  .shots{position:relative;width:100%;aspect-ratio:1170/1720;background:#fff;}
+  .shots .shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0;transition:opacity .5s ease;}
+  .shots .shot.on{opacity:1;}
   /* clean status bar overlay (hides the Safari bar in the screenshot) + camera island */
   .phone.real .rbar{position:absolute;top:0;left:0;right:0;height:38px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:9px 20px 0;z-index:2;line-height:1;}
   .phone.real .rbar .isl{position:absolute;left:50%;top:9px;transform:translateX(-50%);width:78px;height:22px;background:#0e1116;border-radius:14px;}
@@ -140,6 +144,27 @@
   .price-toggle button.on{background:var(--accent);color:#fff;}
   .price-amt{font-size:44px;font-weight:900;letter-spacing:-.03em;}
   .price-amt .per{font-size:16px;font-weight:700;color:var(--mute);}
+  /* comparison pricing */
+  .cmp{max-width:680px;margin:30px auto 0;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:#fff;text-align:left;box-shadow:0 24px 60px -34px rgba(14,17,22,.28);}
+  .cmp-row{display:grid;grid-template-columns:1fr 86px 116px;align-items:center;}
+  .cmp-row>div{padding:15px 8px;}
+  .cmp-row>div:first-child{padding-left:22px;}
+  .cmp-row>div:last-child{padding-right:22px;}
+  .cmp-row .c{text-align:center;font-weight:700;}
+  .cmp-row .pro{background:var(--accent-soft);}
+  .cmp-body .cmp-row{border-top:1px solid var(--line);}
+  .cmp-body .lab{font-size:15px;font-weight:600;color:var(--ink);}
+  .cmp-body .sm{display:block;font-size:12px;font-weight:600;color:var(--faint);margin-top:1px;}
+  .cmp-head{background:#fff;}
+  .cmp-head .ph{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
+  .cmp-head .c{font-size:15px;font-weight:900;color:var(--ink);}
+  .cmp-head .pro .c,.cmp-head .pro{color:var(--accent);}
+  .cmp-head .cmp-price{display:block;font-size:22px;font-weight:900;letter-spacing:-.02em;margin-top:2px;}
+  .cmp-head .cmp-per{font-size:12px;font-weight:700;color:var(--mute);}
+  .cmp .tick{color:var(--ok);}
+  .cmp .dash{color:var(--faint);}
+  .cmp-note{font-size:13px;color:var(--faint);font-weight:600;margin-top:14px;}
+  @media(max-width:560px){.cmp-row{grid-template-columns:1fr 62px 84px;}.cmp-head .cmp-price{font-size:18px;}}
   @media(max-width:900px){
     .grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}
     .hero-flex{flex-direction:column;text-align:center;}.hero-flex .chips,.hero-flex .hero-cta{justify-content:center;}
@@ -201,7 +226,11 @@
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17 19a5.5 5.5 0 0 0-3-4.9"/></svg><span data-k="chipFriends"></span></span>
       </div>
     </div>
-    <div class="phone"><div class="pbar"><span class="ptime">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><div class="pscreen" id="heroScreen"></div></div>
+    <div class="phone real"><div class="shots" id="heroShots">
+      <img class="shot on" src="assets/landing/photo-proof.jpg" alt="Cert — new goal, photo proof">
+      <img class="shot" src="assets/landing/video-proof.jpg" alt="Cert — new goal, video proof">
+      <img class="shot" src="assets/landing/geo-proof.jpg" alt="Cert — new goal, location check-in">
+    </div></div>
   </div>
 </section>
 
@@ -224,7 +253,11 @@
           <span style="font-size:13.5px;color:var(--faint);font-weight:600;" data-k="heroFree"></span>
         </div>
       </div>
-      <div class="how-phone"><div class="phone"><div class="pbar"><span class="ptime">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><div class="pscreen" id="howScreen"></div></div></div>
+      <div class="how-phone"><div class="phone real"><div class="shots" id="howShots">
+        <img class="shot on" src="assets/landing/photo-proof.jpg" alt="Cert — photo proof goal">
+        <img class="shot" src="assets/landing/video-proof.jpg" alt="Cert — video proof goal">
+        <img class="shot" src="assets/landing/geo-proof.jpg" alt="Cert — location check-in goal">
+      </div></div></div>
     </div>
   </div>
 </section>
@@ -261,23 +294,30 @@
   </div>
 </section>
 
-<!-- THE JUDGE (dark band) -->
-<section style="padding:84px 0;background:linear-gradient(160deg,var(--dark),var(--dark2));">
+<!-- THE JUDGE -->
+<section style="padding:84px 0;background:#fff;">
   <div class="wrap grid2" style="align-items:center;">
     <div>
-      <span class="kicker" style="color:var(--dark-mute);" data-k="judgeKicker"></span>
-      <h2 style="color:var(--dark-ink);margin-top:14px;" data-k="judgeH"></h2>
-      <p style="color:var(--dark-mute);font-size:17px;line-height:1.65;margin:20px 0 0;" data-k="judgeT"></p>
-      <ul style="margin:22px 0 0;padding:0;list-style:none;color:var(--dark-ink);font-size:15.5px;line-height:2.15;font-weight:600;">
-        <li style="display:flex;gap:10px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dark-mute)" stroke-width="2.5" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL1"></span></li>
-        <li style="display:flex;gap:10px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dark-mute)" stroke-width="2.5" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL2"></span></li>
-        <li style="display:flex;gap:10px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--dark-mute)" stroke-width="2.5" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL3"></span></li>
+      <span class="kicker" data-k="judgeKicker"></span>
+      <h2 style="margin-top:14px;" data-k="judgeH"></h2>
+      <p class="sub" style="margin:20px 0 0;" data-k="judgeT"></p>
+      <ul style="margin:22px 0 0;padding:0;list-style:none;color:var(--ink);font-size:15.5px;line-height:2.05;font-weight:600;">
+        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL1"></span></li>
+        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL2"></span></li>
+        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL3"></span></li>
       </ul>
     </div>
     <div style="display:flex;justify-content:center;">
-      <div style="transform:rotate(-7deg);border:4px solid var(--dark-mute);border-radius:18px;padding:24px 38px;box-shadow:0 0 70px rgba(185,190,248,.30);">
-        <div style="color:#fff;font-size:36px;font-weight:900;letter-spacing:.1em;">APPROVED ✓</div>
-        <div style="color:var(--dark-mute);font-size:13px;font-weight:700;text-align:center;margin-top:8px;letter-spacing:.08em;text-transform:uppercase;" data-k="judgeStampSub"></div>
+      <div style="width:300px;background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 26px 60px -30px rgba(14,17,22,.3);overflow:hidden;">
+        <div style="height:158px;background:linear-gradient(150deg,#e5e8f1,#c9cfdd);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8b93a8" stroke-width="1.5"><rect x="3" y="6" width="18" height="14" rx="2.5"/><circle cx="12" cy="13" r="3.8"/><path d="M8 6l1.4-2.3h5.2L16 6"/></svg>
+          <span style="position:absolute;top:14px;right:14px;background:var(--ok);color:#fff;font-size:13px;font-weight:900;letter-spacing:.09em;padding:5px 12px;border-radius:9px;box-shadow:0 8px 20px -8px var(--ok);">APPROVED</span>
+        </div>
+        <div style="padding:17px 19px;">
+          <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;">CERT JUDGE</div>
+          <div style="font-size:15.5px;font-weight:800;margin-top:6px;color:var(--ink);" data-k="judgeCardGoal"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid var(--line);font-size:13.5px;color:var(--mute);font-weight:600;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.8"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeCardMeta"></span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -318,21 +358,16 @@
       <button id="bill-mo" class="on" onclick="setBill('mo')" data-k="billMo"></button>
       <button id="bill-yr" onclick="setBill('yr')" data-k="billYr"></button>
     </div>
-    <div class="grid2" style="max-width:760px;margin:28px auto 0;text-align:left;">
-      <div class="card" style="background:#fff;">
-        <div style="font-size:22px;font-weight:900;">Free</div>
-        <div class="price-amt" style="margin-top:10px;">$0 <span class="per" data-k="perForever"></span></div>
-        <p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="freeList"></p>
+    <div class="cmp">
+      <div class="cmp-head cmp-row">
+        <div class="ph" data-k="cmpHead"></div>
+        <div class="c">Free<span class="cmp-price">$0</span></div>
+        <div class="c pro">Cert Pro<span class="cmp-price" id="proPrice">$4.99</span><span class="cmp-per" id="proPer"></span></div>
       </div>
-      <div class="card" style="background:#fff;border:2px solid var(--accent);position:relative;">
-        <div style="position:absolute;top:-12px;right:20px;background:var(--accent);color:#fff;font-size:11px;font-weight:900;letter-spacing:.06em;border-radius:999px;padding:4px 12px;" data-k="popular"></div>
-        <div style="font-size:22px;font-weight:900;color:var(--accent);">Cert Pro</div>
-        <div class="price-amt" style="margin-top:10px;color:var(--accent);"><span id="proPrice">$4.99</span> <span class="per" id="proPer"></span></div>
-        <div style="font-size:13px;color:var(--faint);font-weight:600;margin-top:4px;" id="proNote"></div>
-        <p style="color:var(--mute);font-size:15px;line-height:2.1;margin:14px 0 0;" data-k="proList"></p>
-      </div>
+      <div class="cmp-body" id="cmpBody"></div>
     </div>
-    <a class="btn" style="margin-top:30px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" data-k="priceCta"></a>
+    <div class="cmp-note" id="proNote"></div>
+    <a class="btn" style="margin-top:20px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" data-k="priceCta"></a>
   </div>
 </section>
 
@@ -345,12 +380,12 @@
 </section>
 
 <!-- FINAL CTA -->
-<section style="padding:96px 0;background:linear-gradient(160deg,var(--dark),var(--dark2));text-align:center;">
+<section style="padding:96px 0;background:var(--accent-soft);border-top:1px solid var(--line);text-align:center;">
   <div class="wrap">
-    <img src="assets/logo-mark.png" alt="Cert" style="width:56px;height:56px;filter:brightness(0) invert(1);">
-    <h2 style="color:var(--dark-ink);margin-top:20px;" data-k="ctaH"></h2>
-    <p style="color:var(--dark-mute);font-size:18px;margin:16px 0 32px;" data-k="ctaT"></p>
-    <a class="store lg" style="background:#fff;color:var(--ink);" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+    <img src="assets/logo-mark.png" alt="Cert" style="width:58px;height:58px;">
+    <h2 style="margin-top:20px;" data-k="ctaH"></h2>
+    <p style="color:var(--mute);font-size:18px;margin:16px 0 32px;" data-k="ctaT"></p>
+    <a class="store lg" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
       <svg width="20" height="22" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
       <span><small data-k="storeSmall"></small><b>App Store</b></span>
     </a>
@@ -365,7 +400,7 @@
       <a class="navlink" href="privacy.html" data-k="ftPrivacy"></a>
       <a class="navlink" href="terms.html" data-k="ftTerms"></a>
       <a class="navlink" href="delete-account.html" data-k="ftDelete"></a>
-      <a class="navlink" href="mailto:janibek190906@gmail.com" data-k="ftSupport"></a>
+      <a class="navlink" href="mailto:zhanibek@certapp.pro" data-k="ftSupport"></a>
     </span>
     <span style="width:100%;text-align:right;">© 2026 Cert</span>
   </div>
@@ -406,6 +441,9 @@ const T = {
     freeList:"1 active goal<br>Photo proof<br>Challenges with friends<br>Streak freezes",
     proList:"Unlimited goals<br>Video &amp; location proof<br>6-month analytics &amp; trophies<br>Monthly freezes included",
     priceCta:"Start free on iPhone", priceMore:"See full pricing details",
+    cmpHead:"What you get",
+    cmp:[["Active goals","1","Unlimited"],["Photo proof + AI judge",true,true],["Challenges with friends",true,true],["Streak freezes",true,true],["Video proof",false,true],["Location check-in proof",false,true],["6-month analytics & trophies",false,true]],
+    judgeCardGoal:"“A photo at the gym”", judgeCardMeta:"Matches your goal · streak → day 13",
     faqH:"Questions, answered.",
     ctaH:"Start a streak that means something.",
     ctaT:"Free on the App Store. Your first goal takes under a minute.",
@@ -441,7 +479,7 @@ const T = {
   },
   ru: {
     navHow:"Как работает", navFeatures:"Возможности", navPricing:"Цены",
-    storeSmall:"Скачать в", soonSmall:"Скоро в", soonB:"Google Play", heroFree:"Бесплатный старт · iPhone",
+    storeSmall:"Download on the", soonSmall:"Скоро в", soonB:"Google Play", heroFree:"Бесплатный старт · iPhone",
     heroH1a:"Серия, которую", heroH1b:"не подделать.",
     heroSub:"Выбери <b style='color:var(--accent)'>одну привычку</b>. Каждый день доказывай её <b style='color:var(--accent)'>живым фото</b> — а <b style='color:var(--accent)'>ИИ-судья</b> решит, засчитано ли. Галочке больше не соврёшь.",
     chipLive:"Только живая камера", chipAI:"Проверка ИИ", chipFriends:"Челленджи с друзьями",
@@ -471,6 +509,9 @@ const T = {
     freeList:"1 активная цель<br>Фото-доказательство<br>Челленджи с друзьями<br>Заморозки серии",
     proList:"Безлимит целей<br>Видео и гео-доказательства<br>Аналитика за 6 месяцев и трофеи<br>Ежемесячные заморозки",
     priceCta:"Начать бесплатно на iPhone", priceMore:"Полные детали цен",
+    cmpHead:"Что входит",
+    cmp:[["Активные цели","1","Безлимит"],["Фото-пруф + AI-судья",true,true],["Челленджи с друзьями",true,true],["Заморозки серии",true,true],["Видео-пруф",false,true],["Гео-чек-ин",false,true],["Аналитика 6 мес. и трофеи",false,true]],
+    judgeCardGoal:"«Фото в зале»", judgeCardMeta:"Совпадает с целью · серия → день 13",
     faqH:"Вопросы и ответы.",
     ctaH:"Начни серию, которая чего-то стоит.",
     ctaT:"Бесплатно в App Store. Первая цель займёт меньше минуты.",
@@ -540,33 +581,26 @@ let heroVis=true, howVis=true;
 // light update: only rewrite the typed input, not the whole phone (perf)
 function setInputText(id, typed){ const el=document.getElementById(id); if(!el) return; const inp=el.querySelector('.cs-input'); if(inp) inp.innerHTML=(typed?'<span>'+typed+'</span>':'')+'<span class="caret"></span>'; }
 
-// ---- hero animation (auto-cycle proof type + typewriter) ----
-let hIdx=0, hTyped="", hPhase="type", hTick=0, hStart=Date.now();
-function renderHero(flash){ const el=document.getElementById("heroScreen"); if(el) el.innerHTML=createScreen(PT[hIdx], hTyped, flash); }
-function heroLoop(){
-  if(!heroVis) return;
-  const full=T[lang].proofs[PT[hIdx]].goal;
-  if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); setInputText("heroScreen", hTyped); } else { hPhase="hold"; hTick=0; } }
-  else if(hPhase==="hold"){ hTick++; if(hTick>26){ hPhase="next"; } }
-  else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); }
-}
-setInterval(heroLoop,55);
+// ---- hero: auto-cycle the real create-screen screenshots (photo/video/geo) ----
+let hIdx=0;
+function showHeroShot(){ document.querySelectorAll('#heroShots .shot').forEach((im,k)=>im.classList.toggle('on',k===hIdx)); }
+function renderHero(){ showHeroShot(); }
+setInterval(()=>{ if(!heroVis) return; hIdx=(hIdx+1)%PT.length; showHeroShot(); }, 2600);
 let liveMsgIdx=0, liveMsgStart=Date.now();
 setInterval(()=>{ if(!heroVis) return;
   if(Math.floor((Date.now()-liveMsgStart)/1000)>=13){ liveMsgIdx=(liveMsgIdx+1)%T[lang].liveMsgs.length; liveMsgStart=Date.now(); }
   const el=document.getElementById("liveText"); if(el) el.textContent=T[lang].liveText(T[lang].liveMsgs[liveMsgIdx], Math.floor((Date.now()-liveMsgStart)/1000));
 },1000);
 
-// ---- how-it-works (pills + steps + progress drive the SAME create screen) ----
-let cat=0, step=0, prog=0, raf=null, lastT=0, cTyped="", cTw=null;
-const STEP_MS=2700; const HOWCATS=["photo","video","geo"];
+// ---- how-it-works: pills + steps; the phone shows the matching real screenshot ----
+let cat=0, step=0, prog=0, raf=null, lastT=0;
+const STEP_MS=2600; const HOWCATS=["photo","video","geo"];
 function howD(){ return T[lang].how[HOWCATS[cat]]; }
-function startHowType(){ clearInterval(cTw); cTyped=""; const full=T[lang].proofs[HOWCATS[cat]].goal; let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); setInputText("howScreen", cTyped); if(i>=full.length) clearInterval(cTw); },50); }
-function renderHowPhone(){ const el=document.getElementById("howScreen"); if(el) el.innerHTML=createScreen(HOWCATS[cat], cTyped, step===0); }
-function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; startHowType(); renderAll(); }; el.appendChild(b); }); }
+function showHowShot(){ document.querySelectorAll('#howShots .shot').forEach((im,k)=>im.classList.toggle('on',k===cat)); }
+function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; renderAll(); }; el.appendChild(b); }); }
 function renderSteps(){ const el=document.getElementById("howSteps"), d=howD(); el.innerHTML=""; d.steps.forEach((s,i)=>{ const div=document.createElement("div"); div.className="step"+(i===step?" on":"")+(i<step?" done":""); const conn=i<d.steps.length-1?'<div class="conn"></div>':''; div.innerHTML='<div class="rail"><div class="dot">'+(i+1)+'</div>'+conn+'</div><div class="body"><h4>'+s[0]+'</h4><p>'+s[1]+'</p><div class="bar"><i style="width:'+(i===step?Math.round(prog*100):0)+'%"></i></div></div>'; el.appendChild(div); }); }
-function renderAll(){ renderPills(); renderSteps(); renderHowPhone(); }
-function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
+function renderAll(){ renderPills(); renderSteps(); showHowShot(); }
+function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
 try{ const io=new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.target.id==="top") heroVis=e.isIntersecting; if(e.target.id==="how") howVis=e.isIntersecting; }); },{threshold:0}); io.observe(document.getElementById("top")); io.observe(document.getElementById("how")); }catch(_){}
 
 // ---- pricing ----
@@ -584,6 +618,10 @@ function renderPrice(){
   document.getElementById("bill-yr").classList.toggle("on",yr);
 }
 function setBill(b){ bill=b; renderPrice(); }
+function renderCmp(){ const el=document.getElementById("cmpBody"); if(!el||!T[lang].cmp) return;
+  const tick='<span class="tick"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="M5 12l4 4 10-10"/></svg></span>';
+  const cell=(v,pro)=>{ let c = v===true?tick : v===false?'<span class="dash">—</span>' : '<span style="font-weight:800;color:'+(pro?'var(--accent)':'var(--ink)')+'">'+v+'</span>'; return '<div class="c'+(pro?' pro':'')+'">'+c+'</div>'; };
+  el.innerHTML=T[lang].cmp.map(r=>'<div class="cmp-row"><div class="lab">'+r[0]+'</div>'+cell(r[1],false)+cell(r[2],true)+'</div>').join(''); }
 
 // ---- i18n + accordions ----
 function buildAcc(id,arr){ const list=document.getElementById(id); list.innerHTML=""; arr.forEach(([q,a])=>{ const it=document.createElement("div"); it.className="acc-item"; it.innerHTML='<button class="acc-q">'+q+'<span class="acc-x">+</span></button><div class="acc-a">'+a+'</div>'; it.querySelector(".acc-q").onclick=()=>it.classList.toggle("open"); list.appendChild(it); }); }
@@ -593,8 +631,7 @@ function applyLang(){
   document.getElementById("lang-en").classList.toggle("active",lang==="en");
   document.getElementById("lang-ru").classList.toggle("active",lang==="ru");
   buildAcc("ucList",d.uc); buildAcc("faqList",d.faq);
-  hTyped=""; hPhase="type"; renderHero();
-  startHowType(); renderAll(); renderPrice();
+  renderHero(); renderAll(); renderCmp(); renderPrice();
 }
 function setLang(l){ lang=l; localStorage.setItem("cert_lang",l); applyLang(); }
 applyLang();
