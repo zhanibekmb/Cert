@@ -72,10 +72,10 @@
 
   /* ---------- realistic device ---------- */
   .device{position:relative;width:296px;flex:none;border-radius:52px;
-    background:linear-gradient(145deg,#f0f1f4,#c9ccd4 42%,#eceef2 80%);
-    padding:3px;box-shadow:0 1px 1px rgba(255,255,255,.7) inset,0 30px 64px -26px rgba(13,15,20,.45),0 8px 22px -14px rgba(13,15,20,.35);}
-  .device .bezel{background:#0a0a0c;border-radius:49px;padding:9px;}
-  .device .screen{position:relative;border-radius:40px;overflow:hidden;background:#fff;aspect-ratio:1170/2532;display:flex;flex-direction:column;}
+    background:linear-gradient(150deg,#ffffff,#e7e9ef 50%,#fcfcff);
+    padding:3px;box-shadow:0 0 0 1px #e0e2e9,0 30px 64px -26px rgba(13,15,20,.42),0 10px 24px -14px rgba(13,15,20,.32);}
+  .device .bezel{background:#eef0f4;border-radius:49px;padding:9px;box-shadow:0 0 0 1px #e4e6ec inset;}
+  .device .screen{position:relative;border-radius:40px;overflow:hidden;background:#fff;aspect-ratio:1170/2532;display:flex;flex-direction:column;border:1px solid #e6e8ef;}
   .device .screen.real-screen{display:block;}
   .device .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:90px;height:27px;background:#000;border-radius:16px;z-index:8;}
   .device .shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;}
@@ -512,9 +512,9 @@ const T = {
     ftPrivacy:"Privacy", ftTerms:"Terms", ftDelete:"Delete account", ftSupport:"Support",
     csTitle:"New goal", csOne:"One-time", csRep:"Repeating", csSay:"I'll prove it with", csIdeasH:"Provable ideas", csCreate:"Create goal",
     proofs:{
-      photo:{pill:"a photo", goal:"A photo at the gym", dl:"Today at 23:59"},
-      video:{pill:"a video", goal:"A video of my 20 pushups", dl:"Today at 21:00"},
-      geo:{pill:"a check-in", place:"Invictus Fitness", goal:"Morning gym check-in", dl:"Tomorrow at 09:00"},
+      photo:{pill:"a photo", dl:"Today at 23:59", goals:["A photo at the gym","Tonight's book page","My home-cooked dinner","A photo of my made bed"]},
+      video:{pill:"a video", dl:"Today at 21:00", goals:["A video of my 20 pushups","A clip of me stretching","A 30-second plank","Me practicing guitar"]},
+      geo:{pill:"a check-in", place:"Invictus Fitness", dl:"Tomorrow at 09:00", goals:["Morning gym check-in"]},
     },
     ideas:["Gym 45 min","Morning run","50 pushups","Home-cooked meal"],
     how:{
@@ -580,9 +580,9 @@ const T = {
     ftPrivacy:"Конфиденциальность", ftTerms:"Условия", ftDelete:"Удаление аккаунта", ftSupport:"Поддержка",
     csTitle:"Новая цель", csOne:"Разовая", csRep:"Повтор", csSay:"Докажу через", csIdeasH:"Доказуемые идеи", csCreate:"Создать цель",
     proofs:{
-      photo:{pill:"фото", goal:"Фото в зале", dl:"Сегодня в 23:59"},
-      video:{pill:"видео", goal:"Видео моих 20 отжиманий", dl:"Сегодня в 21:00"},
-      geo:{pill:"чек-ин", place:"Invictus Fitness", goal:"Утренний чек-ин", dl:"Завтра в 09:00"},
+      photo:{pill:"фото", dl:"Сегодня в 23:59", goals:["Фото в зале","Страница книги","Домашний ужин","Заправил кровать"]},
+      video:{pill:"видео", dl:"Сегодня в 21:00", goals:["Видео 20 отжиманий","Как я мою посуду","Планка 30 секунд","Играю на гитаре"]},
+      geo:{pill:"чек-ин", place:"Invictus Fitness", dl:"Завтра в 09:00", goals:["Утренний чек-ин"]},
     },
     ideas:["Зал 45 мин","Утренняя пробежка","50 отжиманий","Домашняя еда"],
     how:{
@@ -631,6 +631,11 @@ const PIN_SVG='<svg width="22" height="28" viewBox="0 0 22 28" fill="none"><path
 // ---- live create-screen animation (Forfeit-style: the proof pill cycles + the goal types out) ----
 const PT=["photo","video","geo"];
 let heroVis=true, howVis=true;
+// each proof type has several example goals; rotate through them so the animation
+// isn't the same sentence every loop (geo stays the gym check-in — it's the strong one).
+const gPos={photo:0,video:0,geo:0};
+function goalOf(pt){ const a=T[lang].proofs[pt].goals; return a[gPos[pt]%a.length]; }
+function advanceGoal(pt){ gPos[pt]++; }
 const CHEV='<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg>';
 function createScreen(pt, typed, flash){
   const d=T[lang], p=d.proofs[pt], geo=pt==="geo", a=flash?' anim':'';
@@ -652,10 +657,10 @@ function setInputText(id, typed){ const el=document.getElementById(id); if(!el) 
 // ---- hero: cycle proof type + typewriter ----
 let hIdx=0, hTyped="", hPhase="type", hTick=0;
 function renderHero(flash){ const el=document.getElementById("heroScreen"); if(el) el.innerHTML=createScreen(PT[hIdx], hTyped, flash); }
-function heroLoop(){ if(!heroVis) return; const full=T[lang].proofs[PT[hIdx]].goal;
+function heroLoop(){ if(!heroVis) return; const full=goalOf(PT[hIdx]);
   if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); setInputText("heroScreen", hTyped); } else { hPhase="hold"; hTick=0; } }
   else if(hPhase==="hold"){ hTick++; if(hTick>30) hPhase="next"; }
-  else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); }
+  else { advanceGoal(PT[hIdx]); hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); }
 }
 setInterval(heroLoop,55);
 let liveMsgIdx=0, liveMsgStart=Date.now();
@@ -668,12 +673,12 @@ setInterval(()=>{ if(!heroVis) return;
 let cat=0, step=0, prog=0, raf=null, lastT=0, cTyped="", cTw=null;
 const STEP_MS=2700; const HOWCATS=PT;
 function howD(){ return T[lang].how[HOWCATS[cat]]; }
-function startHowType(){ clearInterval(cTw); cTyped=""; const full=T[lang].proofs[HOWCATS[cat]].goal; let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); setInputText("howScreen", cTyped); if(i>=full.length) clearInterval(cTw); },48); }
+function startHowType(){ clearInterval(cTw); cTyped=""; const full=goalOf(HOWCATS[cat]); let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); setInputText("howScreen", cTyped); if(i>=full.length) clearInterval(cTw); },48); }
 function renderHowPhone(){ const el=document.getElementById("howScreen"); if(el) el.innerHTML=createScreen(HOWCATS[cat], cTyped, step===0); }
 function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; startHowType(); renderAll(); }; el.appendChild(b); }); }
 function renderSteps(){ const el=document.getElementById("howSteps"), d=howD(); el.innerHTML=""; d.steps.forEach((s,i)=>{ const div=document.createElement("div"); div.className="step"+(i===step?" on":"")+(i<step?" done":""); const conn=i<d.steps.length-1?'<div class="conn"></div>':''; div.innerHTML='<div class="rail"><div class="dot">'+(i+1)+'</div>'+conn+'</div><div class="body"><h4>'+s[0]+'</h4><p>'+s[1]+'</p><div class="bar"><i style="width:'+(i===step?Math.round(prog*100):0)+'%"></i></div></div>'; el.appendChild(div); }); }
 function renderAll(){ renderPills(); renderSteps(); renderHowPhone(); }
-function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector("#howSteps .step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
+function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; advanceGoal(HOWCATS[cat]); cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector("#howSteps .step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
 try{ const io=new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.target.id==="top") heroVis=e.isIntersecting; if(e.target.id==="how") howVis=e.isIntersecting; }); },{threshold:0}); io.observe(document.getElementById("top")); io.observe(document.getElementById("how")); }catch(_){}
 
 // ---- pricing ----
