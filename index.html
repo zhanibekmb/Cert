@@ -68,7 +68,7 @@
     background:linear-gradient(145deg,#f0f1f4,#c9ccd4 42%,#eceef2 80%);
     padding:3px;box-shadow:0 1px 1px rgba(255,255,255,.7) inset,0 30px 64px -26px rgba(13,15,20,.45),0 8px 22px -14px rgba(13,15,20,.35);}
   .device .bezel{background:#0a0a0c;border-radius:49px;padding:9px;}
-  .device .screen{position:relative;border-radius:40px;overflow:hidden;background:#fff;aspect-ratio:1170/2532;}
+  .device .screen{position:relative;border-radius:40px;overflow:hidden;background:#fff;aspect-ratio:1170/2532;display:flex;flex-direction:column;}
   .device .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:90px;height:27px;background:#000;border-radius:16px;z-index:8;}
   .device .shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;}
   .device.stack .shot{opacity:0;transition:opacity .55s ease;}
@@ -78,7 +78,7 @@
   .sbar .t{font-size:14.5px;font-weight:600;letter-spacing:-.02em;color:#0d0f14;}
   .sbar .st{display:flex;gap:6px;align-items:center;}
   /* live create-screen (matches the app) */
-  .cs{padding:3px 18px 20px;}
+  .cs{padding:3px 18px 22px;flex:1;display:flex;flex-direction:column;}
   .cs-back{font-size:15px;color:var(--mute);font-weight:400;margin:2px 0 8px;}
   .cs-title{font-size:25px;font-weight:700;letter-spacing:-.025em;margin:0 0 16px;}
   .cs-seg{display:flex;background:#f2f3f6;border-radius:12px;padding:3px;margin-bottom:15px;}
@@ -105,7 +105,7 @@
   .cs-idea{display:flex;align-items:center;gap:9px;background:#f7f8fb;border-radius:11px;padding:11px 12px;font-size:13px;font-weight:500;color:var(--ink);}
   .cs-idea .ic{width:22px;height:22px;border-radius:6px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
   .cs-idea .ic svg{width:13px;height:13px;}
-  .cs-create{margin-top:15px;background:var(--accent);color:#fff;border-radius:12px;text-align:center;font-weight:600;font-size:15px;padding:14px;}
+  .cs-create{margin-top:auto;background:var(--accent);color:#fff;border-radius:12px;text-align:center;font-weight:600;font-size:15px;padding:14px;}
 
   /* ---------- how it works ---------- */
   .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;justify-content:center;}
@@ -287,7 +287,7 @@
     <div class="device" style="justify-self:center;">
       <div class="bezel"><div class="screen">
         <div class="island"></div>
-        <img class="shot" style="position:relative;" src="assets/landing/statistics.jpg" alt="Cert — analytics & trophies">
+        <img class="shot" src="assets/landing/statistics.jpg" alt="Cert — analytics & trophies">
       </div></div>
     </div>
     <div>
@@ -347,7 +347,7 @@
     <div class="device" style="justify-self:center;">
       <div class="bezel"><div class="screen">
         <div class="island"></div>
-        <img class="shot" style="position:relative;" src="assets/landing/group-challenge.jpg" alt="Cert — group challenge">
+        <img class="shot" src="assets/landing/group-challenge.jpg" alt="Cert — group challenge">
       </div></div>
     </div>
   </div>
@@ -602,13 +602,10 @@ function createScreen(pt, typed, flash){
   const input='<div class="cs-input">'+(typed?'<span>'+typed+'</span>':'<span class="ph">'+(lang==="ru"?"напр. ":"e.g. ")+p.goal+'</span>')+'<span class="caret"></span></div>';
   const dl='<div class="cs-dl-row"><span class="cs-dl-lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl'+a+'">'+p.dl+chev+'</span></div>';
   const map = geo ? '<div class="cs-map">'+MAP_SVG+'<div class="pin">'+PIN_SVG+'</div><span class="place">'+p.place+'</span></div>' : '';
-  const ideas = d.ideas.map((t,i)=>'<div class="cs-idea"><span class="ic">'+IDEA_ICONS[i]+'</span>'+t+'</div>').join('');
-  const ideasBlock = geo ? '' : '<div class="cs-ideas-h">'+d.csIdeasH+'</div><div class="cs-ideas">'+ideas+'</div>';
   return '<div class="cs-back">‹ '+(lang==="ru"?"Назад":"Back")+'</div>'
     +'<div class="cs-title">'+d.csTitle+'</div>'
     +'<div class="cs-seg"><span class="on">'+d.csOne+'</span><span>'+d.csRep+'</span></div>'
     +'<div class="cs-card">'+say+input+dl+map+'</div>'
-    +ideasBlock
     +'<div class="cs-create">'+d.csCreate+'</div>';
 }
 let heroVis=true, howVis=true;

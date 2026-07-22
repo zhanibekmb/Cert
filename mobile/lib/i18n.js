@@ -92,6 +92,8 @@ const RU = {
   "Record timelapse": "Снять таймлапс",
   "Take a photo": "Сделать фото",
   "Gym 45 min": "Зал 45 мин",
+  "At the gym": "В зале",
+  "Made my bed": "Заправил кровать",
   "Read 20 pages": "Прочесть 20 страниц",
   "Morning run": "Утренняя пробежка",
   "Meditate 10 min": "Медитация 10 мин",

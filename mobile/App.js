@@ -2149,13 +2149,14 @@ function NewGoal({ session, isPro, firstRun, onUpgrade, onDone, onBack }) {
         ) : null}
       </View>
 
-      {/* one-tap starters — only things a photo/video can actually PROVE
-          (a gym visit, a run, pushups, a cooked meal), not "read 20 pages" */}
+      {/* one-tap starters — only things a SINGLE photo can actually PROVE in the
+          moment (being at the gym, a run, a cooked meal, a made bed). Avoid claims a
+          photo can't verify like durations ("45 min") or counts ("50 pushups"). */}
       {isGeo ? null : (
         <>
           <Text style={[s.label, { marginTop: 16, marginBottom: 6 }]}>{t("Provable ideas")}</Text>
           <View style={{ flexDirection: "row", flexWrap: "wrap", marginHorizontal: -4 }}>
-            {[["barbell-outline", t("Gym 45 min")], ["walk-outline", t("Morning run")], ["body-outline", t("50 pushups")], ["restaurant-outline", t("Home-cooked meal")]].map(([ic, label]) => {
+            {[["barbell-outline", t("At the gym")], ["walk-outline", t("Morning run")], ["restaurant-outline", t("Home-cooked meal")], ["bed-outline", t("Made my bed")]].map(([ic, label]) => {
               const on = text === label;
               return (
                 <View key={label} style={{ width: "50%", padding: 4 }}>
