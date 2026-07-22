@@ -105,14 +105,16 @@
   .cs-pill{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:3px 10px;font-size:13.5px;font-weight:600;background:#fff;}
   .cs-pill.anim,.cs-dl.anim{animation:pillIn .42s cubic-bezier(.2,.85,.25,1);}
   @keyframes pillIn{0%{opacity:0;transform:translateY(5px) scale(.9);}100%{opacity:1;transform:none;}}
-  .cs-input{margin-top:11px;background:#fff;border:1px solid var(--line-2);border-radius:11px;padding:12px 12px;font-size:14.5px;color:var(--ink);min-height:44px;font-weight:400;}
+  .cs-card.anim{animation:cardIn .5s cubic-bezier(.2,.85,.25,1);}
+  @keyframes cardIn{0%{opacity:0;transform:translateY(12px) scale(.98);}100%{opacity:1;transform:none;}}
+  .cs-input{margin-top:11px;background:#fff;border:1px solid var(--line-2);border-radius:11px;padding:12px 12px;font-size:14.5px;color:var(--ink);height:44px;font-weight:400;white-space:nowrap;overflow:hidden;display:flex;align-items:center;}
   .cs-input .ph{color:var(--faint);}
   .caret{display:inline-block;width:2px;height:1.02em;background:var(--accent);vertical-align:-2px;margin-left:1px;animation:blink 1.1s steps(1) infinite;}
   @keyframes blink{50%{opacity:0;}}
   .cs-dl-row{display:flex;align-items:center;gap:10px;margin-top:13px;}
   .cs-dl-lbl{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--faint);text-transform:uppercase;}
   .cs-dl{border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600;background:#fff;}
-  .cs-map{margin-top:13px;border-radius:11px;overflow:hidden;height:128px;position:relative;border:1px solid var(--line);}
+  .cs-map{margin-top:12px;border-radius:11px;overflow:hidden;height:104px;position:relative;border:1px solid var(--line);}
   .cs-map svg.map{width:100%;height:100%;display:block;}
   .cs-map .pin{position:absolute;left:50%;top:44%;transform:translate(-50%,-92%);z-index:3;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28));}
   .cs-map .place{position:absolute;left:8px;bottom:8px;background:#fff;color:var(--accent);font-size:11px;font-weight:600;padding:4px 9px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:3;}
@@ -335,9 +337,28 @@
     </div>
     <div style="display:flex;justify-content:center;">
       <div style="width:310px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 56px -30px rgba(13,15,20,.3);overflow:hidden;">
-        <div style="height:160px;background:linear-gradient(150deg,#e7e9f0,#cfd3de);display:flex;align-items:center;justify-content:center;position:relative;">
-          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#9198ab" stroke-width="1.5"><rect x="3" y="6" width="18" height="14" rx="2.5"/><circle cx="12" cy="13" r="3.8"/><path d="M8 6l1.4-2.3h5.2L16 6"/></svg>
-          <span style="position:absolute;top:14px;right:14px;background:var(--ok);color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.06em;padding:5px 11px;border-radius:8px;">APPROVED</span>
+        <div style="height:170px;position:relative;overflow:hidden;">
+          <svg viewBox="0 0 310 170" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">
+            <defs>
+              <linearGradient id="gymbg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3c414e"/><stop offset="1" stop-color="#1b1e26"/></linearGradient>
+              <radialGradient id="gymspot" cx="0.42" cy="0.28" r="0.85"><stop offset="0" stop-color="rgba(255,255,255,.13)"/><stop offset="1" stop-color="rgba(255,255,255,0)"/></radialGradient>
+            </defs>
+            <rect width="310" height="170" fill="url(#gymbg)"/>
+            <rect width="310" height="170" fill="url(#gymspot)"/>
+            <rect y="128" width="310" height="42" fill="rgba(0,0,0,.2)"/>
+            <line x1="0" y1="128" x2="310" y2="128" stroke="rgba(255,255,255,.08)" stroke-width="1"/>
+            <rect x="32" y="22" width="10" height="106" rx="3" fill="rgba(255,255,255,.06)"/>
+            <rect x="268" y="22" width="10" height="106" rx="3" fill="rgba(255,255,255,.06)"/>
+            <g transform="translate(155,90) rotate(-11)">
+              <rect x="-48" y="-7" width="96" height="14" rx="7" fill="#cdd2dc"/>
+              <rect x="-66" y="-19" width="15" height="38" rx="5" fill="#b6bcc8"/>
+              <rect x="51" y="-19" width="15" height="38" rx="5" fill="#b6bcc8"/>
+              <rect x="-83" y="-25" width="16" height="50" rx="6" fill="#e0e4eb"/>
+              <rect x="67" y="-25" width="16" height="50" rx="6" fill="#e0e4eb"/>
+            </g>
+          </svg>
+          <span style="position:absolute;top:14px;right:14px;background:var(--ok);color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.06em;padding:5px 11px;border-radius:8px;box-shadow:0 6px 16px -6px var(--ok);">APPROVED</span>
+          <span style="position:absolute;left:14px;bottom:12px;background:rgba(0,0,0,.42);color:#fff;font-size:10.5px;font-weight:600;letter-spacing:.04em;padding:3px 9px;border-radius:7px;">LIVE · 08:12</span>
         </div>
         <div style="padding:16px 18px;">
           <div style="font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--faint);text-transform:uppercase;">Cert judge</div>
@@ -493,7 +514,7 @@ const T = {
     proofs:{
       photo:{pill:"a photo", goal:"A photo at the gym", dl:"Today at 23:59"},
       video:{pill:"a video", goal:"A video of my 20 pushups", dl:"Today at 21:00"},
-      geo:{pill:"a check-in", place:"Invictus Fitness", goal:"Morning check-in at the gym", dl:"Today at 09:00"},
+      geo:{pill:"a check-in", place:"Invictus Fitness", goal:"Morning gym check-in", dl:"Tomorrow at 09:00"},
     },
     ideas:["Gym 45 min","Morning run","50 pushups","Home-cooked meal"],
     how:{
@@ -561,7 +582,7 @@ const T = {
     proofs:{
       photo:{pill:"фото", goal:"Фото в зале", dl:"Сегодня в 23:59"},
       video:{pill:"видео", goal:"Видео моих 20 отжиманий", dl:"Сегодня в 21:00"},
-      geo:{pill:"чек-ин", place:"Invictus Fitness", goal:"Утренний чек-ин в зале", dl:"Сегодня в 09:00"},
+      geo:{pill:"чек-ин", place:"Invictus Fitness", goal:"Утренний чек-ин", dl:"Завтра в 09:00"},
     },
     ideas:["Зал 45 мин","Утренняя пробежка","50 отжиманий","Домашняя еда"],
     how:{
@@ -623,7 +644,7 @@ function createScreen(pt, typed, flash){
   return '<div class="cs-back">‹ '+(lang==="ru"?"Назад":"Back")+'</div>'
     +'<div class="cs-title">'+d.csTitle+'</div>'
     +'<div class="cs-seg"><span class="on">'+d.csOne+'</span><span>'+d.csRep+'</span></div>'
-    +'<div class="cs-card">'+say+input+dl+map+'</div>'
+    +'<div class="cs-card'+a+'">'+say+input+dl+map+'</div>'
     +'<div class="cs-create">'+d.csCreate+'</div>';
 }
 function setInputText(id, typed){ const el=document.getElementById(id); if(!el) return; const inp=el.querySelector('.cs-input'); if(inp) inp.innerHTML=(typed?'<span>'+typed+'</span>':'')+'<span class="caret"></span>'; }
