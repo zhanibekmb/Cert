@@ -599,29 +599,31 @@ const MAP_SVG='<svg class="map" viewBox="0 0 300 128" preserveAspectRatio="xMidY
   +'</svg>';
 const PIN_SVG='<svg width="22" height="28" viewBox="0 0 22 28" fill="none"><path d="M11 27c6-8 9-12.5 9-16A9 9 0 1 0 2 11c0 3.5 3 8 9 16z" fill="#e5484d"/><circle cx="11" cy="11" r="3.4" fill="#fff"/></svg>';
 
-// ---- live create-screen ----
+// ---- animated create-screen: real app screens crossfade + proof-type switch ----
 const PT=["photo","video","geo"];
 const SHOTS={photo:"assets/landing/photo-proof.jpg",video:"assets/landing/video-proof.jpg",geo:"assets/landing/geo-proof.jpg"};
-function createScreen(pt, typed, flash){
-  const d=T[lang];
-  const shots=PT.map((c)=>'<img class="shot live-shot'+(c===pt?' on':'')+'" src="'+SHOTS[c]+'" alt="Cert app '+c+' proof screen">').join('');
-  const labels=PT.map((c)=>'<span class="'+(c===pt?'on':'')+'">'+d.how[c].label+'</span>').join('');
-  return '<div class="shot-stage">'+shots+'</div><div class="proof-switch'+(flash?' pop':'')+'">'+labels+'</div>';
-}
 let heroVis=true, howVis=true;
-function setInputText(id, typed){ const el=document.getElementById(id); if(!el) return; const inp=el.querySelector('.cs-input'); if(inp) inp.innerHTML=(typed?'<span>'+typed+'</span>':'')+'<span class="caret"></span>'; }
-
-// ---- hero animation (auto-cycle proof type + typewriter) ----
-let hIdx=0, hTyped="", hPhase="type", hTick=0;
-function renderHero(flash){ const el=document.getElementById("heroScreen"); if(el) el.innerHTML=createScreen(PT[hIdx], hTyped, flash); }
-function heroLoop(){
-  if(!heroVis) return;
-  const full=T[lang].proofs[PT[hIdx]].goal;
-  if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); setInputText("heroScreen", hTyped); } else { hPhase="hold"; hTick=0; } }
-  else if(hPhase==="hold"){ hTick++; if(hTick>28){ hPhase="next"; } }
-  else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); }
+// Build the phone content ONCE, then only toggle the active class — that way the
+// CSS crossfade (opacity + zoom) and the proof-switch "pop" actually play.
+// Rebuilding innerHTML every tick recreates the nodes and kills the transition,
+// which is why it looked frozen before.
+function stageHTML(){
+  const d=T[lang];
+  const shots=PT.map((c,i)=>'<img class="shot live-shot'+(i===0?' on':'')+'" src="'+SHOTS[c]+'" alt="Cert app '+c+' proof screen">').join('');
+  const labels=PT.map((c,i)=>'<span class="'+(i===0?'on':'')+'">'+d.how[c].label+'</span>').join('');
+  return '<div class="shot-stage">'+shots+'</div><div class="proof-switch">'+labels+'</div>';
 }
-setInterval(heroLoop,55);
+function setActive(id, idx){
+  const el=document.getElementById(id); if(!el) return;
+  el.querySelectorAll('.shot-stage .shot').forEach((im,k)=>im.classList.toggle('on',k===idx));
+  const sw=el.querySelector('.proof-switch');
+  if(sw){ sw.querySelectorAll('span').forEach((s,k)=>s.classList.toggle('on',k===idx)); sw.classList.remove('pop'); void sw.offsetWidth; sw.classList.add('pop'); }
+}
+
+// ---- hero: auto-cycle photo → video → geo ----
+let hIdx=0;
+function renderHero(){ const el=document.getElementById("heroScreen"); if(el){ el.innerHTML=stageHTML(); setActive("heroScreen", hIdx); } }
+setInterval(()=>{ if(!heroVis) return; hIdx=(hIdx+1)%PT.length; setActive("heroScreen", hIdx); }, 2400);
 let liveMsgIdx=0, liveMsgStart=Date.now();
 setInterval(()=>{ if(!heroVis) return;
   if(Math.floor((Date.now()-liveMsgStart)/1000)>=13){ liveMsgIdx=(liveMsgIdx+1)%T[lang].liveMsgs.length; liveMsgStart=Date.now(); }
@@ -629,15 +631,14 @@ setInterval(()=>{ if(!heroVis) return;
 },1000);
 
 // ---- how-it-works (pills + steps + typewriter drive the create screen) ----
-let cat=0, step=0, prog=0, raf=null, lastT=0, cTyped="", cTw=null;
-const STEP_MS=2700; const HOWCATS=["photo","video","geo"];
+let cat=0, step=0, prog=0, raf=null, lastT=0;
+const STEP_MS=2600; const HOWCATS=PT;
 function howD(){ return T[lang].how[HOWCATS[cat]]; }
-function startHowType(){ clearInterval(cTw); cTyped=""; const full=T[lang].proofs[HOWCATS[cat]].goal; let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); setInputText("howScreen", cTyped); if(i>=full.length) clearInterval(cTw); },48); }
-function renderHowPhone(){ const el=document.getElementById("howScreen"); if(el) el.innerHTML=createScreen(HOWCATS[cat], cTyped, step===0); }
-function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; startHowType(); renderAll(); }; el.appendChild(b); }); }
+function renderHowPhone(){ const el=document.getElementById("howScreen"); if(el){ el.innerHTML=stageHTML(); setActive("howScreen", cat); } }
+function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; renderPills(); renderSteps(); setActive("howScreen", cat); }; el.appendChild(b); }); }
 function renderSteps(){ const el=document.getElementById("howSteps"), d=howD(); el.innerHTML=""; d.steps.forEach((s,i)=>{ const div=document.createElement("div"); div.className="step"+(i===step?" on":"")+(i<step?" done":""); const conn=i<d.steps.length-1?'<div class="conn"></div>':''; div.innerHTML='<div class="rail"><div class="dot">'+(i+1)+'</div>'+conn+'</div><div class="body"><h4>'+s[0]+'</h4><p>'+s[1]+'</p><div class="bar"><i style="width:'+(i===step?Math.round(prog*100):0)+'%"></i></div></div>'; el.appendChild(div); }); }
 function renderAll(){ renderPills(); renderSteps(); renderHowPhone(); }
-function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
+function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; setActive("howScreen", cat); } renderPills(); renderSteps(); } else { const bar=document.querySelector("#howSteps .step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
 try{ const io=new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.target.id==="top") heroVis=e.isIntersecting; if(e.target.id==="how") howVis=e.isIntersecting; }); },{threshold:0}); io.observe(document.getElementById("top")); io.observe(document.getElementById("how")); }catch(_){}
 
 // ---- pricing ----
@@ -669,8 +670,7 @@ function applyLang(){
   document.getElementById("lang-en").classList.toggle("active",lang==="en");
   document.getElementById("lang-ru").classList.toggle("active",lang==="ru");
   buildAcc("ucList",d.uc); buildAcc("faqList",d.faq);
-  hTyped=""; hPhase="type"; renderHero();
-  startHowType(); renderAll(); renderPlans(); renderPrice();
+  renderHero(); renderAll(); renderPlans(); renderPrice();
 }
 function setLang(l){ lang=l; localStorage.setItem("cert_lang",l); applyLang(); }
 applyLang();
