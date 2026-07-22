@@ -6,7 +6,6 @@
 // Needs the GEMINI_API_KEY secret. SUPABASE_* are injected automatically.
 // =====================================================================
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -125,11 +124,61 @@ function buildVideoPrompt(goalText: string, proofSpec?: string, reasonLang = "En
     `Respond with ONLY a JSON object: {"approved": true|false, "reason": "<short, kind, written in ${reasonLang}>", "confidence": <0..1>}.`,
   ].filter(Boolean).join("\n");
 }
-async function judgeVideo(opts: { video: string; goalText: string; proofSpec?: string; reasonLang?: string }) {
-  const v = parseImage(opts.video); // same data:<mime>;base64,<data> shape as a photo
+// Video must go through Gemini's Files API, NOT inline_data: inline video is
+// capped at ~20MB per request and is flaky for phone clips (iOS records .mov
+// even when we label it mp4). The Files API ingests the bytes, transcodes them
+// server-side, and hands back a file_uri we reference in generateContent.
+async function uploadFileToGemini(bytes: Uint8Array, mimeType: string): Promise<string> {
+  const key = KEY();
+  if (!key) throw new Error("missing GEMINI_API_KEY");
+  const num = bytes.byteLength;
+  // 1. start a resumable upload session
+  const start = await fetch("https://generativelanguage.googleapis.com/upload/v1beta/files", {
+    method: "POST",
+    headers: {
+      "x-goog-api-key": key,
+      "X-Goog-Upload-Protocol": "resumable",
+      "X-Goog-Upload-Command": "start",
+      "X-Goog-Upload-Header-Content-Length": String(num),
+      "X-Goog-Upload-Header-Content-Type": mimeType,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ file: { display_name: "cert-proof" } }),
+  });
+  const uploadUrl = start.headers.get("X-Goog-Upload-URL");
+  if (!start.ok || !uploadUrl) throw new Error(`files start ${start.status}: ${(await start.text().catch(() => "")).slice(0, 180)}`);
+  // 2. upload the bytes and finalize in one shot
+  const up = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "Content-Length": String(num), "X-Goog-Upload-Offset": "0", "X-Goog-Upload-Command": "upload, finalize" },
+    body: bytes,
+  });
+  if (!up.ok) throw new Error(`files upload ${up.status}: ${(await up.text().catch(() => "")).slice(0, 180)}`);
+  const info = await up.json();
+  let file = info?.file;
+  if (!file?.uri || !file?.name) throw new Error("files: no uri");
+  const fileUri = file.uri;
+  const fileName = file.name;
+  // 3. wait for the clip to finish PROCESSING -> ACTIVE. Videos often take
+  // longer than images; returning too early made valid user clips look broken.
+  let state = file.state || "PROCESSING", tries = 0;
+  while (state === "PROCESSING" && tries < 35) {
+    await sleep(1200);
+    const g = await fetch(`https://generativelanguage.googleapis.com/v1beta/${fileName}`, { headers: { "x-goog-api-key": key } });
+    if (!g.ok) throw new Error(`files get ${g.status}`);
+    const gj = await g.json().catch(() => ({}));
+    state = gj?.state || state;
+    tries++;
+  }
+  if (state === "FAILED") throw new Error("files state FAILED");
+  if (state !== "ACTIVE") throw new Error(`files state ${state}`);
+  return fileUri;
+}
+async function judgeVideo(opts: { bytes: Uint8Array; mimeType: string; goalText: string; proofSpec?: string; reasonLang?: string }) {
+  const fileUri = await uploadFileToGemini(opts.bytes, opts.mimeType);
   const data = await geminiCall({
     system_instruction: { parts: [{ text: buildVideoPrompt(opts.goalText, opts.proofSpec, opts.reasonLang) }] },
-    contents: [{ role: "user", parts: [{ text: "Judge this video clip. Reply with ONLY the JSON object." }, { inline_data: { mime_type: v.mimeType, data: v.data } }] }],
+    contents: [{ role: "user", parts: [{ text: "Judge this video clip. Reply with ONLY the JSON object." }, { file_data: { mime_type: opts.mimeType, file_uri: fileUri } }] }],
     generationConfig: { responseMimeType: "application/json", maxOutputTokens: 256, temperature: 0.3, thinkingConfig: { thinkingBudget: 0 } },
   });
   const p = parseJsonLoose(extractText(data));
@@ -297,18 +346,25 @@ Deno.serve(async (req) => {
   } else if (isVideo) {
     // Everything here (storage download, base64, Gemini) is wrapped so a failure
     // returns a graceful "try again" (200) instead of crashing to a non-2xx.
+    const videoReadReason = lang === "ru" ? "Не удалось прочитать загруженный ролик — попробуй ещё раз." : "Could not read the uploaded video — please try again.";
+    const videoJudgeReason = lang === "ru" ? "Судья не смог прочитать этот ролик — запиши короче и попробуй снова." : "The judge couldn't read this clip — record a shorter one and try again.";
     try {
-      let videoData = video;
+      let vBytes: Uint8Array; let vMime = "video/mp4";
       if (hasVideoPath) {
         if (!String(videoPath).startsWith(`${user.id}/`)) return json({ error: "bad_path" }, 400);
         const { data: blob, error: dlErr } = await svc.storage.from("proofs").download(videoPath);
-        if (dlErr || !blob) return json({ error: true, busy: true, reason: "Could not read the uploaded video — please try again." });
-        videoData = `data:video/mp4;base64,${encodeBase64(new Uint8Array(await blob.arrayBuffer()))}`;
+        if (dlErr || !blob) return json({ error: true, busy: true, reason: videoReadReason });
+        vBytes = new Uint8Array(await blob.arrayBuffer());
+        if (blob.type && blob.type.startsWith("video/")) vMime = blob.type;
+      } else {
+        const m = /^data:([^;]+);base64,(.*)$/s.exec(String(video));
+        if (!m) return json({ error: true, busy: true, reason: videoReadReason });
+        vMime = m[1]; vBytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
       }
-      verdict = await judgeVideo({ video: videoData, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang });
+      verdict = await judgeVideo({ bytes: vBytes, mimeType: vMime, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang });
     } catch (e) {
       console.error("judgeVideo failed:", e instanceof Error ? e.message : String(e));
-      return json({ error: true, busy: true, reason: "The judge couldn't read this clip — please try again." });
+      return json({ error: true, busy: true, reason: videoJudgeReason });
     }
   } else if (isTimelapse) {
     try { verdict = await judgeTimelapse({ frames, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang }); }

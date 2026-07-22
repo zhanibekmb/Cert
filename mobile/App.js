@@ -2209,14 +2209,22 @@ function NewGoal({ session, isPro, firstRun, onUpgrade, onDone, onBack }) {
 /* ---------- TIMELAPSE (recorded IN-APP; the AI judge watches the clip) ----------
    The proof is a short video the user records here — not picked from the library,
    so a pre-made / faked clip can't be used. Hard-capped in length + file size so
-   the base64 payload stays under Gemini's ~20MB inline limit. Front/back camera. */
-const TL_MAX_SECONDS = 30;             // recording auto-stops here
+   uploads stay quick and Gemini's video processing has room to finish. */
+const TL_MAX_SECONDS = 20;             // recording auto-stops here
 const TL_MIN_SECONDS = 3;              // enough to show a real attempt
-// Gemini's ~20MB request cap applies to the base64-INFLATED payload (×1.33),
-// so raw bytes must stay ≤ ~14MB. With the 2 Mbps bitrate below, 30s ≈ 7.5MB —
-// still well under the cap, so the size auto-stop rarely trips before 30s.
-const TL_MAX_BYTES = 14 * 1024 * 1024;
-const TL_BITRATE = 2000000; // 2 Mbps — plenty for the AI to judge motion
+const TL_MAX_BYTES = 10 * 1024 * 1024;
+const TL_BITRATE = 1200000; // enough for motion; lighter clips fail less often
+
+function timelapseMime(uri = "") {
+  const clean = String(uri).split("?")[0].toLowerCase();
+  if (clean.endsWith(".mov")) return "video/quicktime";
+  if (clean.endsWith(".webm")) return "video/webm";
+  if (clean.endsWith(".m4v")) return "video/x-m4v";
+  return "video/mp4";
+}
+function timelapseExt(mime) {
+  return mime === "video/quicktime" ? "mov" : mime === "video/webm" ? "webm" : mime === "video/x-m4v" ? "m4v" : "mp4";
+}
 
 
 function TimelapseCapture({ onCancel, onDone }) {
@@ -2239,8 +2247,10 @@ function TimelapseCapture({ onCancel, onDone }) {
     try {
       // resolves when recording stops — manually or at maxDuration. No maxFileSize
       // (it was cutting recordings to a few seconds); size is checked after instead.
-      // codec is required on iOS for videoBitrate to take effect.
-      const clip = await camRef.current.recordAsync({ maxDuration: TL_MAX_SECONDS, codec: "avc1" });
+      // codec is iOS-only; setting it there keeps bitrate predictable.
+      const opts = { maxDuration: TL_MAX_SECONDS };
+      if (Platform.OS === "ios") opts.codec = "avc1";
+      const clip = await camRef.current.recordAsync(opts);
       if (timer.current) { clearInterval(timer.current); timer.current = null; }
       setRecording(false);
       const secs = Math.round((Date.now() - startedAt.current) / 1000);
@@ -2269,7 +2279,7 @@ function TimelapseCapture({ onCancel, onDone }) {
   const remain = Math.max(0, TL_MAX_SECONDS - elapsed);
   return (
     <View style={{ flex: 1, backgroundColor: "#000" }}>
-      <CameraView ref={camRef} style={{ flex: 1 }} facing={facing} mode="video" videoQuality="4:3" videoBitrate={TL_BITRATE} mute />
+      <CameraView ref={camRef} style={{ flex: 1 }} facing={facing} mode="video" videoQuality="480p" videoBitrate={TL_BITRATE} mute />
       <View style={{ position: "absolute", top: 0, left: 0, right: 0, padding: 18, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
         <TouchableOpacity onPress={() => { stop(); onCancel(); }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} disabled={preparing}>
           <Text style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}>✕</Text>
@@ -2479,7 +2489,9 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
     if (!result || !result.uri) return;
     setBusy(true); setStage("judging"); setReject(null);
     try {
-      const bytes = await fetch(result.uri).then((r) => r.arrayBuffer());
+      const res = await fetch(result.uri);
+      if (!res.ok) throw new Error("clip_read_failed");
+      const bytes = await res.arrayBuffer();
       if (bytes.byteLength > TL_MAX_BYTES) {
         setBusy(false); setStage("idle");
         return Alert.alert("Cert", t("That clip is too heavy. Record a shorter one."));
@@ -2487,8 +2499,9 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
       const { data: sess } = await supabase.auth.getSession();
       const uidNow = sess?.session?.user?.id;
       if (!uidNow) throw new Error("no session");
-      const path = `${uidNow}/${goal.id}/${Date.now()}.mp4`;
-      const { error: upErr } = await supabase.storage.from("proofs").upload(path, bytes, { contentType: "video/mp4" });
+      const mime = timelapseMime(result.uri);
+      const path = `${uidNow}/${goal.id}/${Date.now()}.${timelapseExt(mime)}`;
+      const { error: upErr } = await supabase.storage.from("proofs").upload(path, bytes, { contentType: mime });
       if (upErr) throw upErr;
       await runJudge({ videoPath: path });
     } catch (_) {
@@ -2506,7 +2519,7 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
       const geoPlaceNow = geo && geo.place ? geo.place : null;
       const { data, error } = await supabase.functions.invoke("judge", { body: { goalId: goal.id, geo, lang: activeLang(), ...payload } });
       if (error) throw error;
-      if (data?.busy) { Alert.alert("Cert", t("The judge is busy — try again in a moment.")); return; }
+      if (data?.busy) { Alert.alert("Cert", data.reason || t("The judge is busy — try again in a moment.")); return; }
       if (data?.error) {
         const msg = {
           no_checks_left: t("No attempts left today. Come back tomorrow, or appeal your last rejected photo."),
@@ -2630,7 +2643,7 @@ function Submit({ goal, goalSubs = [], onDone, onBack, onViewBadge }) {
           </Text>
         </View>
       ) : null}
-      {isGeo ? null : <Text style={s.note}>{t("The AI judges in a few seconds. A reject resets your streak — you can appeal once.")}</Text>}
+      {isGeo ? null : <Text style={s.note}>{isTimelapse ? t("Video proof takes longer than a photo. Keep the app open while the judge watches it.") : t("The AI judges in a few seconds. A reject resets your streak — you can appeal once.")}</Text>}
       {stage === "judging" ? (
         <View style={{ alignItems: "center", marginTop: 24 }}>
           <ActivityIndicator color={C.bronze} />

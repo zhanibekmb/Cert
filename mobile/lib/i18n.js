@@ -568,6 +568,7 @@ const RU = {
   "Past today's deadline ({d})": "Дедлайн на сегодня прошёл ({d})",
   "Submit before {d} today": "Отправь сегодня до {d}",
   "The AI judges in a few seconds. A reject resets your streak — you can appeal once.": "ИИ судит за пару секунд. Отказ обнуляет серию — можно оспорить один раз.",
+  "Video proof takes longer than a photo. Keep the app open while the judge watches it.": "Видео проверяется дольше фото. Не закрывай приложение, пока судья смотрит ролик.",
   "The judge is analyzing your timelapse…": "Судья анализирует твой таймлапс…",
   "The judge is analyzing your photo…": "Судья анализирует твоё фото…",
   "Rejected — no attempts left today": "Отказ — попыток на сегодня не осталось",
