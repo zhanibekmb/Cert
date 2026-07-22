@@ -68,6 +68,17 @@ function parseImage(photo: string): { mimeType: string; data: string } {
   if (m) return { mimeType: m[1], data: m[2] };
   return { mimeType: "image/jpeg", data: String(photo).replace(/^data:[^,]*,/, "") };
 }
+// Trust the bytes, not the client-declared type: iOS records QuickTime (.mov)
+// yet the app uploads it as video/mp4, and Supabase may hand back an empty type.
+// Both mp4 and mov are ISO-BMFF (an "ftyp" box at offset 4); Gemini's Files API
+// decodes them as video/mp4. WebM/3GP are detected too so the label is honest.
+function sniffVideoMime(bytes: Uint8Array, fallback: string): string {
+  try {
+    if (bytes.byteLength >= 12 && String.fromCharCode(bytes[4], bytes[5], bytes[6], bytes[7]) === "ftyp") return "video/mp4";
+    if (bytes.byteLength >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3) return "video/webm";
+  } catch (_) { /* keep fallback */ }
+  return (fallback && fallback.startsWith("video/")) ? fallback : "video/mp4";
+}
 // RETIRED as a requirement: photos are now captured live in-app (no gallery
 // picking), so freshness is guaranteed by capture, not by finger poses — users
 // found posing awkward. The generator is kept only so older builds that still
@@ -361,6 +372,7 @@ Deno.serve(async (req) => {
         if (!m) return json({ error: true, busy: true, reason: videoReadReason });
         vMime = m[1]; vBytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
       }
+      vMime = sniffVideoMime(vBytes, vMime);   // normalize to a type Gemini accepts
       verdict = await judgeVideo({ bytes: vBytes, mimeType: vMime, goalText: goal.text, proofSpec: (lang === "ru" ? goal.proof_spec_ru : goal.proof_spec_en) || goal.proof_spec_en, reasonLang });
     } catch (e) {
       console.error("judgeVideo failed:", e instanceof Error ? e.message : String(e));
