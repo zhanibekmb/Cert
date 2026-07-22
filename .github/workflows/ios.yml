@@ -1,0 +1,63 @@
+name: iOS build & submit (local, no EAS quota)
+
+# Manual trigger from the Actions tab → "Run workflow".
+# Builds the iOS app ON the macOS runner with `eas build --local`, which does
+# NOT consume the EAS Free-plan cloud build allotment, then submits it to
+# App Store Connect. Requires one repo secret: EXPO_TOKEN
+# (expo.dev → Account settings → Access tokens). Apple signing credentials are
+# pulled automatically from EAS (already set up from earlier cloud builds).
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: "Also submit to App Store Connect after building"
+        type: boolean
+        default: true
+
+concurrency:
+  group: ios-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-14
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm i -g eas-cli
+
+      - name: Who am I (sanity check the token)
+        run: eas whoami
+
+      - name: Build iOS (.ipa) locally — does not use EAS cloud quota
+        run: eas build --local --non-interactive --profile production --platform ios --output "$GITHUB_WORKSPACE/app.ipa"
+
+      - name: Upload .ipa as an artifact (backup you can download)
+        uses: actions/upload-artifact@v4
+        with:
+          name: cert-ios-ipa
+          path: app.ipa
+          retention-days: 14
+
+      - name: Submit to App Store Connect
+        if: ${{ inputs.submit }}
+        run: eas submit --non-interactive --profile production --platform ios --path "$GITHUB_WORKSPACE/app.ipa"
