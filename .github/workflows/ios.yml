@@ -1,11 +1,14 @@
 name: iOS build & submit (local, no EAS quota)
 
 # Manual trigger from the Actions tab → "Run workflow".
-# Builds the iOS app ON the macOS runner with `eas build --local`, which does
-# NOT consume the EAS Free-plan cloud build allotment, then submits it to
-# App Store Connect. Requires one repo secret: EXPO_TOKEN
-# (expo.dev → Account settings → Access tokens). Apple signing credentials are
-# pulled automatically from EAS (already set up from earlier cloud builds).
+# Split into two jobs so a transient network blip on submit (e.g. ENOTFOUND
+# api.expo.dev) does NOT cost a 40-min macOS rebuild:
+#   build  — macOS runner, `eas build --local` (no EAS cloud quota), saves .ipa
+#   submit — ubuntu runner (submit needs no macOS), downloads the .ipa and
+#            uploads to App Store Connect, retrying on network flakes.
+# If submit still flakes: Actions → the run → "Re-run failed jobs" re-runs ONLY
+# the fast submit job (the .ipa artifact is reused, no rebuild).
+# Requires one repo secret: EXPO_TOKEN (expo.dev → Account → Access tokens).
 
 on:
   workflow_dispatch:
@@ -54,8 +57,10 @@ jobs:
       - name: Install EAS CLI
         run: npm i -g eas-cli
 
-      - name: Who am I (sanity check the token)
-        run: eas whoami
+      - name: Who am I (retry on network flakes)
+        run: |
+          for i in 1 2 3 4 5; do eas whoami && exit 0; echo "whoami attempt $i failed — retrying in 15s…"; sleep 15; done
+          exit 1
 
       - name: Build iOS (.ipa) locally — does not use EAS cloud quota
         run: eas build --local --non-interactive --profile production --platform ios --output "$GITHUB_WORKSPACE/app.ipa"
@@ -72,20 +77,57 @@ jobs:
             find "$d" -type f -name "*.log" 2>/dev/null | while read -r f; do
               echo ""; echo "==================== $f ===================="; tail -200 "$f";
             done
-            # CocoaPods sometimes leaves the error only in the ios build output captured by eas
             find "$d" -maxdepth 3 -type f -name "Podfile" 2>/dev/null | while read -r pf; do
               echo ""; echo "---- running pod install --verbose in $(dirname "$pf") to reproduce the error ----";
               ( cd "$(dirname "$pf")" && pod install --verbose 2>&1 | tail -200 ) || true;
             done
           done
 
-      - name: Upload .ipa as an artifact (backup you can download)
+      - name: Upload .ipa artifact (reused by submit; also downloadable)
         uses: actions/upload-artifact@v4
         with:
           name: cert-ios-ipa
           path: app.ipa
           retention-days: 14
+          if-no-files-found: error
 
-      - name: Submit to App Store Connect
-        if: ${{ inputs.submit }}
-        run: eas submit --non-interactive --profile production --platform ios --path "$GITHUB_WORKSPACE/app.ipa"
+  submit:
+    needs: build
+    if: ${{ inputs.submit }}
+    runs-on: ubuntu-latest     # submitting an .ipa does not need macOS
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm i -g eas-cli
+
+      - name: Download the built .ipa
+        uses: actions/download-artifact@v4
+        with:
+          name: cert-ios-ipa
+          path: ${{ github.workspace }}
+
+      - name: Submit to App Store Connect (retry on network flakes)
+        run: |
+          for i in 1 2 3 4 5; do
+            eas submit --non-interactive --profile production --platform ios --path "$GITHUB_WORKSPACE/app.ipa" && exit 0
+            echo "submit attempt $i failed (likely a transient network blip) — retrying in 25s…"; sleep 25
+          done
+          echo "All submit attempts failed."; exit 1
