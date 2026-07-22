@@ -9,191 +9,180 @@
 <meta property="og:description" content="One goal. Live proof every day. An AI judge decides if it counts. Free on the App Store.">
 <meta property="og:type" content="website">
 <link rel="icon" type="image/png" href="assets/logo-mark.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
   :root{
     --accent:#4f46e5; --accent-deep:#4338ca; --accent-soft:#eef2ff;
-    --ink:#0e1116; --mute:#5b6472; --faint:#98a1ae;
-    --bg:#ffffff; --card:#f6f8fb; --line:#e7eaf1;
-    --dark:#12102b; --dark2:#1e1b4e; --dark-ink:#f2f0ff; --dark-mute:#b9beF8;
-    --err:#dc2626; --ok:#16a34a; --black:#0e1116;
+    --ink:#0d0f14; --mute:#5c626e; --faint:#9aa0ac;
+    --bg:#ffffff; --card:#fafafb; --line:#ececef; --line-2:#e2e3e8;
+    --err:#dc2626; --ok:#16a34a;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
   }
   *{box-sizing:border-box;}
   html{scroll-behavior:smooth;}
   html,body{margin:0;padding:0;background:var(--bg);}
-  body{font-family:'Geist','Inter',-apple-system,system-ui,sans-serif;color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;letter-spacing:-.005em;}
+  body{font-family:var(--font);color:var(--ink);overflow-x:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;letter-spacing:-.011em;line-height:1.5;}
   ::selection{background:var(--accent);color:#fff;}
-  a{color:inherit;}
-  .wrap{max-width:1140px;margin:0 auto;padding:0 24px;}
-  h1,h2,h3,h4{margin:0;font-weight:900;letter-spacing:-.03em;line-height:1.02;}
-  h1{font-size:clamp(46px,7vw,84px);}
-  h2{font-size:clamp(32px,4.6vw,52px);}
-  .lead{font-size:clamp(18px,2vw,21px);line-height:1.55;color:var(--mute);}
-  .sub{font-size:17px;line-height:1.6;color:var(--mute);}
-  .kicker{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:26px;}
-  .chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:9px 15px;font-size:13.5px;font-weight:600;color:var(--mute);background:#fff;}
+  a{color:inherit;text-decoration:none;}
+  img{display:block;max-width:100%;}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px;}
+  h1,h2,h3,h4{margin:0;font-weight:640;letter-spacing:-.028em;line-height:1.05;color:var(--ink);}
+  h1{font-size:clamp(38px,5.4vw,62px);font-weight:660;letter-spacing:-.035em;}
+  h2{font-size:clamp(28px,3.6vw,42px);}
+  .lead{font-size:clamp(17px,1.6vw,19px);line-height:1.55;color:var(--mute);font-weight:400;letter-spacing:-.01em;}
+  .sub{font-size:16.5px;line-height:1.6;color:var(--mute);font-weight:400;}
+  .kicker{display:inline-block;font-size:12.5px;font-weight:600;letter-spacing:.04em;color:var(--accent);}
+  .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:24px;}
+  .chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13.5px;font-weight:500;color:var(--mute);background:#fff;}
   .chip svg{width:15px;height:15px;color:var(--accent);flex:none;}
-  .icon-box{width:46px;height:46px;border-radius:13px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
-  .icon-box svg{width:22px;height:22px;}
-  /* black store buttons — Forfeit style */
-  .store{display:inline-flex;align-items:center;gap:9px;background:var(--black);color:#fff;border-radius:12px;padding:10px 18px;text-decoration:none;transition:transform .15s,opacity .15s;}
-  .store:hover{transform:translateY(-1px);opacity:.9;}
-  .store small{display:block;font-size:10px;font-weight:600;opacity:.8;letter-spacing:.02em;line-height:1;}
-  .store b{display:block;font-size:16px;font-weight:800;line-height:1.15;}
-  .store.lg{padding:13px 22px;}
-  .store.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);}
-  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--accent);color:#fff;border:none;border-radius:12px;padding:14px 24px;font:inherit;font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:transform .15s,box-shadow .15s;}
-  .btn:hover{transform:translateY(-1px);box-shadow:0 10px 30px rgba(79,70,229,.28);}
-  .btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--line);}
-  .btn.ghost:hover{border-color:var(--accent);color:var(--accent);box-shadow:none;}
-  .navlink{text-decoration:none;font-size:14px;font-weight:600;color:var(--mute);}
-  .navlink:hover{color:var(--accent);}
-  .lang-btn{background:none;border:none;padding:5px 8px;font:inherit;font-size:12px;font-weight:700;color:var(--faint);cursor:pointer;border-radius:7px;}
-  .lang-btn.active{background:var(--accent);color:#fff;}
-  .live{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--mute);}
-  .live .dot{width:8px;height:8px;border-radius:5px;background:var(--accent);animation:pulse 1.6s ease infinite;}
-  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
-  .acc-q{width:100%;text-align:left;background:none;border:none;padding:20px 0;font:inherit;font-size:17px;font-weight:700;color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;}
+  .icon-box{width:42px;height:42px;border-radius:11px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
+  .icon-box svg{width:21px;height:21px;}
+  /* store buttons */
+  .store{display:inline-flex;align-items:center;gap:9px;background:var(--ink);color:#fff;border-radius:13px;padding:10px 18px;transition:transform .15s,opacity .15s;}
+  .store:hover{transform:translateY(-1px);opacity:.92;}
+  .store small{display:block;font-size:10px;font-weight:500;opacity:.82;letter-spacing:.01em;line-height:1.1;}
+  .store b{display:block;font-size:16px;font-weight:600;line-height:1.2;letter-spacing:-.01em;}
+  .store.lg{padding:12px 22px;}
+  .store.soon{background:#fff;color:var(--ink);border:1px solid var(--line-2);}
+  .btn{display:inline-flex;align-items:center;gap:9px;background:var(--ink);color:#fff;border:none;border-radius:12px;padding:13px 24px;font:inherit;font-weight:600;font-size:15.5px;cursor:pointer;transition:transform .15s,opacity .15s;letter-spacing:-.01em;}
+  .btn:hover{transform:translateY(-1px);opacity:.92;}
+  .navlink{font-size:14px;font-weight:500;color:var(--mute);transition:color .15s;}
+  .navlink:hover{color:var(--ink);}
+  .lang-btn{background:none;border:none;padding:5px 8px;font:inherit;font-size:12.5px;font-weight:600;color:var(--faint);cursor:pointer;border-radius:7px;}
+  .lang-btn.active{background:var(--ink);color:#fff;}
+  .live{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 13px;font-size:13px;font-weight:500;color:var(--mute);}
+  .live .dot{width:7px;height:7px;border-radius:5px;background:var(--ok);animation:pulse 1.8s ease infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.25;}}
+  /* accordion */
+  .acc-q{width:100%;text-align:left;background:none;border:none;padding:20px 0;font:inherit;font-size:16.5px;font-weight:600;color:var(--ink);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:14px;letter-spacing:-.01em;}
   .acc-q:hover{color:var(--accent);}
-  .acc-a{display:none;padding:0 0 20px;color:var(--mute);font-size:15.5px;line-height:1.65;}
+  .acc-a{display:none;padding:0 0 20px;color:var(--mute);font-size:15px;line-height:1.65;max-width:640px;}
   .acc-item{border-bottom:1px solid var(--line);}
   .acc-item.open .acc-a{display:block;}
   .acc-item.open .acc-x{transform:rotate(45deg);}
-  .acc-x{transition:transform .15s;color:var(--accent);font-size:22px;font-weight:700;flex:none;}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
-  .pro-tag{font-size:11px;font-weight:900;color:var(--accent);border:1.5px solid var(--accent);border-radius:6px;padding:2px 6px;vertical-align:middle;letter-spacing:.04em;}
-  /* phone */
-  .phone{width:322px;border:12px solid #ffffff;border-radius:54px;background:#fff;box-shadow:0 0 0 1.5px var(--line),0 40px 90px rgba(14,17,22,.16);overflow:hidden;flex:none;}
-  .phone.real{line-height:0;background:#fff;position:relative;}
-  .phone.real .shot{width:100%;display:block;}
-  /* crossfading real app screenshots (hero + how-it-works) */
-  .shots{position:relative;width:100%;aspect-ratio:1170/1720;background:#fff;}
-  .shots .shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;opacity:0;transition:opacity .5s ease;}
-  .shots .shot.on{opacity:1;}
-  /* clean status bar overlay (hides the Safari bar in the screenshot) + camera island */
-  .phone.real .rbar{position:absolute;top:0;left:0;right:0;height:38px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:9px 20px 0;z-index:2;line-height:1;}
-  .phone.real .rbar .isl{position:absolute;left:50%;top:9px;transform:translateX(-50%);width:78px;height:22px;background:#0e1116;border-radius:14px;}
-  .phone.real .rbar .t{font-size:14px;font-weight:800;color:#0e1116;}
-  .phone.real .rbar .st{display:flex;align-items:center;gap:5px;}
-  /* realistic status bar: time · dynamic island · wifi/battery */
-  .pbar{position:relative;display:flex;align-items:center;justify-content:space-between;padding:11px 22px 3px;background:#fff;}
-  .pbar .ptime{font-size:14px;font-weight:800;color:#0e1116;letter-spacing:-.01em;}
-  .pbar .isl{position:absolute;left:50%;top:8px;transform:translateX(-50%);width:78px;height:22px;background:#0e1116;border-radius:14px;}
-  .pbar .st{display:flex;align-items:center;gap:5px;}
-  .pscreen{padding:12px 14px 18px;background:#fff;height:556px;overflow:hidden;}
-  /* create-screen mock (animated) */
-  .cs-title{font-size:22px;font-weight:900;margin:2px 0 12px;}
-  .cs-toggle{display:flex;background:var(--card);border:1px solid var(--line);border-radius:13px;padding:4px;gap:4px;}
-  .cs-toggle span{flex:1;text-align:center;padding:9px;border-radius:10px;font-size:13.5px;font-weight:800;color:var(--mute);}
-  .cs-toggle span.on{background:var(--accent);color:#fff;}
-  .cs-card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:12px;}
-  .cs-say{font-size:16px;font-weight:800;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-  .cs-pill{display:inline-flex;align-items:center;gap:5px;border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 12px;font-size:14px;font-weight:800;}
-  /* crossfade: new pill/deadline fades + slides in when the scenario changes */
-  @keyframes pillIn{0%{opacity:0;transform:translateY(6px) scale(.96);}100%{opacity:1;transform:translateY(0) scale(1);}}
-  .cs-pill.anim,.cs-dl.anim{animation:pillIn .42s cubic-bezier(.2,.7,.2,1);}
-  .cs-input{margin-top:11px;border:1.5px solid var(--accent);border-radius:12px;padding:12px 13px;font-size:14.5px;font-weight:600;min-height:46px;color:var(--ink);}
+  .acc-x{transition:transform .18s;color:var(--faint);font-size:20px;font-weight:400;flex:none;}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:40px;}
+
+  /* ---------- realistic device ---------- */
+  .device{position:relative;width:296px;flex:none;border-radius:52px;
+    background:linear-gradient(145deg,#f0f1f4,#c9ccd4 42%,#eceef2 80%);
+    padding:3px;box-shadow:0 1px 1px rgba(255,255,255,.7) inset,0 30px 64px -26px rgba(13,15,20,.45),0 8px 22px -14px rgba(13,15,20,.35);}
+  .device .bezel{background:#0a0a0c;border-radius:49px;padding:9px;}
+  .device .screen{position:relative;border-radius:40px;overflow:hidden;background:#fff;aspect-ratio:1170/2532;}
+  .device .island{position:absolute;top:12px;left:50%;transform:translateX(-50%);width:90px;height:27px;background:#000;border-radius:16px;z-index:8;}
+  .device .shot{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;}
+  .device.stack .shot{opacity:0;transition:opacity .55s ease;}
+  .device.stack .shot.on{opacity:1;}
+  /* live status bar */
+  .sbar{position:relative;display:flex;align-items:center;justify-content:space-between;padding:14px 26px 0;height:47px;z-index:7;}
+  .sbar .t{font-size:14.5px;font-weight:600;letter-spacing:-.02em;color:#0d0f14;}
+  .sbar .st{display:flex;gap:6px;align-items:center;}
+  /* live create-screen (matches the app) */
+  .cs{padding:3px 18px 20px;}
+  .cs-back{font-size:15px;color:var(--mute);font-weight:400;margin:2px 0 8px;}
+  .cs-title{font-size:25px;font-weight:700;letter-spacing:-.025em;margin:0 0 16px;}
+  .cs-seg{display:flex;background:#f2f3f6;border-radius:12px;padding:3px;margin-bottom:15px;}
+  .cs-seg span{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:14px;font-weight:600;color:var(--mute);}
+  .cs-seg span.on{background:var(--accent);color:#fff;box-shadow:0 3px 8px -3px rgba(79,70,229,.5);}
+  .cs-card{background:#f7f8fb;border-radius:15px;padding:15px 15px 16px;}
+  .cs-say{font-size:15.5px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap;line-height:1.7;color:var(--ink);}
+  .cs-pill{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:3px 10px;font-size:13.5px;font-weight:600;background:#fff;}
+  .cs-pill.anim{animation:pillIn .4s cubic-bezier(.2,.8,.2,1);}
+  @keyframes pillIn{0%{opacity:0;transform:translateY(4px);}100%{opacity:1;transform:none;}}
+  .cs-input{margin-top:11px;background:#fff;border:1px solid var(--line-2);border-radius:11px;padding:12px 12px;font-size:14.5px;color:var(--ink);min-height:44px;font-weight:400;}
   .cs-input .ph{color:var(--faint);}
-  .cs-deadline{display:flex;align-items:center;gap:10px;margin-top:13px;}
-  .cs-deadline .lbl{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;}
-  .cs-dl{border:1.5px solid var(--accent);color:var(--accent);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:800;}
-  .cs-map{margin-top:12px;height:122px;border-radius:12px;position:relative;overflow:hidden;
-    background:repeating-linear-gradient(90deg,transparent 0 26px,rgba(120,130,160,.16) 26px 28px),
-      repeating-linear-gradient(0deg,transparent 0 24px,rgba(120,130,160,.16) 24px 26px),
-      linear-gradient(135deg,#eef1f8,#e3e8f3);}
-  .cs-map .radius{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:74px;height:74px;border-radius:50%;background:rgba(79,70,229,.16);border:2px solid rgba(79,70,229,.55);animation:radiusPulse 2.2s ease-in-out infinite;}
-  @keyframes radiusPulse{0%,100%{transform:translate(-50%,-50%) scale(.72);opacity:.75;}50%{transform:translate(-50%,-50%) scale(1.12);opacity:.3;}}
-  .cs-map .pin{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%) rotate(-45deg);width:16px;height:16px;border-radius:50% 50% 50% 0;background:var(--err);box-shadow:0 4px 10px rgba(0,0,0,.18);z-index:2;}
-  .cs-map .cs-place{position:absolute;left:8px;bottom:8px;background:#fff;color:var(--accent);font-size:11px;font-weight:800;padding:4px 9px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.08);z-index:2;}
-  .cs-ideas-h{font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;margin:14px 0 8px;}
-  .cs-ideas{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .cs-idea{display:flex;align-items:center;gap:9px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px;font-size:13px;font-weight:700;}
-  .cs-idea .ic{width:24px;height:24px;border-radius:7px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
-  .cs-idea .ic svg{width:14px;height:14px;}
-  .cs-create{margin-top:14px;background:var(--accent);color:#fff;border-radius:12px;text-align:center;font-weight:800;font-size:15px;padding:13px;}
-  .caret{display:inline-block;width:2px;height:1.05em;background:var(--accent);vertical-align:-3px;animation:blink 1s steps(1) infinite;}
+  .caret{display:inline-block;width:2px;height:1.02em;background:var(--accent);vertical-align:-2px;margin-left:1px;animation:blink 1.1s steps(1) infinite;}
   @keyframes blink{50%{opacity:0;}}
-  /* interactive how-it-works */
-  .pills{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px;}
-  .pill{border:1.5px solid var(--line);background:#fff;color:var(--mute);border-radius:999px;padding:10px 18px;font:inherit;font-weight:800;font-size:14px;cursor:pointer;transition:all .15s;}
-  .pill:hover{border-color:var(--accent);color:var(--accent);}
+  .cs-dl-row{display:flex;align-items:center;gap:10px;margin-top:13px;}
+  .cs-dl-lbl{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--faint);text-transform:uppercase;}
+  .cs-dl{border:1px solid var(--accent);color:var(--accent);border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600;background:#fff;}
+  .cs-map{margin-top:13px;border-radius:11px;overflow:hidden;height:128px;position:relative;border:1px solid var(--line);}
+  .cs-map svg.map{width:100%;height:100%;display:block;}
+  .cs-map .pin{position:absolute;left:50%;top:44%;transform:translate(-50%,-92%);z-index:3;filter:drop-shadow(0 3px 4px rgba(0,0,0,.28));}
+  .cs-map .place{position:absolute;left:8px;bottom:8px;background:#fff;color:var(--accent);font-size:11px;font-weight:600;padding:4px 9px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12);z-index:3;}
+  .cs-ideas-h{font-size:10.5px;font-weight:700;letter-spacing:.06em;color:var(--faint);text-transform:uppercase;margin:15px 0 9px;}
+  .cs-ideas{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+  .cs-idea{display:flex;align-items:center;gap:9px;background:#f7f8fb;border-radius:11px;padding:11px 12px;font-size:13px;font-weight:500;color:var(--ink);}
+  .cs-idea .ic{width:22px;height:22px;border-radius:6px;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;color:var(--accent);flex:none;}
+  .cs-idea .ic svg{width:13px;height:13px;}
+  .cs-create{margin-top:15px;background:var(--accent);color:#fff;border-radius:12px;text-align:center;font-weight:600;font-size:15px;padding:14px;}
+
+  /* ---------- how it works ---------- */
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px;justify-content:center;}
+  .pill{border:1px solid var(--line-2);background:#fff;color:var(--mute);border-radius:999px;padding:9px 18px;font:inherit;font-weight:600;font-size:14px;cursor:pointer;transition:all .15s;letter-spacing:-.01em;}
+  .pill:hover{border-color:var(--ink);color:var(--ink);}
   .pill.active{background:var(--ink);color:#fff;border-color:var(--ink);}
-  .how-grid{display:grid;grid-template-columns:1fr 376px;gap:56px;margin-top:36px;align-items:stretch;}
-  .how-left{display:flex;flex-direction:column;justify-content:space-between;}
-  .step{display:flex;gap:16px;opacity:.45;transition:opacity .3s;}
+  .how-grid{display:grid;grid-template-columns:1fr 360px;gap:60px;margin-top:40px;align-items:center;}
+  .how-left{display:flex;flex-direction:column;}
+  .step{display:flex;gap:16px;opacity:.4;transition:opacity .3s;}
   .step.on{opacity:1;}
   .step .rail{display:flex;flex-direction:column;align-items:center;flex:none;}
-  .step .dot{width:34px;height:34px;border-radius:17px;background:var(--card);border:1.5px solid var(--line);color:var(--faint);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;transition:all .3s;}
-  .step.on .dot{background:var(--accent);border-color:var(--accent);color:#fff;}
-  .step .conn{width:2px;flex:1;background:var(--line);margin:4px 0;min-height:26px;transition:background .3s;}
-  .step.done .conn{background:var(--accent);}
-  .step .body{padding-bottom:22px;}
-  .step h4{font-size:19px;margin-bottom:6px;}
-  .step p{margin:0;color:var(--mute);font-size:15px;line-height:1.55;}
-  .step .bar{height:3px;border-radius:2px;background:var(--line);margin-top:14px;overflow:hidden;display:none;}
+  .step .dot{width:32px;height:32px;border-radius:16px;background:#fff;border:1px solid var(--line-2);color:var(--faint);display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px;transition:all .3s;}
+  .step.on .dot{background:var(--ink);border-color:var(--ink);color:#fff;}
+  .step .conn{width:1.5px;flex:1;background:var(--line-2);margin:5px 0;min-height:24px;transition:background .3s;}
+  .step.done .conn{background:var(--ink);}
+  .step .body{padding-bottom:24px;}
+  .step h4{font-size:18px;font-weight:640;margin-bottom:5px;letter-spacing:-.02em;}
+  .step p{margin:0;color:var(--mute);font-size:14.5px;line-height:1.55;}
+  .step .bar{height:2px;border-radius:2px;background:var(--line-2);margin-top:14px;overflow:hidden;display:none;}
   .step.on .bar{display:block;}
-  .step .bar i{display:block;height:3px;background:var(--accent);width:0%;}
-  .how-phone{position:sticky;top:90px;display:flex;justify-content:center;}
-  .stat-num{font-size:clamp(30px,4vw,44px);font-weight:900;letter-spacing:-.03em;color:var(--ink);}
-  .price-toggle{display:inline-flex;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px;gap:4px;margin-top:24px;}
-  .price-toggle button{border:none;background:none;border-radius:999px;padding:9px 20px;font:inherit;font-weight:800;font-size:14px;color:var(--mute);cursor:pointer;transition:all .2s;}
-  .price-toggle button.on{background:var(--accent);color:#fff;}
-  .price-amt{font-size:44px;font-weight:900;letter-spacing:-.03em;}
-  .price-amt .per{font-size:16px;font-weight:700;color:var(--mute);}
-  /* comparison pricing */
-  .cmp{max-width:680px;margin:30px auto 0;border:1px solid var(--line);border-radius:22px;overflow:hidden;background:#fff;text-align:left;box-shadow:0 24px 60px -34px rgba(14,17,22,.28);}
-  .cmp-row{display:grid;grid-template-columns:1fr 86px 116px;align-items:center;}
-  .cmp-row>div{padding:15px 8px;}
-  .cmp-row>div:first-child{padding-left:22px;}
-  .cmp-row>div:last-child{padding-right:22px;}
-  .cmp-row .c{text-align:center;font-weight:700;}
-  .cmp-row .pro{background:var(--accent-soft);}
-  .cmp-body .cmp-row{border-top:1px solid var(--line);}
-  .cmp-body .lab{font-size:15px;font-weight:600;color:var(--ink);}
-  .cmp-body .sm{display:block;font-size:12px;font-weight:600;color:var(--faint);margin-top:1px;}
-  .cmp-head{background:#fff;}
-  .cmp-head .ph{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);}
-  .cmp-head .c{font-size:15px;font-weight:900;color:var(--ink);}
-  .cmp-head .pro .c,.cmp-head .pro{color:var(--accent);}
-  .cmp-head .cmp-price{display:block;font-size:22px;font-weight:900;letter-spacing:-.02em;margin-top:2px;}
-  .cmp-head .cmp-per{font-size:12px;font-weight:700;color:var(--mute);}
-  .cmp .tick{color:var(--ok);}
-  .cmp .dash{color:var(--faint);}
-  .cmp-note{font-size:13px;color:var(--faint);font-weight:600;margin-top:14px;}
-  @media(max-width:560px){.cmp-row{grid-template-columns:1fr 62px 84px;}.cmp-head .cmp-price{font-size:18px;}}
+  .step .bar i{display:block;height:2px;background:var(--accent);width:0%;}
+  .how-phone{display:flex;justify-content:center;}
+
+  /* ---------- pricing (Anthropic-style cards) ---------- */
+  .price-toggle{display:inline-flex;background:#fff;border:1px solid var(--line-2);border-radius:999px;padding:4px;gap:2px;margin-top:26px;}
+  .price-toggle button{border:none;background:none;border-radius:999px;padding:8px 18px;font:inherit;font-weight:600;font-size:13.5px;color:var(--mute);cursor:pointer;transition:all .2s;letter-spacing:-.01em;}
+  .price-toggle button.on{background:var(--ink);color:#fff;}
+  .plans{display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:800px;margin:34px auto 0;text-align:left;}
+  .plan{border:1px solid var(--line);border-radius:18px;padding:30px 28px;background:#fff;display:flex;flex-direction:column;}
+  .plan.featured{border:1px solid var(--ink);}
+  .plan-name{font-size:14.5px;font-weight:600;letter-spacing:.01em;display:flex;align-items:center;gap:10px;color:var(--mute);}
+  .plan.featured .plan-name{color:var(--ink);}
+  .badge{font-size:11px;font-weight:600;color:#fff;background:var(--accent);border-radius:999px;padding:2px 9px;letter-spacing:0;}
+  .plan-price{font-size:46px;font-weight:680;letter-spacing:-.035em;margin:14px 0 0;line-height:1;}
+  .plan-per{font-size:15px;font-weight:500;color:var(--mute);letter-spacing:-.01em;}
+  .plan-desc{font-size:14px;color:var(--mute);margin:10px 0 0;line-height:1.5;min-height:40px;}
+  .plan-cta{margin:22px 0 24px;text-align:center;border-radius:11px;padding:12px;font-weight:600;font-size:14.5px;transition:opacity .15s,transform .15s;letter-spacing:-.01em;}
+  .plan-cta:hover{transform:translateY(-1px);}
+  .plan-cta.dark{background:var(--ink);color:#fff;}
+  .plan-cta.ghost{border:1px solid var(--line-2);color:var(--ink);}
+  .plan-feats-h{font-size:12.5px;font-weight:600;color:var(--ink);margin-bottom:15px;padding-top:22px;border-top:1px solid var(--line);}
+  .plan ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:13px;}
+  .plan li{display:flex;gap:10px;font-size:14px;color:var(--mute);line-height:1.4;}
+  .plan li svg{width:16px;height:16px;color:var(--accent);flex:none;margin-top:2px;}
+  .price-note{font-size:13px;color:var(--faint);font-weight:400;margin-top:18px;}
+
   @media(max-width:900px){
-    .grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}
+    .grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;gap:34px;}
     .hero-flex{flex-direction:column;text-align:center;}.hero-flex .chips,.hero-flex .hero-cta{justify-content:center;}
-    .how-grid{grid-template-columns:1fr;gap:14px;}.how-phone{position:static;order:-1;margin-bottom:8px;}
+    .how-grid{grid-template-columns:1fr;gap:28px;}.how-phone{order:-1;}
+    .plans{grid-template-columns:1fr;max-width:420px;}
   }
   @media(max-width:560px){.navlink.hide-sm{display:none;}.store small{display:none;}.store b{font-size:14px;}}
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;scroll-behavior:auto!important;}.caret{animation:blink 1.1s steps(1) infinite!important;}}
 </style>
 </head>
 <body>
 
 <!-- NAV -->
-<header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);">
-  <div class="wrap" style="display:flex;align-items:center;height:66px;">
+<header style="position:sticky;top:0;z-index:50;background:rgba(255,255,255,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--line);">
+  <div class="wrap" style="display:flex;align-items:center;height:64px;">
     <div style="flex:1;">
-      <a href="#top" style="display:inline-flex;align-items:center;gap:9px;text-decoration:none;">
-        <img src="assets/logo-mark.png" alt="Cert" style="width:30px;height:30px;">
-        <span style="font-weight:900;font-size:19px;letter-spacing:.04em;">CERT</span>
+      <a href="#top" style="display:inline-flex;align-items:center;gap:8px;">
+        <img src="assets/logo-mark.png" alt="Cert" style="width:28px;height:28px;">
+        <span style="font-weight:680;font-size:18px;letter-spacing:-.01em;">Cert</span>
       </a>
     </div>
-    <nav style="display:flex;gap:28px;align-items:center;">
+    <nav style="display:flex;gap:26px;align-items:center;">
       <a class="navlink hide-sm" href="#how" data-k="navHow"></a>
-      <a class="navlink hide-sm" href="#flex" data-k="navFeatures"></a>
+      <a class="navlink hide-sm" href="#features" data-k="navFeatures"></a>
       <a class="navlink hide-sm" href="#faq">FAQ</a>
       <a class="navlink hide-sm" href="#pricing" data-k="navPricing"></a>
     </nav>
     <div style="flex:1;display:flex;justify-content:flex-end;align-items:center;gap:14px;">
       <a class="store" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
         <svg width="18" height="20" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
-        <span><small data-k="storeSmall"></small><b>App Store</b></span>
+        <span><small data-k="storeSmall">Download on the</small><b>App Store</b></span>
       </a>
       <div style="display:flex;gap:2px;">
         <button id="lang-en" class="lang-btn active" onclick="setLang('en')">EN</button>
@@ -204,89 +193,108 @@
 </header>
 
 <!-- HERO -->
-<section id="top" style="padding:72px 0 60px;">
-  <div class="wrap hero-flex" style="display:flex;align-items:center;gap:60px;">
+<section id="top" style="padding:74px 0 66px;">
+  <div class="wrap hero-flex" style="display:flex;align-items:center;gap:64px;">
     <div style="flex:1;min-width:0;">
       <span class="live"><span class="dot"></span><span id="liveText"></span></span>
-      <h1 style="margin-top:18px;"><span data-k="heroH1a"></span> <span style="color:var(--accent);" data-k="heroH1b"></span></h1>
-      <p class="lead" style="margin:24px 0 30px;max-width:500px;" data-k="heroSub"></p>
+      <h1 style="margin-top:20px;"><span data-k="heroH1a"></span> <span style="color:var(--accent);" data-k="heroH1b"></span></h1>
+      <p class="lead" style="margin:22px 0 30px;max-width:480px;" data-k="heroSub"></p>
       <div class="hero-cta" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
         <a class="store lg" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
           <svg width="20" height="22" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
           <span><small data-k="storeSmall"></small><b>App Store</b></span>
         </a>
-        <a class="store lg ghost" href="#" onclick="return false;" style="cursor:default;">
-          <svg width="18" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 2.5v19l10.5-9.5L3 2.5zm12 8.2l3.1-2.8-11-6.2 7.9 9zm0 2.6l-7.9 9 11-6.2-3.1-2.8z"/></svg>
+        <a class="store lg soon" href="#" onclick="return false;" style="cursor:default;">
+          <svg width="17" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M3 2.5v19l10.5-9.5L3 2.5zm12 8.2l3.1-2.8-11-6.2 7.9 9zm0 2.6l-7.9 9 11-6.2-3.1-2.8z"/></svg>
           <span><small data-k="soonSmall"></small><b data-k="soonB"></b></span>
         </a>
       </div>
-      <div class="chips" style="display:flex;gap:10px;flex-wrap:wrap;margin-top:28px;">
+      <div class="chips" style="display:flex;gap:9px;flex-wrap:wrap;margin-top:26px;">
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="3"/><circle cx="12" cy="13.5" r="3.2"/><path d="M8 7l1.4-2.2h5.2L16 7"/></svg><span data-k="chipLive"></span></span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg><span data-k="chipAI"></span></span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17 19a5.5 5.5 0 0 0-3-4.9"/></svg><span data-k="chipFriends"></span></span>
       </div>
     </div>
-    <div class="phone real"><div class="shots" id="heroShots">
-      <img class="shot on" src="assets/landing/photo-proof.jpg" alt="Cert — new goal, photo proof">
-      <img class="shot" src="assets/landing/video-proof.jpg" alt="Cert — new goal, video proof">
-      <img class="shot" src="assets/landing/geo-proof.jpg" alt="Cert — new goal, location check-in">
-    </div></div>
+    <div class="device">
+      <div class="bezel"><div class="screen">
+        <div class="island"></div>
+        <div class="sbar"><span class="t">9:41</span><span class="st">
+          <svg width="17" height="11" viewBox="0 0 18 12" fill="#0d0f14"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+          <svg width="16" height="12" viewBox="0 0 18 13" fill="none"><path d="M9 3.5c2.2 0 4.2.8 5.7 2.2M9 7c1.3 0 2.4.5 3.3 1.3M9 10.2c.5 0 1 .2 1.4.6M3.3 5.7C4.8 4.3 6.8 3.5 9 3.5" stroke="#0d0f14" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <svg width="25" height="12" viewBox="0 0 27 13" fill="none"><rect x="1" y="1" width="22" height="11" rx="3" stroke="#0d0f14" stroke-opacity=".4" stroke-width="1"/><rect x="2.5" y="2.5" width="17" height="8" rx="1.5" fill="#0d0f14"/><rect x="24" y="4" width="1.8" height="5" rx="1" fill="#0d0f14" fill-opacity=".4"/></svg>
+        </span></div>
+        <div class="cs" id="heroScreen"></div>
+      </div></div>
+    </div>
   </div>
 </section>
 
-<!-- HOW IT WORKS (interactive; pills drive the animated create screen) -->
-<section id="how" style="padding:78px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+<!-- HOW IT WORKS -->
+<section id="how" style="padding:80px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap">
-    <div style="text-align:center;">
+    <div style="text-align:center;max-width:720px;margin:0 auto;">
       <span class="kicker" data-k="howKicker"></span>
-      <h2 style="margin:14px auto 0;max-width:820px;font-size:clamp(38px,5.6vw,66px);" data-k="howH"></h2>
+      <h2 style="margin-top:12px;" data-k="howH"></h2>
     </div>
-    <div class="pills" id="howPills" style="justify-content:center;"></div>
+    <div class="pills" id="howPills"></div>
     <div class="how-grid">
       <div class="how-left">
         <div class="steps" id="howSteps"></div>
-        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:24px;">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:8px;">
           <a class="store lg" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
             <svg width="20" height="22" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
             <span><small data-k="storeSmall"></small><b>App Store</b></span>
           </a>
-          <span style="font-size:13.5px;color:var(--faint);font-weight:600;" data-k="heroFree"></span>
+          <span style="font-size:13px;color:var(--faint);font-weight:500;" data-k="heroFree"></span>
         </div>
       </div>
-      <div class="how-phone"><div class="phone real"><div class="shots" id="howShots">
-        <img class="shot on" src="assets/landing/photo-proof.jpg" alt="Cert — photo proof goal">
-        <img class="shot" src="assets/landing/video-proof.jpg" alt="Cert — video proof goal">
-        <img class="shot" src="assets/landing/geo-proof.jpg" alt="Cert — location check-in goal">
-      </div></div></div>
+      <div class="how-phone"><div class="device">
+        <div class="bezel"><div class="screen">
+          <div class="island"></div>
+          <div class="sbar"><span class="t">9:41</span><span class="st">
+            <svg width="17" height="11" viewBox="0 0 18 12" fill="#0d0f14"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="4.5" y="5" width="3" height="7" rx="1"/><rect x="9" y="2.5" width="3" height="9.5" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 18 13" fill="none"><path d="M9 3.5c2.2 0 4.2.8 5.7 2.2M9 7c1.3 0 2.4.5 3.3 1.3M9 10.2c.5 0 1 .2 1.4.6M3.3 5.7C4.8 4.3 6.8 3.5 9 3.5" stroke="#0d0f14" stroke-width="1.5" stroke-linecap="round"/></svg>
+            <svg width="25" height="12" viewBox="0 0 27 13" fill="none"><rect x="1" y="1" width="22" height="11" rx="3" stroke="#0d0f14" stroke-opacity=".4" stroke-width="1"/><rect x="2.5" y="2.5" width="17" height="8" rx="1.5" fill="#0d0f14"/><rect x="24" y="4" width="1.8" height="5" rx="1" fill="#0d0f14" fill-opacity=".4"/></svg>
+          </span></div>
+          <div class="cs" id="howScreen"></div>
+        </div></div>
+      </div></div>
     </div>
   </div>
 </section>
 
-<!-- FLEXIBILITY / FEATURES -->
-<section id="flex" style="padding:82px 0;">
+<!-- FEATURES -->
+<section id="features" style="padding:88px 0;">
   <div class="wrap">
-    <span class="kicker" data-k="flexKicker"></span>
-    <h2 style="margin-top:14px;max-width:600px;" data-k="flexH"></h2>
+    <div style="max-width:600px;">
+      <span class="kicker" data-k="flexKicker"></span>
+      <h2 style="margin-top:12px;" data-k="flexH"></h2>
+    </div>
     <div class="grid3" style="margin-top:40px;">
-      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h4 style="margin:16px 0 6px;font-size:19px;" data-k="f1H"></h4><p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="f1T"></p></div>
-      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 1 1 3 6.2"/><path d="M4 20v-4h4"/></svg></div><h4 style="margin:16px 0 6px;font-size:19px;" data-k="f2H"></h4><p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="f2T"></p></div>
-      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 7l16 10M20 7L4 17M12 4l3 2-3 2-3-2zM12 20l3-2-3-2-3 2z"/></svg></div><h4 style="margin:16px 0 6px;font-size:19px;" data-k="f3H"></h4><p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="f3T"></p></div>
-      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c5-5 7-8.2 7-11a7 7 0 1 0-14 0c0 2.8 2 6 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></div><h4 style="margin:16px 0 6px;font-size:19px;" data-k="f4H"></h4><p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="f4T"></p></div>
-      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 15l3-3 2 2 4-5"/></svg></div><h4 style="margin:16px 0 6px;font-size:19px;" data-k="f5H"></h4><p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="f5T"></p></div>
-      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17 19a5.5 5.5 0 0 0-3-4.9"/></svg></div><h4 style="margin:16px 0 6px;font-size:19px;" data-k="f6H"></h4><p style="margin:0;color:var(--mute);font-size:15px;line-height:1.6;" data-k="f6T"></p></div>
+      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg></div><h4 style="margin:16px 0 6px;font-size:18px;" data-k="f1H"></h4><p style="margin:0;color:var(--mute);font-size:14.5px;line-height:1.6;" data-k="f1T"></p></div>
+      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12a8 8 0 1 1 3 6.2"/><path d="M4 20v-4h4"/></svg></div><h4 style="margin:16px 0 6px;font-size:18px;" data-k="f2H"></h4><p style="margin:0;color:var(--mute);font-size:14.5px;line-height:1.6;" data-k="f2T"></p></div>
+      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v4M16 3v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M9 14l2 2 4-4"/></svg></div><h4 style="margin:16px 0 6px;font-size:18px;" data-k="f3H"></h4><p style="margin:0;color:var(--mute);font-size:14.5px;line-height:1.6;" data-k="f3T"></p></div>
+      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21c5-5 7-8.2 7-11a7 7 0 1 0-14 0c0 2.8 2 6 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg></div><h4 style="margin:16px 0 6px;font-size:18px;" data-k="f4H"></h4><p style="margin:0;color:var(--mute);font-size:14.5px;line-height:1.6;" data-k="f4T"></p></div>
+      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 15l3-3 2 2 4-5"/></svg></div><h4 style="margin:16px 0 6px;font-size:18px;" data-k="f5H"></h4><p style="margin:0;color:var(--mute);font-size:14.5px;line-height:1.6;" data-k="f5T"></p></div>
+      <div class="card"><div class="icon-box"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3.2 3.2 0 0 1 0 6M17 19a5.5 5.5 0 0 0-3-4.9"/></svg></div><h4 style="margin:16px 0 6px;font-size:18px;" data-k="f6H"></h4><p style="margin:0;color:var(--mute);font-size:14.5px;line-height:1.6;" data-k="f6T"></p></div>
     </div>
   </div>
 </section>
 
-<!-- ANALYTICS SHOWCASE (real screenshot) -->
-<section style="padding:78px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
+<!-- ANALYTICS -->
+<section style="padding:80px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap grid2" style="align-items:center;">
-    <div class="phone real" style="justify-self:center;"><div class="rbar"><span class="t">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><img class="shot" src="assets/landing/statistics.jpg" alt="Cert — analytics & trophies"></div>
+    <div class="device" style="justify-self:center;">
+      <div class="bezel"><div class="screen">
+        <div class="island"></div>
+        <img class="shot" style="position:relative;" src="assets/landing/statistics.jpg" alt="Cert — analytics & trophies">
+      </div></div>
+    </div>
     <div>
       <span class="kicker" data-k="anKicker"></span>
-      <h2 style="margin-top:14px;" data-k="anH"></h2>
-      <p class="sub" style="margin:20px 0 0;" data-k="anT"></p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;">
+      <h2 style="margin-top:12px;" data-k="anH"></h2>
+      <p class="sub" style="margin:18px 0 0;" data-k="anT"></p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:24px;">
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 15l3-3 2 2 4-5"/></svg><span data-k="anChip1"></span></span>
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l7 3v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span data-k="anChip2"></span></span>
       </div>
@@ -295,106 +303,120 @@
 </section>
 
 <!-- THE JUDGE -->
-<section style="padding:84px 0;background:#fff;">
+<section id="judge" style="padding:88px 0;">
   <div class="wrap grid2" style="align-items:center;">
     <div>
       <span class="kicker" data-k="judgeKicker"></span>
-      <h2 style="margin-top:14px;" data-k="judgeH"></h2>
-      <p class="sub" style="margin:20px 0 0;" data-k="judgeT"></p>
-      <ul style="margin:22px 0 0;padding:0;list-style:none;color:var(--ink);font-size:15.5px;line-height:2.05;font-weight:600;">
-        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL1"></span></li>
-        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL2"></span></li>
-        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6" style="margin-top:6px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL3"></span></li>
+      <h2 style="margin-top:12px;" data-k="judgeH"></h2>
+      <p class="sub" style="margin:18px 0 0;" data-k="judgeT"></p>
+      <ul style="margin:22px 0 0;padding:0;list-style:none;color:var(--ink);font-size:15px;line-height:1.9;font-weight:500;">
+        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" style="margin-top:5px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL1"></span></li>
+        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" style="margin-top:5px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL2"></span></li>
+        <li style="display:flex;gap:11px;align-items:flex-start;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.4" style="margin-top:5px;flex:none;"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeL3"></span></li>
       </ul>
     </div>
     <div style="display:flex;justify-content:center;">
-      <div style="width:300px;background:#fff;border:1px solid var(--line);border-radius:22px;box-shadow:0 26px 60px -30px rgba(14,17,22,.3);overflow:hidden;">
-        <div style="height:158px;background:linear-gradient(150deg,#e5e8f1,#c9cfdd);display:flex;align-items:center;justify-content:center;position:relative;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#8b93a8" stroke-width="1.5"><rect x="3" y="6" width="18" height="14" rx="2.5"/><circle cx="12" cy="13" r="3.8"/><path d="M8 6l1.4-2.3h5.2L16 6"/></svg>
-          <span style="position:absolute;top:14px;right:14px;background:var(--ok);color:#fff;font-size:13px;font-weight:900;letter-spacing:.09em;padding:5px 12px;border-radius:9px;box-shadow:0 8px 20px -8px var(--ok);">APPROVED</span>
+      <div style="width:310px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 24px 56px -30px rgba(13,15,20,.3);overflow:hidden;">
+        <div style="height:160px;background:linear-gradient(150deg,#e7e9f0,#cfd3de);display:flex;align-items:center;justify-content:center;position:relative;">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#9198ab" stroke-width="1.5"><rect x="3" y="6" width="18" height="14" rx="2.5"/><circle cx="12" cy="13" r="3.8"/><path d="M8 6l1.4-2.3h5.2L16 6"/></svg>
+          <span style="position:absolute;top:14px;right:14px;background:var(--ok);color:#fff;font-size:12.5px;font-weight:700;letter-spacing:.06em;padding:5px 11px;border-radius:8px;">APPROVED</span>
         </div>
-        <div style="padding:17px 19px;">
-          <div style="font-size:11px;font-weight:800;letter-spacing:.08em;color:var(--faint);text-transform:uppercase;">CERT JUDGE</div>
-          <div style="font-size:15.5px;font-weight:800;margin-top:6px;color:var(--ink);" data-k="judgeCardGoal"></div>
-          <div style="display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid var(--line);font-size:13.5px;color:var(--mute);font-weight:600;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.8"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeCardMeta"></span></div>
+        <div style="padding:16px 18px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.07em;color:var(--faint);text-transform:uppercase;">Cert judge</div>
+          <div style="font-size:15px;font-weight:640;margin-top:6px;color:var(--ink);" data-k="judgeCardGoal"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:13px;padding-top:13px;border-top:1px solid var(--line);font-size:13.5px;color:var(--mute);font-weight:500;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--ok)" stroke-width="2.6"><path d="M5 12l4 4 10-10"/></svg><span data-k="judgeCardMeta"></span></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CHALLENGES (real screenshot) -->
-<section style="padding:82px 0;">
+<!-- CHALLENGES -->
+<section style="padding:80px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap grid2" style="align-items:center;">
     <div>
       <span class="kicker" data-k="chKicker"></span>
-      <h2 style="margin-top:14px;" data-k="chH"></h2>
-      <p class="sub" style="margin:20px 0 0;" data-k="chT"></p>
-      <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:24px;">
+      <h2 style="margin-top:12px;" data-k="chH"></h2>
+      <p class="sub" style="margin:18px 0 0;" data-k="chT"></p>
+      <div style="display:flex;gap:9px;flex-wrap:wrap;margin-top:24px;">
         <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8v3a4 4 0 0 1-8 0z"/><path d="M8 5H5v2a3 3 0 0 0 3 3M16 5h3v2a3 3 0 0 1-3 3M9 15h6M10 20h4M12 12v3"/></svg><span data-k="chChip1"></span></span>
-        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18M6 6l12 12M18 6L6 18"/></svg><span data-k="chChip2"></span></span>
-        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M4 7l16 10M20 7L4 17M12 4l3 2-3 2-3-2zM12 20l3-2-3-2-3 2z"/></svg><span data-k="chChip3"></span></span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/></svg><span data-k="chChip2"></span></span>
+        <span class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3v4M16 3v4M3 9h18M5 5h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/></svg><span data-k="chChip3"></span></span>
       </div>
     </div>
-    <div class="phone real" style="justify-self:center;"><div class="rbar"><span class="t">9:41</span><span class="isl"></span><span class="st"><svg width="17" height="12" viewBox="0 0 20 14" fill="#0e1116"><path d="M10 2c2.9 0 5.5 1.1 7.4 3l-1.5 1.6C14.4 5.1 12.3 4.3 10 4.3S5.6 5.1 4.1 6.6L2.6 5C4.5 3.1 7.1 2 10 2zm0 4.2c1.7 0 3.2.7 4.3 1.8l-1.5 1.6C12.2 8.9 11.2 8.5 10 8.5s-2.2.4-2.8 1.1L5.7 8C6.8 6.9 8.3 6.2 10 6.2zM10 10.4c.8 0 1.5.4 2 .9L10 13.4 8 11.3c.5-.5 1.2-.9 2-.9z"/></svg><svg width="25" height="13" viewBox="0 0 27 14" fill="none"><rect x="1" y="1.5" width="22" height="11" rx="3" stroke="#0e1116" stroke-width="1.3"/><rect x="3" y="3.5" width="15" height="7" rx="1.5" fill="#0e1116"/><rect x="24" y="5" width="2" height="4" rx="1" fill="#0e1116"/></svg></span></div><img class="shot" src="assets/landing/group-challenge.jpg" alt="Cert — group challenge"></div>
+    <div class="device" style="justify-self:center;">
+      <div class="bezel"><div class="screen">
+        <div class="island"></div>
+        <img class="shot" style="position:relative;" src="assets/landing/group-challenge.jpg" alt="Cert — group challenge">
+      </div></div>
+    </div>
   </div>
 </section>
 
 <!-- USE CASES -->
-<section style="padding:82px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
-  <div class="wrap" style="max-width:820px;">
+<section style="padding:88px 0;">
+  <div class="wrap" style="max-width:800px;">
     <span class="kicker" data-k="ucKicker"></span>
-    <h2 style="margin-top:14px;" data-k="ucH"></h2>
-    <div id="ucList" style="margin-top:22px;"></div>
+    <h2 style="margin-top:12px;" data-k="ucH"></h2>
+    <div id="ucList" style="margin-top:20px;"></div>
   </div>
 </section>
 
-<!-- PRICING (real, geo-aware) -->
-<section id="pricing" style="padding:82px 0;">
+<!-- PRICING -->
+<section id="pricing" style="padding:88px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
   <div class="wrap" style="text-align:center;">
     <span class="kicker" data-k="priceKicker"></span>
-    <h2 style="margin-top:14px;" data-k="priceH"></h2>
+    <h2 style="margin-top:12px;" data-k="priceH"></h2>
     <div class="price-toggle">
       <button id="bill-mo" class="on" onclick="setBill('mo')" data-k="billMo"></button>
       <button id="bill-yr" onclick="setBill('yr')" data-k="billYr"></button>
     </div>
-    <div class="cmp">
-      <div class="cmp-head cmp-row">
-        <div class="ph" data-k="cmpHead"></div>
-        <div class="c">Free<span class="cmp-price">$0</span></div>
-        <div class="c pro">Cert Pro<span class="cmp-price" id="proPrice">$4.99</span><span class="cmp-per" id="proPer"></span></div>
+    <div class="plans">
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0</div>
+        <div class="plan-desc" data-k="freeDesc"></div>
+        <a class="plan-cta ghost" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" data-k="freeCta"></a>
+        <div class="plan-feats-h" data-k="freeFeatsH"></div>
+        <ul id="freeFeats"></ul>
       </div>
-      <div class="cmp-body" id="cmpBody"></div>
+      <div class="plan featured">
+        <div class="plan-name"><span data-k="proName">Cert Pro</span> <span class="badge" data-k="popular"></span></div>
+        <div class="plan-price"><span id="proPrice">$4.99</span><span class="plan-per" id="proPer"></span></div>
+        <div class="plan-desc" data-k="proDesc"></div>
+        <a class="plan-cta dark" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" data-k="proCta"></a>
+        <div class="plan-feats-h" data-k="proFeatsH"></div>
+        <ul id="proFeats"></ul>
+      </div>
     </div>
-    <div class="cmp-note" id="proNote"></div>
-    <a class="btn" style="margin-top:20px;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener" data-k="priceCta"></a>
+    <div class="price-note" id="proNote"></div>
   </div>
 </section>
 
 <!-- FAQ -->
-<section id="faq" style="padding:82px 0;background:var(--card);border-top:1px solid var(--line);border-bottom:1px solid var(--line);">
-  <div class="wrap" style="max-width:780px;">
-    <h2 data-k="faqH"></h2>
-    <div id="faqList" style="margin-top:24px;"></div>
+<section id="faq" style="padding:88px 0;">
+  <div class="wrap" style="max-width:760px;">
+    <h2 style="text-align:center;" data-k="faqH"></h2>
+    <div id="faqList" style="margin-top:26px;"></div>
   </div>
 </section>
 
 <!-- FINAL CTA -->
-<section style="padding:96px 0;background:var(--accent-soft);border-top:1px solid var(--line);text-align:center;">
+<section style="padding:92px 0;background:var(--accent-soft);border-top:1px solid var(--line);text-align:center;">
   <div class="wrap">
-    <img src="assets/logo-mark.png" alt="Cert" style="width:58px;height:58px;">
+    <img src="assets/logo-mark.png" alt="Cert" style="width:54px;height:54px;margin:0 auto;">
     <h2 style="margin-top:20px;" data-k="ctaH"></h2>
-    <p style="color:var(--mute);font-size:18px;margin:16px 0 32px;" data-k="ctaT"></p>
-    <a class="store lg" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
+    <p style="color:var(--mute);font-size:17px;margin:14px 0 30px;" data-k="ctaT"></p>
+    <a class="store lg" style="display:inline-flex;" href="https://apps.apple.com/app/id6786159294" target="_blank" rel="noopener">
       <svg width="20" height="22" viewBox="0 0 15 17" fill="currentColor"><path d="M12.4 9c0-2 1.6-3 1.7-3-1-1.4-2.4-1.6-2.9-1.6-1.2-.1-2.4.7-3 .7-.7 0-1.6-.7-2.7-.7C4.1 4.5 2.8 5.3 2 6.6c-1.5 2.6-.4 6.4 1.1 8.5.7 1 1.5 2.2 2.6 2.1 1.1 0 1.5-.7 2.8-.7s1.6.7 2.8.7c1.1 0 1.9-1 2.6-2.1.8-1.2 1.1-2.4 1.2-2.4-.1 0-2.7-1-2.7-3.7zM10.4 2.8c.6-.7 1-1.7.9-2.8-.9 0-1.9.6-2.5 1.3-.6.6-1 1.6-.9 2.6 1 .1 1.9-.5 2.5-1.1z"/></svg>
       <span><small data-k="storeSmall"></small><b>App Store</b></span>
     </a>
   </div>
 </section>
 
-<footer style="padding:38px 0;border-top:1px solid var(--line);">
-  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:18px;align-items:center;font-size:13.5px;color:var(--faint);">
-    <span style="display:flex;align-items:center;gap:8px;font-weight:800;color:var(--mute);"><img src="assets/logo-mark.png" alt="" style="width:20px;height:20px;">CERT</span>
+<footer style="padding:36px 0;border-top:1px solid var(--line);">
+  <div class="wrap" style="display:flex;flex-wrap:wrap;gap:16px;align-items:center;font-size:13px;color:var(--faint);">
+    <span style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--mute);"><img src="assets/logo-mark.png" alt="" style="width:20px;height:20px;">Cert</span>
     <span style="margin-left:auto;display:flex;gap:18px;flex-wrap:wrap;">
       <a class="navlink" href="#pricing" data-k="navPricing"></a>
       <a class="navlink" href="privacy.html" data-k="ftPrivacy"></a>
@@ -402,7 +424,7 @@
       <a class="navlink" href="delete-account.html" data-k="ftDelete"></a>
       <a class="navlink" href="mailto:zhanibek@certapp.pro" data-k="ftSupport"></a>
     </span>
-    <span style="width:100%;text-align:right;">© 2026 Cert</span>
+    <span style="width:100%;text-align:right;color:var(--faint);">© 2026 Cert</span>
   </div>
 </footer>
 
@@ -413,7 +435,7 @@ const T = {
     navHow:"How it works", navFeatures:"Features", navPricing:"Pricing",
     storeSmall:"Download on the", soonSmall:"Coming soon to", soonB:"Google Play", heroFree:"Free to start · iPhone",
     heroH1a:"The streak", heroH1b:"you can't fake.",
-    heroSub:"Pick <b style='color:var(--accent)'>one habit</b>. Prove it every day with a <b style='color:var(--accent)'>real photo</b> — and an <b style='color:var(--accent)'>AI judge</b> decides if it counts. No checkbox to lie to.",
+    heroSub:"Pick one habit. Prove it every day with a real photo, video or location check-in — and an AI judge decides if it counts. No checkbox to lie to.",
     chipLive:"Live camera only", chipAI:"AI-verified", chipFriends:"Challenges with friends",
     howKicker:"How it works", howH:"Choose how you'll prove it. The judge does the rest.",
     flexKicker:"Built to keep you honest", flexH:"Strict where it counts. Fair where it should be.",
@@ -431,29 +453,29 @@ const T = {
     judgeL1:"Rejects screenshots, stock images and stale photos",
     judgeL2:"Explains every rejection in plain words",
     judgeL3:"One appeal per day if you think it got it wrong",
-    judgeStampSub:"reviewed in seconds",
+    judgeCardGoal:"“A photo at the gym”", judgeCardMeta:"Matches your goal · streak → day 13",
     chKicker:"Challenges", chH:"Bring your friends. Last place pays.",
     chT:"Start a shared goal with your group. Everyone sends proof, everyone sees the leaderboard. Whoever finishes last spins a wheel of penalties — written by your own friends.",
     chChip1:"Shared leaderboard", chChip2:"Penalty wheel", chChip3:"Streak freezes",
     ucKicker:"Use cases", ucH:"Whatever you keep putting off.",
     priceKicker:"Pricing", priceH:"Free to start. Pro when you're serious.",
-    billMo:"Monthly", billYr:"Yearly", popular:"BEST VALUE", perForever:"/forever",
-    freeList:"1 active goal<br>Photo proof<br>Challenges with friends<br>Streak freezes",
-    proList:"Unlimited goals<br>Video &amp; location proof<br>6-month analytics &amp; trophies<br>Monthly freezes included",
-    priceCta:"Start free on iPhone", priceMore:"See full pricing details",
-    cmpHead:"What you get",
-    cmp:[["Active goals","1","Unlimited"],["Photo proof + AI judge",true,true],["Challenges with friends",true,true],["Streak freezes",true,true],["Video proof",false,true],["Location check-in proof",false,true],["6-month analytics & trophies",false,true]],
-    judgeCardGoal:"“A photo at the gym”", judgeCardMeta:"Matches your goal · streak → day 13",
+    billMo:"Monthly", billYr:"Yearly",
+    proName:"Cert Pro", popular:"Popular",
+    freeDesc:"Everything you need for one honest streak.",
+    proDesc:"For everyone you're serious about — unlimited.",
+    freeFeatsH:"What's included:", proFeatsH:"Everything in Free, plus:",
+    freeFeats:["1 active goal","Photo proof + AI judge","Challenges with friends","Streak freezes"],
+    proFeats:["Unlimited goals","Timelapse video proof","GPS check-in proof","6-month analytics & trophies"],
+    freeCta:"Download free", proCta:"Get Cert Pro",
     faqH:"Questions, answered.",
     ctaH:"Start a streak that means something.",
     ctaT:"Free on the App Store. Your first goal takes under a minute.",
     ftPrivacy:"Privacy", ftTerms:"Terms", ftDelete:"Delete account", ftSupport:"Support",
-    // create-screen animation
     csTitle:"New goal", csOne:"One-time", csRep:"Repeating", csSay:"I'll prove it with", csIdeasH:"Provable ideas", csCreate:"Create goal",
     proofs:{
-      photo:{pill:"photo", goal:"A photo at the gym", dl:"22 Jul, 23:59"},
-      video:{pill:"video", goal:"A video of my 20 pushups", dl:"23 Jul, 10:00"},
-      geo:{pill:"location", place:"Invictus Fitness, Almaty", goal:"Morning check-in at the gym", dl:"23 Jul, 19:00"},
+      photo:{pill:"a photo", goal:"A photo at the gym", dl:"Today at 23:59"},
+      video:{pill:"a video", goal:"A video of my 20 pushups", dl:"Today at 21:00"},
+      geo:{pill:"a check-in", place:"Invictus Fitness", goal:"Morning check-in at the gym", dl:"Today at 09:00"},
     },
     ideas:["Gym 45 min","Morning run","50 pushups","Home-cooked meal"],
     how:{
@@ -481,7 +503,7 @@ const T = {
     navHow:"Как работает", navFeatures:"Возможности", navPricing:"Цены",
     storeSmall:"Download on the", soonSmall:"Скоро в", soonB:"Google Play", heroFree:"Бесплатный старт · iPhone",
     heroH1a:"Серия, которую", heroH1b:"не подделать.",
-    heroSub:"Выбери <b style='color:var(--accent)'>одну привычку</b>. Каждый день доказывай её <b style='color:var(--accent)'>живым фото</b> — а <b style='color:var(--accent)'>ИИ-судья</b> решит, засчитано ли. Галочке больше не соврёшь.",
+    heroSub:"Выбери одну привычку. Каждый день доказывай её живым фото, видео или гео-чек-ином — а ИИ-судья решит, засчитано ли. Галочке больше не соврёшь.",
     chipLive:"Только живая камера", chipAI:"Проверка ИИ", chipFriends:"Челленджи с друзьями",
     howKicker:"Как работает", howH:"Выбери, чем докажешь. Остальное — за судьёй.",
     flexKicker:"Чтобы держать честно", flexH:"Строг там, где важно. Справедлив там, где нужно.",
@@ -499,28 +521,29 @@ const T = {
     judgeL1:"Отклоняет скриншоты, картинки из интернета и старые фото",
     judgeL2:"Объясняет каждый отказ простыми словами",
     judgeL3:"Одна апелляция в день, если судья ошибся",
-    judgeStampSub:"проверка за секунды",
+    judgeCardGoal:"«Фото в зале»", judgeCardMeta:"Совпадает с целью · серия → день 13",
     chKicker:"Челленджи", chH:"Зови друзей. Последний платит.",
     chT:"Создай общую цель с компанией. Все присылают доказательства, все видят таблицу лидеров. Кто финиширует последним — крутит колесо наказаний, которые придумали сами друзья.",
     chChip1:"Общая таблица", chChip2:"Колесо наказаний", chChip3:"Заморозки серии",
     ucKicker:"Примеры", ucH:"Всё, что ты откладываешь.",
     priceKicker:"Цены", priceH:"Начни бесплатно. Pro — когда серьёзно.",
-    billMo:"Месяц", billYr:"Год", popular:"ВЫГОДНО", perForever:"/навсегда",
-    freeList:"1 активная цель<br>Фото-доказательство<br>Челленджи с друзьями<br>Заморозки серии",
-    proList:"Безлимит целей<br>Видео и гео-доказательства<br>Аналитика за 6 месяцев и трофеи<br>Ежемесячные заморозки",
-    priceCta:"Начать бесплатно на iPhone", priceMore:"Полные детали цен",
-    cmpHead:"Что входит",
-    cmp:[["Активные цели","1","Безлимит"],["Фото-пруф + AI-судья",true,true],["Челленджи с друзьями",true,true],["Заморозки серии",true,true],["Видео-пруф",false,true],["Гео-чек-ин",false,true],["Аналитика 6 мес. и трофеи",false,true]],
-    judgeCardGoal:"«Фото в зале»", judgeCardMeta:"Совпадает с целью · серия → день 13",
+    billMo:"Месяц", billYr:"Год",
+    proName:"Cert Pro", popular:"Выбор",
+    freeDesc:"Всё для одной честной серии.",
+    proDesc:"Для всего, к чему ты серьёзен — без лимитов.",
+    freeFeatsH:"Что входит:", proFeatsH:"Всё из Free, плюс:",
+    freeFeats:["1 активная цель","Фото-пруф + ИИ-судья","Челленджи с друзьями","Заморозки серии"],
+    proFeats:["Безлимит целей","Таймлапс-видео пруф","GPS-чек-ин пруф","Аналитика 6 мес. и трофеи"],
+    freeCta:"Скачать бесплатно", proCta:"Купить Cert Pro",
     faqH:"Вопросы и ответы.",
     ctaH:"Начни серию, которая чего-то стоит.",
     ctaT:"Бесплатно в App Store. Первая цель займёт меньше минуты.",
     ftPrivacy:"Конфиденциальность", ftTerms:"Условия", ftDelete:"Удаление аккаунта", ftSupport:"Поддержка",
-    csTitle:"Новая цель", csOne:"Разовая", csRep:"Повторяющаяся", csSay:"Докажу", csIdeasH:"Доказуемые идеи", csCreate:"Создать цель",
+    csTitle:"Новая цель", csOne:"Разовая", csRep:"Повтор", csSay:"Докажу через", csIdeasH:"Доказуемые идеи", csCreate:"Создать цель",
     proofs:{
-      photo:{pill:"фото", goal:"фото в зале", dl:"22 Jul, 23:59"},
-      video:{pill:"видео", goal:"видео, как я мою посуду", dl:"23 Jul, 10:00"},
-      geo:{pill:"гео-отметкой", place:"Invictus Fitness, Алматы", goal:"Утренний чек-ин в зале", dl:"23 Jul, 19:00"},
+      photo:{pill:"фото", goal:"Фото в зале", dl:"Сегодня в 23:59"},
+      video:{pill:"видео", goal:"Видео моих 20 отжиманий", dl:"Сегодня в 21:00"},
+      geo:{pill:"чек-ин", place:"Invictus Fitness", goal:"Утренний чек-ин в зале", dl:"Сегодня в 09:00"},
     },
     ideas:["Зал 45 мин","Утренняя пробежка","50 отжиманий","Домашняя еда"],
     how:{
@@ -552,55 +575,72 @@ const IDEA_ICONS=[
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="1.8"/><path d="M8 21l2-8-3-2 5-2 4 3M12 13l3 8"/></svg>',
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v8a3 3 0 0 0 6 0V3M8 3v18M17 3c-1.5 0-2 2-2 4s.5 4 2 4 2-2 2-4-.5-4-2-4zM17 15v6"/></svg>'
 ];
-// ---- animated CREATE screen ----
+// Apple-Maps-style mini map (soft roads, a park, water, streets)
+const MAP_SVG='<svg class="map" viewBox="0 0 300 128" preserveAspectRatio="xMidYMid slice">'
+  +'<rect width="300" height="128" fill="#eef0ea"/>'
+  +'<rect x="158" y="6" width="86" height="52" rx="7" fill="#d5e7cd"/>'
+  +'<rect x="24" y="74" width="70" height="46" rx="7" fill="#d5e7cd"/>'
+  +'<path d="M-10 44 H310" stroke="#fff" stroke-width="11"/>'
+  +'<path d="M-10 96 H310" stroke="#fff" stroke-width="8"/>'
+  +'<path d="M64 -10 V138" stroke="#fff" stroke-width="9"/>'
+  +'<path d="M214 -10 V138" stroke="#fff" stroke-width="6"/>'
+  +'<path d="M-10 16 L150 138" stroke="#e3e5df" stroke-width="4"/>'
+  +'<path d="M120 -10 C150 40 120 70 190 138" stroke="#bfe0f5" stroke-width="5" fill="none"/>'
+  +'</svg>';
+const PIN_SVG='<svg width="22" height="28" viewBox="0 0 22 28" fill="none"><path d="M11 27c6-8 9-12.5 9-16A9 9 0 1 0 2 11c0 3.5 3 8 9 16z" fill="#e5484d"/><circle cx="11" cy="11" r="3.4" fill="#fff"/></svg>';
+
+// ---- live create-screen ----
 const PT=["photo","video","geo"];
 function createScreen(pt, typed, flash){
   const d=T[lang], p=d.proofs[pt], geo=pt==="geo";
-  const chev='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg>';
+  const chev='<svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="margin-left:2px;"><path d="M6 9l6 6 6-6"/></svg>';
   const a=flash?' anim':'';
   const pill='<span class="cs-pill'+a+'">'+p.pill+chev+'</span>';
   const say = geo
-    ? '<div class="cs-say">'+d.csSay+' '+pill+' '+(lang==="ru"?"в":"at")+'</div><div style="margin-top:8px;"><span class="cs-pill'+a+'">'+p.place+chev+'</span></div>'
-    : '<div class="cs-say">'+d.csSay+' '+pill+' :</div>';
+    ? '<div class="cs-say">'+d.csSay+' '+pill+' '+(lang==="ru"?"в":"at")+' <span class="cs-pill'+a+'">'+p.place+chev+'</span></div>'
+    : '<div class="cs-say">'+d.csSay+' '+pill+'</div>';
   const input='<div class="cs-input">'+(typed?'<span>'+typed+'</span>':'<span class="ph">'+(lang==="ru"?"напр. ":"e.g. ")+p.goal+'</span>')+'<span class="caret"></span></div>';
-  const deadline='<div class="cs-deadline"><span class="lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl'+a+'">'+p.dl+chev+'</span></div>';
-  const map = geo ? '<div class="cs-map"><div class="radius"></div><div class="pin"></div><span class="cs-place">'+p.place+'</span></div>' : '';
+  const dl='<div class="cs-dl-row"><span class="cs-dl-lbl">'+(lang==="ru"?"Дедлайн":"Deadline")+'</span><span class="cs-dl'+a+'">'+p.dl+chev+'</span></div>';
+  const map = geo ? '<div class="cs-map">'+MAP_SVG+'<div class="pin">'+PIN_SVG+'</div><span class="place">'+p.place+'</span></div>' : '';
   const ideas = d.ideas.map((t,i)=>'<div class="cs-idea"><span class="ic">'+IDEA_ICONS[i]+'</span>'+t+'</div>').join('');
-  // geo: map lives in the card, no "ideas" grid — matches the real screen and
-  // keeps the phone the SAME height as photo/video variants.
   const ideasBlock = geo ? '' : '<div class="cs-ideas-h">'+d.csIdeasH+'</div><div class="cs-ideas">'+ideas+'</div>';
-  return '<div class="cs-title">'+d.csTitle+'</div>'
-    +'<div class="cs-toggle"><span class="on">'+d.csOne+'</span><span>'+d.csRep+'</span></div>'
-    +'<div class="cs-card">'+say+input+deadline+map+'</div>'
+  return '<div class="cs-back">‹ '+(lang==="ru"?"Назад":"Back")+'</div>'
+    +'<div class="cs-title">'+d.csTitle+'</div>'
+    +'<div class="cs-seg"><span class="on">'+d.csOne+'</span><span>'+d.csRep+'</span></div>'
+    +'<div class="cs-card">'+say+input+dl+map+'</div>'
     +ideasBlock
     +'<div class="cs-create">'+d.csCreate+'</div>';
 }
-
-// animations pause when their section is off-screen (smooth scrolling)
 let heroVis=true, howVis=true;
-// light update: only rewrite the typed input, not the whole phone (perf)
 function setInputText(id, typed){ const el=document.getElementById(id); if(!el) return; const inp=el.querySelector('.cs-input'); if(inp) inp.innerHTML=(typed?'<span>'+typed+'</span>':'')+'<span class="caret"></span>'; }
 
-// ---- hero: auto-cycle the real create-screen screenshots (photo/video/geo) ----
-let hIdx=0;
-function showHeroShot(){ document.querySelectorAll('#heroShots .shot').forEach((im,k)=>im.classList.toggle('on',k===hIdx)); }
-function renderHero(){ showHeroShot(); }
-setInterval(()=>{ if(!heroVis) return; hIdx=(hIdx+1)%PT.length; showHeroShot(); }, 2600);
+// ---- hero animation (auto-cycle proof type + typewriter) ----
+let hIdx=0, hTyped="", hPhase="type", hTick=0;
+function renderHero(flash){ const el=document.getElementById("heroScreen"); if(el) el.innerHTML=createScreen(PT[hIdx], hTyped, flash); }
+function heroLoop(){
+  if(!heroVis) return;
+  const full=T[lang].proofs[PT[hIdx]].goal;
+  if(hPhase==="type"){ if(hTyped.length<full.length){ hTyped=full.slice(0,hTyped.length+1); setInputText("heroScreen", hTyped); } else { hPhase="hold"; hTick=0; } }
+  else if(hPhase==="hold"){ hTick++; if(hTick>28){ hPhase="next"; } }
+  else { hIdx=(hIdx+1)%PT.length; hTyped=""; hPhase="type"; renderHero(true); }
+}
+setInterval(heroLoop,55);
 let liveMsgIdx=0, liveMsgStart=Date.now();
 setInterval(()=>{ if(!heroVis) return;
   if(Math.floor((Date.now()-liveMsgStart)/1000)>=13){ liveMsgIdx=(liveMsgIdx+1)%T[lang].liveMsgs.length; liveMsgStart=Date.now(); }
   const el=document.getElementById("liveText"); if(el) el.textContent=T[lang].liveText(T[lang].liveMsgs[liveMsgIdx], Math.floor((Date.now()-liveMsgStart)/1000));
 },1000);
 
-// ---- how-it-works: pills + steps; the phone shows the matching real screenshot ----
-let cat=0, step=0, prog=0, raf=null, lastT=0;
-const STEP_MS=2600; const HOWCATS=["photo","video","geo"];
+// ---- how-it-works (pills + steps + typewriter drive the create screen) ----
+let cat=0, step=0, prog=0, raf=null, lastT=0, cTyped="", cTw=null;
+const STEP_MS=2700; const HOWCATS=["photo","video","geo"];
 function howD(){ return T[lang].how[HOWCATS[cat]]; }
-function showHowShot(){ document.querySelectorAll('#howShots .shot').forEach((im,k)=>im.classList.toggle('on',k===cat)); }
-function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; renderAll(); }; el.appendChild(b); }); }
+function startHowType(){ clearInterval(cTw); cTyped=""; const full=T[lang].proofs[HOWCATS[cat]].goal; let i=0; cTw=setInterval(()=>{ i++; cTyped=full.slice(0,i); setInputText("howScreen", cTyped); if(i>=full.length) clearInterval(cTw); },48); }
+function renderHowPhone(){ const el=document.getElementById("howScreen"); if(el) el.innerHTML=createScreen(HOWCATS[cat], cTyped, step===0); }
+function renderPills(){ const el=document.getElementById("howPills"); el.innerHTML=""; HOWCATS.forEach((c,i)=>{ const b=document.createElement("button"); b.className="pill"+(i===cat?" active":""); b.textContent=T[lang].how[c].label; b.onclick=()=>{ cat=i; step=0; prog=0; lastT=0; startHowType(); renderAll(); }; el.appendChild(b); }); }
 function renderSteps(){ const el=document.getElementById("howSteps"), d=howD(); el.innerHTML=""; d.steps.forEach((s,i)=>{ const div=document.createElement("div"); div.className="step"+(i===step?" on":"")+(i<step?" done":""); const conn=i<d.steps.length-1?'<div class="conn"></div>':''; div.innerHTML='<div class="rail"><div class="dot">'+(i+1)+'</div>'+conn+'</div><div class="body"><h4>'+s[0]+'</h4><p>'+s[1]+'</p><div class="bar"><i style="width:'+(i===step?Math.round(prog*100):0)+'%"></i></div></div>'; el.appendChild(div); }); }
-function renderAll(){ renderPills(); renderSteps(); showHowShot(); }
-function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
+function renderAll(){ renderPills(); renderSteps(); renderHowPhone(); }
+function frame(t){ if(howVis){ if(!lastT) lastT=t; prog+=(t-lastT)/STEP_MS; lastT=t; if(prog>=1){ prog=0; step++; if(step>2){ step=0; cat=(cat+1)%HOWCATS.length; startHowType(); } renderAll(); } else { const bar=document.querySelector(".step.on .bar i"); if(bar) bar.style.width=Math.round(prog*100)+"%"; } } else { lastT=0; } raf=requestAnimationFrame(frame); }
 try{ const io=new IntersectionObserver((es)=>{ es.forEach(e=>{ if(e.target.id==="top") heroVis=e.isIntersecting; if(e.target.id==="how") howVis=e.isIntersecting; }); },{threshold:0}); io.observe(document.getElementById("top")); io.observe(document.getElementById("how")); }catch(_){}
 
 // ---- pricing ----
@@ -610,18 +650,19 @@ function renderPrice(){
   const P=window.CertPrice;
   const mo=P?P.monthly():"$4.99", yrp=P?P.yearly():"$29.99", perMo=P?P.yearlyPerMo():"$2.50";
   document.getElementById("proPrice").textContent = yr?yrp:mo;
-  document.getElementById("proPer").textContent = yr?(lang==="ru"?"/год":"/year"):(lang==="ru"?"/мес":"/month");
+  document.getElementById("proPer").textContent = yr?(lang==="ru"?" /год":" /year"):(lang==="ru"?" /мес":" /month");
   document.getElementById("proNote").textContent = yr
-    ? (lang==="ru"?"≈ "+perMo+"/мес — экономия ~50%":"≈ "+perMo+"/mo — saves ~50%")
+    ? (lang==="ru"?"≈ "+perMo+"/мес при годовой оплате · отмена в любой момент":"≈ "+perMo+"/mo billed yearly · cancel anytime")
     : (lang==="ru"?"Помесячно. Отмена в любой момент.":"Billed monthly. Cancel anytime.");
   document.getElementById("bill-mo").classList.toggle("on",!yr);
   document.getElementById("bill-yr").classList.toggle("on",yr);
 }
 function setBill(b){ bill=b; renderPrice(); }
-function renderCmp(){ const el=document.getElementById("cmpBody"); if(!el||!T[lang].cmp) return;
-  const tick='<span class="tick"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8"><path d="M5 12l4 4 10-10"/></svg></span>';
-  const cell=(v,pro)=>{ let c = v===true?tick : v===false?'<span class="dash">—</span>' : '<span style="font-weight:800;color:'+(pro?'var(--accent)':'var(--ink)')+'">'+v+'</span>'; return '<div class="c'+(pro?' pro':'')+'">'+c+'</div>'; };
-  el.innerHTML=T[lang].cmp.map(r=>'<div class="cmp-row"><div class="lab">'+r[0]+'</div>'+cell(r[1],false)+cell(r[2],true)+'</div>').join(''); }
+function renderPlans(){
+  const d=T[lang], chk='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><path d="M5 12l4 4 10-10"/></svg>';
+  document.getElementById("freeFeats").innerHTML = d.freeFeats.map(f=>'<li>'+chk+'<span>'+f+'</span></li>').join('');
+  document.getElementById("proFeats").innerHTML = d.proFeats.map(f=>'<li>'+chk+'<span>'+f+'</span></li>').join('');
+}
 
 // ---- i18n + accordions ----
 function buildAcc(id,arr){ const list=document.getElementById(id); list.innerHTML=""; arr.forEach(([q,a])=>{ const it=document.createElement("div"); it.className="acc-item"; it.innerHTML='<button class="acc-q">'+q+'<span class="acc-x">+</span></button><div class="acc-a">'+a+'</div>'; it.querySelector(".acc-q").onclick=()=>it.classList.toggle("open"); list.appendChild(it); }); }
@@ -631,7 +672,8 @@ function applyLang(){
   document.getElementById("lang-en").classList.toggle("active",lang==="en");
   document.getElementById("lang-ru").classList.toggle("active",lang==="ru");
   buildAcc("ucList",d.uc); buildAcc("faqList",d.faq);
-  renderHero(); renderAll(); renderCmp(); renderPrice();
+  hTyped=""; hPhase="type"; renderHero();
+  startHowType(); renderAll(); renderPlans(); renderPrice();
 }
 function setLang(l){ lang=l; localStorage.setItem("cert_lang",l); applyLang(); }
 applyLang();
