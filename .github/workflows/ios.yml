@@ -28,6 +28,7 @@ jobs:
         working-directory: mobile
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_LOCAL_BUILD_SKIP_CLEANUP: "1"   # keep the build dir so we can read the real pod error
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -58,6 +59,25 @@ jobs:
 
       - name: Build iOS (.ipa) locally — does not use EAS cloud quota
         run: eas build --local --non-interactive --profile production --platform ios --output "$GITHUB_WORKSPACE/app.ipa"
+
+      - name: Surface the real CocoaPods / build error (only if the build failed)
+        if: failure()
+        working-directory: ${{ github.workspace }}
+        run: |
+          echo "===== looking for the kept eas-build working dir ====="
+          DIRS=$(find "${TMPDIR:-/tmp}" /var/folders -maxdepth 5 -type d -name "eas-build-*" 2>/dev/null | sort -u)
+          echo "$DIRS"
+          echo "===== dumping any build / pod / xcode logs (last 200 lines each) ====="
+          for d in $DIRS; do
+            find "$d" -type f -name "*.log" 2>/dev/null | while read -r f; do
+              echo ""; echo "==================== $f ===================="; tail -200 "$f";
+            done
+            # CocoaPods sometimes leaves the error only in the ios build output captured by eas
+            find "$d" -maxdepth 3 -type f -name "Podfile" 2>/dev/null | while read -r pf; do
+              echo ""; echo "---- running pod install --verbose in $(dirname "$pf") to reproduce the error ----";
+              ( cd "$(dirname "$pf")" && pod install --verbose 2>&1 | tail -200 ) || true;
+            done
+          done
 
       - name: Upload .ipa as an artifact (backup you can download)
         uses: actions/upload-artifact@v4
